@@ -52,6 +52,7 @@ Out of scope: play limit, cool-down, rest screen, PIN, Spot the Differences, Pha
 Ground `#FBF4E9`, ink `#5A4038`, rose `#E59AA1`/`#F8DCDF`, sky `#8FB3D1`/`#DCE8F1`, butter `#E5C979`/`#F7ECCB`, sage `#9CC3A4`, peach `#F5D9C4`. Fonts: Baloo 2 (child), Nunito (admin), self-hosted.
 
 ## 7. Non-functional
+- Stack: Next.js + React + TypeScript on Vercel, Supabase backend (ADR-027).
 - Chromium latest; avoid very new JS/CSS so the LG webOS browser at least loads it (ADR-012).
 - Preload images for the current and next question; app interactive in under 3 s on a home network **[assumption]**.
 - Large hit areas: buttons at least 120 px high on the TV screens; visible focus ring for remote navigation.
@@ -64,7 +65,6 @@ Ground `#FBF4E9`, ink `#5A4038`, rose `#E59AA1`/`#F8DCDF`, sky `#8FB3D1`/`#DCE8F
 3. A second child's deployment is set up from the README with no code changes.
 
 ## 9. Open questions
-- Framework: Vite + React + TypeScript (proposed) vs Next.js.
 - Star progress: localStorage vs database.
 - Fallback when no greeting/music is uploaded: silent (proposed).
 - Should a finished set be replayable with questions in a fixed order or shuffled? Proposed: fixed order.

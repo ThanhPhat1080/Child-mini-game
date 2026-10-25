@@ -22,7 +22,7 @@ A personalized, safe, web-based gaming platform built specifically for a 4-5-yea
 * **Extensible Mini-Game Hub (Spot the Differences is Phase 2):** A modular architecture built with Phaser.js allowing seamless expansion of new mini-games (starting with "Spot the Differences").
 
 ## 4. Technical Architecture & Tech Stack
-* **Frontend Hub & Shell:** React (DOM/CSS for the Phase 1 quiz, see ADR-014) for managing routing, splash screens, and TV browser integration.
+* **Frontend Hub & Shell:** Next.js + React + TypeScript (see ADR-027; DOM/CSS for the Phase 1 quiz, see ADR-014) for managing routing, splash screens, and TV browser integration.
 * **Game Engine:** Phaser.js 2D for lightweight, high-performance canvas rendering optimized for Smart TV performance constraints (webOS/Tizen).
 * **Backend & Database:** Supabase (Postgres, Storage, Auth; Firebase is not used, see ADR-008) for storing child profile metadata, session timers, state checkpoints, and dynamic mini-game content (JSON-driven levels).
 * **Deployment & Delivery:** Web-based deployment (Vercel/Netlify), accessed via TV browser bookmarks or shortcuts.
@@ -82,4 +82,4 @@ The Phase 1 prototype (Claude Design canvas, 12 boards) is approved by the owner
 ## Open questions
 
 - Is "finished set" progress (star badge) kept per browser (localStorage) or in the database? Proposed: localStorage in Phase 1 (no user identification, ADR-010).
-- App framework: Vite + React vs Next.js. Proposed: Vite + React + TypeScript (static, light for TV). Confirm in `plan.md`.
+- ~~App framework: Vite + React vs Next.js.~~ Decided 2026-10-26: Next.js + React + TypeScript (ADR-027).

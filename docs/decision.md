@@ -163,3 +163,10 @@
 - **Status:** Accepted
 - **Decision:** Reuse the correct-answer confetti burst, denser (about 140 pieces in waves), plus the chibi girl image on the left. Party horns were tried and rejected. Character images are transparent cut-outs shown at native size to avoid blur.
 - **Consequences:** Keep one shared confetti component; honor `prefers-reduced-motion`.
+
+### ADR-027: Next.js + React + TypeScript as the app framework
+
+- **Status:** Accepted (2026-10-26)
+- **Context:** The framework was open between Vite + React and Next.js (spec section 9, `docs/intent.md` open questions).
+- **Decision:** Build the app with Next.js, React and TypeScript, deployed on Vercel. The child app and the admin dashboard live in the same Next.js project.
+- **Consequences:** Browser-exposed env vars need the `NEXT_PUBLIC_` prefix; only the Supabase URL and anon key may use it, never the service role key (ADR-015). Keep the child pages light for the TV browser and set the build's browser targets so no very new JS/CSS ships (ADR-012). ADR-014 still applies: the quiz is React/DOM, Phaser only in Phase 2.
