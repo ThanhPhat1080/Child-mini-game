@@ -27,7 +27,7 @@ export function AdminNav() {
             <path d="M4 38 L8 10 L20 24 L30 4 L40 24 L52 10 L56 38 Z" />
           </svg>
         </span>
-        <span className={styles.brand}>HaMy Admin</span>
+        <span className={styles.brand}>Parent Admin</span>
       </div>
       <Link href="/admin/settings" aria-current={pathname === '/admin/settings' ? 'page' : undefined} className={cls(pathname === '/admin/settings')}>
         <svg {...icon}><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" /></svg>

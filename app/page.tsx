@@ -9,7 +9,7 @@ import { Stage } from '@/components/Stage';
 import { MusicToggle } from '@/components/MusicToggle';
 import styles from './welcome.module.css';
 
-type Settings = { child_name: string; greeting_path: string | null; music_path: string | null; music_volume: number };
+type Settings = { child_name: string; greeting_path: string | null; music_path: string | null; music_volume: number; avatar_path: string | null };
 
 const CROWN = 'M4 38 L8 10 L20 24 L30 4 L40 24 L52 10 L56 38 Z';
 
@@ -21,7 +21,7 @@ export default function Welcome() {
   useEffect(() => {
     createSupabaseBrowserClient()
       .from('settings')
-      .select('child_name, greeting_path, music_path, music_volume')
+      .select('child_name, greeting_path, music_path, music_volume, avatar_path')
       .eq('id', 1)
       .single()
       .then(({ data }) => setSettings((data as Settings) ?? null));
@@ -84,10 +84,15 @@ export default function Welcome() {
         ) : (
           <div className={`${styles.center} ${styles.enteredWrap}`}>
             <div className={`${styles.crownCircle} ${styles.float}`}>
-              <svg aria-hidden="true" width="120" height="84" viewBox="0 0 60 42" fill="#F6E2A6" stroke="#C9A05A" strokeWidth="2" strokeLinejoin="round">
-                <path d={CROWN} />
-                <circle cx="30" cy="4" r="3" fill="#EBB7BC" stroke="none" />
-              </svg>
+              {mediaUrl(settings?.avatar_path) ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={mediaUrl(settings?.avatar_path) ?? ''} alt="" className={styles.avatarImg} />
+              ) : (
+                <svg aria-hidden="true" width="120" height="84" viewBox="0 0 60 42" fill="#F6E2A6" stroke="#C9A05A" strokeWidth="2" strokeLinejoin="round">
+                  <path d={CROWN} />
+                  <circle cx="30" cy="4" r="3" fill="#EBB7BC" stroke="none" />
+                </svg>
+              )}
               <div className={styles.bars} aria-hidden="true">
                 <span className={styles.wave1} style={{ height: 40 }} />
                 <span className={styles.wave2} style={{ height: 64 }} />

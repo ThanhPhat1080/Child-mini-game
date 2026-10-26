@@ -5,7 +5,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { mediaUrl, uploadMedia } from '@/lib/media';
 import styles from '../../admin.module.css';
 
-type Row = { child_name: string; greeting_path: string | null; music_path: string | null; music_volume: number };
+type Row = { child_name: string; greeting_path: string | null; music_path: string | null; music_volume: number; avatar_path: string | null };
 
 const baseName = (p: string | null) => (p ? p.split('/').pop() ?? p : null);
 
@@ -16,7 +16,9 @@ export default function SettingsPage() {
   const [toast, setToast] = useState<{ text: string; error: boolean } | null>(null);
   const greetingInput = useRef<HTMLInputElement>(null);
   const musicInput = useRef<HTMLInputElement>(null);
+  const avatarInput = useRef<HTMLInputElement>(null);
   const preview = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState<string | null>(null);
 
   const say = (text: string, error = false) => {
     setToast({ text, error });
@@ -26,7 +28,7 @@ export default function SettingsPage() {
   useEffect(() => {
     createSupabaseBrowserClient()
       .from('settings')
-      .select('child_name, greeting_path, music_path, music_volume')
+      .select('child_name, greeting_path, music_path, music_volume, avatar_path')
       .eq('id', 1)
       .single()
       .then(({ data, error }) => {
@@ -64,19 +66,54 @@ export default function SettingsPage() {
     }
   }
 
-  function play(path: string | null) {
+  /** Play / pause a preview. Music previews follow the volume slider live. */
+  function toggle(path: string | null) {
     const url = mediaUrl(path);
-    if (!url) return;
+    if (!url || !path) return;
+    if (playing === path && preview.current) {
+      preview.current.pause();
+      preview.current = null;
+      setPlaying(null);
+      return;
+    }
     preview.current?.pause();
-    preview.current = new Audio(url);
-    preview.current.volume = kindVolume(path);
-    preview.current.play().catch(() => undefined);
+    const audio = new Audio(url);
+    audio.volume = path === row?.music_path ? volume / 100 : 1;
+    audio.onended = () => setPlaying((p) => (p === path ? null : p));
+    audio.play().catch(() => setPlaying(null));
+    preview.current = audio;
+    setPlaying(path);
   }
-  const kindVolume = (path: string | null) => (path && path === row?.music_path ? volume / 100 : 1);
 
-  const PlayIcon = (
-    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M8 5.5v13l10.5-6.5z" /></svg>
-  );
+  useEffect(() => {
+    if (preview.current && playing && playing === row?.music_path) preview.current.volume = volume / 100;
+  }, [volume, playing, row?.music_path]);
+
+  useEffect(() => () => preview.current?.pause(), []);
+
+  async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) return say('Use a PNG, JPG or WebP image.', true);
+    if (file.size > 2 * 1024 * 1024) return say('Image must be 2 MB or smaller.', true);
+    try {
+      const path = await uploadMedia('avatar', file);
+      const { error } = await createSupabaseBrowserClient().from('settings').update({ avatar_path: path }).eq('id', 1);
+      if (error) throw new Error(error.message);
+      setRow((r) => (r ? { ...r, avatar_path: path } : r));
+      say('Avatar updated.');
+    } catch (e) {
+      say(e instanceof Error ? e.message : 'Upload failed', true);
+    }
+  }
+
+  const icon = (path: string | null) =>
+    playing === path ? (
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+    ) : (
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M8 5.5v13l10.5-6.5z" /></svg>
+    );
 
   return (
     <>
@@ -90,12 +127,22 @@ export default function SettingsPage() {
 
       <section className={`${styles.section} ${styles.profile}`}>
         <div className={styles.avatar}>
-          <svg aria-hidden="true" width="54" height="38" viewBox="0 0 60 42" fill="#F6E2A6" stroke="#B08A48" strokeWidth="2" strokeLinejoin="round"><path d="M4 38 L8 10 L20 24 L30 4 L40 24 L52 10 L56 38 Z" /></svg>
+          {mediaUrl(row?.avatar_path) ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={mediaUrl(row?.avatar_path) ?? ''} alt="Avatar" className={styles.avatarImg} />
+          ) : (
+            <svg aria-hidden="true" width="54" height="38" viewBox="0 0 60 42" fill="#F6E2A6" stroke="#B08A48" strokeWidth="2" strokeLinejoin="round"><path d="M4 38 L8 10 L20 24 L30 4 L40 24 L52 10 L56 38 Z" /></svg>
+          )}
         </div>
         <div className={styles.profileBody}>
           <div className={styles.fieldGroup}>
             <label htmlFor="cn">Child&apos;s name</label>
             <input id="cn" className={`${styles.input} ${styles.nameInput}`} type="text" value={childName} onChange={(e) => setChildName(e.target.value)} />
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+            <input ref={avatarInput} className={styles.hidden} type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadAvatar} />
+            <button type="button" className={styles.ghost} onClick={() => avatarInput.current?.click()}>{row?.avatar_path ? 'Replace avatar' : 'Upload avatar'}</button>
+            <span className={styles.note}>PNG, JPG or WebP, square, up to 2 MB</span>
           </div>
         </div>
       </section>
@@ -107,7 +154,7 @@ export default function SettingsPage() {
         </div>
         <div className={styles.row}>
           {row?.greeting_path && (
-            <button type="button" className={styles.playBtn} aria-label="Play greeting" onClick={() => play(row.greeting_path)}>{PlayIcon}</button>
+            <button type="button" className={styles.playBtn} aria-label={playing === row.greeting_path ? 'Pause greeting' : 'Play greeting'} onClick={() => toggle(row.greeting_path)}>{icon(row.greeting_path)}</button>
           )}
           <div className={styles.rowText}>
             <div className={styles.rowTitle}>{baseName(row?.greeting_path ?? null) ?? 'No greeting yet'}</div>
@@ -129,7 +176,7 @@ export default function SettingsPage() {
         </div>
         <div className={`${styles.row} ${row?.music_path ? styles.rowSel : ''}`}>
           {row?.music_path && (
-            <button type="button" className={styles.playBtn} aria-label="Play track" onClick={() => play(row.music_path)}>{PlayIcon}</button>
+            <button type="button" className={styles.playBtn} aria-label={playing === row.music_path ? 'Pause track' : 'Play track'} onClick={() => toggle(row.music_path)}>{icon(row.music_path)}</button>
           )}
           <div className={styles.rowText}>
             <div className={styles.rowTitle}>{baseName(row?.music_path ?? null) ?? 'No track yet'}</div>

@@ -46,7 +46,7 @@ export default function SignInPage() {
               <path d="M4 38 L8 10 L20 24 L30 4 L40 24 L52 10 L56 38 Z" />
             </svg>
           </span>
-          <span className={styles.brand} style={{ fontSize: 28 }}>HaMy Admin</span>
+          <span className={styles.brand} style={{ fontSize: 28 }}>Parent Admin</span>
         </div>
 
         <form className={styles.card} onSubmit={onSubmit}>
