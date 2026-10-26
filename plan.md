@@ -57,7 +57,11 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 - AC: cover upload with live preview; saved set reflects in the preview strip.
 
 ### T6 Question editor (A5, A6, A8; ADR-022, 024)
-- AC: prompt text and/or audio, optional prompt image (PNG/JPG/WebP, max 2 MB, 4:3 frame fitted not cropped), 2-3 answers each with an image, exactly one correct.
+- AC: prompt text and/or audio, 2-3 answers each with an image, exactly one correct.
+- AC: question image is optional and small: 600x300 px frame (2:1), fitted not cropped, PNG/JPG/WebP, max 2 MB; its absence never blocks Save.
+- AC: prompt voice is upload only (mp3/m4a/wav); no in-browser recording.
+- AC: the answer image button reads "Upload image" (also "Upload" when empty), never "Replace image".
+- AC: a "Revert" button sits next to "Save" and discards unsaved edits back to the last saved state.
 - AC: completeness checklist lists what is missing; Save is disabled until complete.
 - AC: delete question only from the editor panel, always with confirmation.
 - AC: up/down buttons reorder questions and the order persists.
@@ -66,6 +70,7 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 ### T7 Audio manager and Welcome (C1; ADR-016)
 - AC: no audio plays before "tap to enter"; after the press the greeting plays, music loops, then "Start game" appears.
 - AC: child name from settings and the princess illustration show; missing audio is silent without errors.
+- AC: music on/off button is always visible at the bottom-left of Welcome and toggles music by click.
 - AC: music keeps playing across all later screens.
 
 ### T8 Game registry and carousel (C2; ADR-014, 018)
@@ -79,13 +84,15 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 ### T10 Question screen (C4-C6, C9, C10, C12; ADR-007, 019, 021, 025)
 - AC: three bands (header, question row, answers) with no overlap at 1920x1080; prompt audio plays if present, with a replay button.
 - AC: 2-3 answers show image + number + fixed color (1 rose, 2 sky, 3 butter); click/tap and keys 1/2/3 answer; no timer.
-- AC: wrong answer dims the card gently with a soft "Oh-oh" and allows retry; no penalty.
-- AC: correct answer plays "Hooray!" with slow pastel confetti, then advances.
+- AC: wrong answer dims the card gently with an "oh-oh" sound and the "Oh-oh… try again!" toast, which disappears after 2 s; retry allowed, no penalty.
+- AC: question dots are clickable to jump to that question, and "n / total" is shown; the replay-voice and music buttons are clickable with press animation.
+- AC: correct answer plays a kid-voice "Yay, hooray!" sound with slow pastel confetti, then advances. Sounds are synthesized/browser voice for now; recorded kid-voice files can replace them later.
 - AC: with `prefers-reduced-motion`, confetti and transitions are disabled or reduced.
 - AC: no screen depends on text; no hard-coded child-facing text.
 
 ### T11 Completed and back navigation (C7, C8, C12; ADR-026)
-- AC: completed screen shows girl image, dense confetti, praise, and a way back to set selection; the set is marked finished (star).
+- AC: completed screen shows girl image, light confetti (simpler and fewer than before), praise, and a way back to set selection; the set is marked finished (star).
+- AC: completed screen plays applause and says "You did it, <child name>!".
 - AC: Esc/Back key and a picture button go from set selection to game list and from a question to set selection.
 
 ### T12 Preview as child (A7; ADR-022)

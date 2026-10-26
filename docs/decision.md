@@ -149,7 +149,7 @@
 ### ADR-024: Question image with size limits
 
 - **Status:** Accepted
-- **Decision:** A question may have a prompt image, shown in a fixed 4:3 frame above the answers, fitted (never cropped or stretched). Admin upload accepts PNG, JPG or WebP up to 2 MB; recommended 1200x900 px. The image is optional and does not block completeness; it appears in the checklist.
+- **Decision:** A question may have a prompt image, shown in a small fixed 600x300 frame beside the question text, fitted (never cropped or stretched). Admin upload accepts PNG, JPG or WebP up to 2 MB; recommended 600x300 px. The image is optional and does not block completeness; it appears in the checklist.
 - **Consequences:** Validate type and size on upload (client and Storage policy). Resize or compress large images before storing. `questions.prompt_image_path` is used.
 
 ### ADR-025: Question screen layout in three bands

@@ -70,7 +70,7 @@ export default function Welcome() {
           </svg>
         </div>
 
-        <MusicToggle />
+        <MusicToggle corner="bottom-left" />
 
         {!entered ? (
           <div className={`${styles.center} ${styles.enterWrap}`}>

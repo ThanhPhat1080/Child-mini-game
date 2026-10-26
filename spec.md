@@ -25,7 +25,7 @@ Out of scope: play limit, cool-down, rest screen, PIN, Spot the Differences, Pha
 | C9 | No screen requires reading. Any text is decorative or admin-written. Vietnamese diacritics render correctly (ADR-017). |
 | C10 | Motion is slow; `prefers-reduced-motion` disables or reduces confetti and transitions (ADR-006, ADR-021). |
 | C11 | Empty state: if there are no published sets, show a friendly picture screen, not an error. |
-| C12 | Question screen has three bands (header, question row with image + replay-voice + text, answers) with no overlap (ADR-025). Set-completed screen shows the girl image and a dense confetti burst (ADR-026). |
+| C12 | Question screen has three bands (header, question row with image + replay-voice + text, answers) with no overlap (ADR-025). Set-completed screen shows the girl image and a light confetti burst with applause and a spoken "You did it" (ADR-026). |
 
 ## 4. Admin flow (desktop, Nunito)
 | ID | Requirement |
@@ -34,7 +34,7 @@ Out of scope: play limit, cool-down, rest screen, PIN, Spot the Differences, Pha
 | A2 | Settings: child's name, upload greeting audio, upload background music (with play-to-check), save. |
 | A3 | Set list: table of sets (name, question count, status draft/published) and a front-page preview strip that mirrors C3 using the same card component (ADR-023). Actions: new set, edit, delete. |
 | A4 | Set editor: name, optional sub-title, heading color (6 presets + custom color picker + hex input, low-contrast warning), cover upload with live preview, status, question list. |
-| A5 | Add/edit question: prompt text and/or prompt audio, prompt image (optional; PNG/JPG/WebP, max 2 MB, best 1200x900, shown in a 4:3 frame, fitted not cropped, ADR-024), 2-3 answers each with an image upload, exactly one marked correct. Completeness checklist shows what is missing; Save is disabled until complete (ADR-023). |
+| A5 | Add/edit question: prompt text and/or prompt audio, prompt image (optional; PNG/JPG/WebP, max 2 MB, best 600x300, shown in a small 600x300 frame, fitted not cropped, ADR-024); prompt audio is upload only (no recording); Save has a Revert button next to it; answer image button says "Upload image", 2-3 answers each with an image upload, exactly one marked correct. Completeness checklist shows what is missing; Save is disabled until complete (ADR-023). |
 | A6 | Delete set and delete question always ask for confirmation. Questions are deleted only from the editor panel (ADR-022). |
 | A7 | "Preview as child" is enabled after the set is saved; it plays the set as the child sees it, including drafts, without publishing (ADR-022). |
 | A8 | Reorder questions. **[assumption]** simple up/down buttons in Phase 1. |

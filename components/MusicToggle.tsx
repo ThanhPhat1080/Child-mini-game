@@ -5,7 +5,7 @@ import { isMusicMuted, setMusicMuted } from '@/lib/audio';
 import styles from './MusicToggle.module.css';
 
 /** Round music on/off button, top right of every child screen. */
-export function MusicToggle() {
+export function MusicToggle({ corner = 'top-right' }: { corner?: 'top-right' | 'bottom-left' }) {
   const [on, setOn] = useState(!isMusicMuted());
 
   function toggle() {
@@ -19,6 +19,7 @@ export function MusicToggle() {
       className={`${styles.btn} ${on ? styles.on : styles.off}`}
       aria-label={on ? 'Turn background music off' : 'Turn background music on'}
       onClick={toggle}
+      style={corner === 'bottom-left' ? { top: 'auto', right: 'auto', bottom: 48, left: 56 } : undefined}
     >
       <svg aria-hidden="true" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke={on ? '#7A5C50' : '#A8968A'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M9 18V5l12-2v13" />
