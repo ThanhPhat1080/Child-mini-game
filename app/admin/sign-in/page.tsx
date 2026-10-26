@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import styles from '../admin.module.css';
 
 export default function SignInPage() {
   const router = useRouter();
@@ -32,49 +33,41 @@ export default function SignInPage() {
       return;
     }
 
-    router.push('/admin');
+    router.push('/admin/settings');
     router.refresh();
   }
 
   return (
-    <main style={{ maxWidth: 380, margin: '96px auto', padding: 24 }}>
-      <h1 style={{ fontSize: 28, margin: '0 0 24px' }}>Admin sign-in</h1>
-      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 16 }}>
-        <label style={{ display: 'grid', gap: 6, fontWeight: 700 }}>
-          Email
-          <input
-            type="email"
-            autoComplete="username"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={{ height: 46, padding: '0 14px', borderRadius: 12, border: '1.5px solid #E3D5C4', font: 'inherit' }}
-          />
-        </label>
-        <label style={{ display: 'grid', gap: 6, fontWeight: 700 }}>
-          Password
-          <input
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ height: 46, padding: '0 14px', borderRadius: 12, border: '1.5px solid #E3D5C4', font: 'inherit' }}
-          />
-        </label>
-        {error && (
-          <p role="alert" style={{ margin: 0, color: '#A8484F', fontWeight: 700 }}>
-            {error}
-          </p>
-        )}
-        <button
-          type="submit"
-          disabled={busy}
-          style={{ height: 46, borderRadius: 12, border: 'none', background: '#5A4038', color: '#FFFFFF', fontWeight: 700, font: 'inherit', cursor: 'pointer' }}
-        >
-          {busy ? 'Signing in…' : 'Sign in'}
-        </button>
-      </form>
-    </main>
+    <div className={`${styles.page} ${styles.signWrap}`}>
+      <div className={styles.signCol}>
+        <div className={styles.signBrand}>
+          <span className={styles.crownDot} style={{ width: 52, height: 52 }}>
+            <svg aria-hidden="true" width="30" height="22" viewBox="0 0 60 42" fill="#F6E2A6" stroke="#B08A48" strokeWidth="3" strokeLinejoin="round">
+              <path d="M4 38 L8 10 L20 24 L30 4 L40 24 L52 10 L56 38 Z" />
+            </svg>
+          </span>
+          <span className={styles.brand} style={{ fontSize: 28 }}>HaMy Admin</span>
+        </div>
+
+        <form className={styles.card} onSubmit={onSubmit}>
+          <div>
+            <h1>Parent sign-in</h1>
+            <p className={styles.sub}>Manage greeting, music and quiz content.</p>
+          </div>
+          <div className={styles.fieldGroup}>
+            <label htmlFor="em">Email</label>
+            <input id="em" className={styles.input} type="email" placeholder="parent@example.com" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div className={styles.fieldGroup}>
+            <label htmlFor="pw">Password</label>
+            <input id="pw" className={styles.input} type="password" placeholder="••••••••" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+          </div>
+          {error && <p role="alert" className={styles.error}>{error}</p>}
+          <button type="submit" className={styles.primary} disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+        </form>
+
+        <p className={styles.foot}>Admin accounts only · Supabase Auth</p>
+      </div>
+    </div>
   );
 }
