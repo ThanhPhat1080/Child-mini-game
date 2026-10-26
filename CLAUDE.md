@@ -22,7 +22,7 @@ Node 24 + npm 11 (tested). On this Windows machine npm is not on the Bash PATH; 
 - Typecheck: `npm run typecheck`; lint: `npm run lint`
 - Test: `npm test`; single file: `npx vitest run tests/tokens.test.ts`; watch: `npm run test:watch`
 - E2E: `npm run e2e` (Playwright, not set up yet)
-- Migrations: not set up yet (T1). Supabase CLI, `supabase/migrations/*.sql`.
+- Migrations: `supabase/migrations/*.sql` (T1 init schema applied to project `uhpsqaqejizcyzwhwnsl`). New migrations only, never hand-edit the dashboard. Add the admin once: `insert into public.admins (user_id) select id from auth.users where email = '<admin email>';`
 
 ## Architecture that spans files (from spec/ADRs)
 - **Game registry** (ADR-014): the game list carousel reads from a registry; Quiz is the only entry. Phase 2 Phaser games plug in here.
