@@ -1,0 +1,115 @@
+# Plan: HaMy Phase 1 (Quiz MVP + Admin)
+
+Source: `spec.md` (requirement IDs C1-C12, A1-A8), `docs/decision.md` (ADRs). Stack per ADR-027: Next.js + React + TypeScript, Supabase, Vercel.
+Status: draft for owner review. Nothing is scaffolded yet.
+
+## 1. Decisions to confirm
+Recommended defaults; the owner can override before T0 starts.
+
+| Topic | Default |
+|-------|---------|
+| Router | Next.js App Router, TypeScript `strict` |
+| Styling | Plain CSS Modules + CSS variables for the spec section 6 tokens. No Tailwind (light bundle for TV) |
+| Data access | Child routes are client-rendered and read-only through the Supabase anon client. Admin under `/admin/*`, guarded by middleware + Supabase Auth (`@supabase/ssr`) |
+| Browser targets | `browserslist` set to older Chromium so no very new JS/CSS ships (ADR-012) |
+| Tooling | npm; Vitest + Testing Library (unit); Playwright (key flows); ESLint + `tsc --noEmit` |
+| Migrations | Supabase CLI, `supabase/migrations/*.sql` (ADR-008) |
+| Open spec questions | Star progress in localStorage; silent when no greeting/music; fixed question order; up/down buttons for reorder (A8) |
+
+## 2. Architecture sketch
+- `app/(child)/`: Welcome, game list, set selection, question, completed. Read-only, unauthenticated.
+- `app/admin/`: sign-in, settings, set list, set editor, question editor, preview. Authenticated.
+- `lib/supabase/`: browser client (anon) and server/middleware client. Only `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`; never the service role key (ADR-015).
+- `lib/audio/`: one audio manager for music, voice, effects; music persists across screens (ADR-016).
+- `lib/games/registry`: game list reads from a registry; Quiz is the only entry (ADR-014).
+- `components/`: `SetCard` (shared by child and admin preview, ADR-023), `Confetti` (shared, dense variant for completed, ADR-026), `AnswerCard` (fixed slot colors, ADR-019).
+- RLS: anon `select` on settings and published sets with their questions/answers; authenticated admin does everything including storage writes. Draft preview uses the authenticated client (ADR-022).
+
+## 3. Tickets
+Done only when every Acceptance Criterion (AC) passes.
+
+### T0 Scaffold
+Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslist`, self-hosted Baloo 2 and Nunito, design tokens, global focus ring and `prefers-reduced-motion` base.
+- AC: install, dev, build, lint, typecheck and test all run clean on a fresh clone.
+- AC: Vietnamese diacritics (e.g. "Hà My ơi, bé ngoan") render correctly in both fonts with no CDN request.
+- AC: `CLAUDE.md` "Commands" updated with the real commands, including single-test and migrations.
+
+### T1 Schema, RLS, storage (spec 5; ADR-008, 015, 024)
+- AC: migrations create `settings`, `quiz_sets`, `questions`, `answers`, bucket `media`, with unique `(question_id, slot)` and exactly-one-correct enforced by constraint/trigger.
+- AC: as anon, only settings and published sets/questions/answers are readable; every write is denied.
+- AC: as admin, all writes succeed, including drafts and storage uploads. Storage policy rejects non-image types and files over 2 MB for images.
+- AC: migrations apply cleanly to an empty Supabase project.
+
+### T2 Admin sign-in (A1)
+- AC: valid email + password opens admin; wrong credentials show an inline error.
+- AC: unauthenticated visits to any `/admin/*` route redirect to sign-in.
+
+### T3 Admin settings (A2)
+- AC: save child name; upload greeting audio and background music; each has play-to-check.
+- AC: values persist after reload and are readable by the child app.
+
+### T4 Admin set list and preview strip (A3; ADR-023)
+- AC: table shows name, question count, draft/published; actions new, edit, delete (with confirmation).
+- AC: preview strip renders with the same `SetCard` component as the child screen.
+
+### T5 Set editor (A4; ADR-020)
+- AC: name, optional sub-title, status, 6 color presets + picker + hex input, low-contrast warning.
+- AC: cover upload with live preview; saved set reflects in the preview strip.
+
+### T6 Question editor (A5, A6, A8; ADR-022, 024)
+- AC: prompt text and/or audio, optional prompt image (PNG/JPG/WebP, max 2 MB, 4:3 frame fitted not cropped), 2-3 answers each with an image, exactly one correct.
+- AC: completeness checklist lists what is missing; Save is disabled until complete.
+- AC: delete question only from the editor panel, always with confirmation.
+- AC: up/down buttons reorder questions and the order persists.
+- AC: creating a 5-question set takes under 10 minutes (timed manual check, DoD 2).
+
+### T7 Audio manager and Welcome (C1; ADR-016)
+- AC: no audio plays before "tap to enter"; after the press the greeting plays, music loops, then "Start game" appears.
+- AC: child name from settings and the princess illustration show; missing audio is silent without errors.
+- AC: music keeps playing across all later screens.
+
+### T8 Game registry and carousel (C2; ADR-014, 018)
+- AC: only "Quiz" is listed, from the registry.
+- AC: Left/Right keys, click-and-hold drag, arrow buttons and dots all move it; a drag never triggers the card click; Enter/click opens the game.
+
+### T9 Set selection (C3, C11)
+- AC: published sets show cover, heading-colored name, optional sub-title, question-count pill, and a star when finished; selectable by click and by arrows + Enter.
+- AC: with no published sets, a friendly picture screen shows, not an error.
+
+### T10 Question screen (C4-C6, C9, C10, C12; ADR-007, 019, 021, 025)
+- AC: three bands (header, question row, answers) with no overlap at 1920x1080; prompt audio plays if present, with a replay button.
+- AC: 2-3 answers show image + number + fixed color (1 rose, 2 sky, 3 butter); click/tap and keys 1/2/3 answer; no timer.
+- AC: wrong answer dims the card gently with a soft "Oh-oh" and allows retry; no penalty.
+- AC: correct answer plays "Hooray!" with slow pastel confetti, then advances.
+- AC: with `prefers-reduced-motion`, confetti and transitions are disabled or reduced.
+- AC: no screen depends on text; no hard-coded child-facing text.
+
+### T11 Completed and back navigation (C7, C8, C12; ADR-026)
+- AC: completed screen shows girl image, dense confetti, praise, and a way back to set selection; the set is marked finished (star).
+- AC: Esc/Back key and a picture button go from set selection to game list and from a question to set selection.
+
+### T12 Preview as child (A7; ADR-022)
+- AC: enabled only after the set is saved; plays the set as the child sees it, including drafts, without publishing.
+
+### T13 Performance, TV pass, deploy (spec 7)
+- AC: images for the current and next question are preloaded; app interactive in under 3 s on a home network.
+- AC: buttons are at least 120 px high on TV screens; visible focus ring for remote navigation.
+- AC: deployed on Vercel; full flow works in Chromium cast to the TV; the URL opens once in the LG webOS browser with no major problems.
+
+### T14 Setup README (DoD 3)
+- AC: README covers creating the Supabase project, running migrations, creating the admin user, env vars, and deploying to Vercel.
+- AC: a second child's deployment is set up from the README alone with no code changes.
+
+## 4. Out of scope (Phase 2)
+Play limit, cool-down, rest screen, PIN, Spot the Differences, Phaser, full webOS testing with the real remote.
+
+## 5. Risks
+- Browser autoplay policy: audio only after "tap to enter" (T7).
+- webOS browser may lack newer JS/CSS: keep `browserslist` conservative and check once on the TV (T13).
+- Draft preview vs RLS: preview must use the authenticated client (T12).
+- Large uploads: validate type and size on client and in Storage policy, compress before storing (T6).
+
+## 6. Definition of done (spec 8)
+1. Child goes from Welcome to the end of a set without anyone reading to her.
+2. A parent creates a set with at least 5 questions in under 10 minutes.
+3. A second child's deployment is set up from the README with no code changes.

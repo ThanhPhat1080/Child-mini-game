@@ -14,7 +14,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Next.js + React + TypeScript (DOM/CSS, no Phaser until Phase 2; ADR-027), Supabase (Postgres, Storage, Auth), Vercel. Browser-exposed env vars need the `NEXT_PUBLIC_` prefix; only the Supabase URL and anon key may use it.
 
 ## Commands
-Not scaffolded yet. Once `plan.md` is approved, record here: install, dev, build, test (incl. single test), lint, and how to run Supabase migrations.
+Node 24 + npm 11 (tested). On this Windows machine npm is not on the Bash PATH; use PowerShell or add Node to PATH first.
+
+- Install: `npm ci`
+- Dev: `npm run dev`
+- Build: `npm run build`; prod server `npm start`
+- Typecheck: `npm run typecheck`; lint: `npm run lint`
+- Test: `npm test`; single file: `npx vitest run tests/tokens.test.ts`; watch: `npm run test:watch`
+- E2E: `npm run e2e` (Playwright, not set up yet)
+- Migrations: not set up yet (T1). Supabase CLI, `supabase/migrations/*.sql`.
 
 ## Architecture that spans files (from spec/ADRs)
 - **Game registry** (ADR-014): the game list carousel reads from a registry; Quiz is the only entry. Phase 2 Phaser games plug in here.

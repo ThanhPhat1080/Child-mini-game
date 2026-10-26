@@ -1,0 +1,48 @@
+/* Design tokens from spec.md section 6 */
+:root {
+  --ground: #FBF4E9;
+  --ink: #5A4038;
+  --rose: #E59AA1;
+  --rose-tint: #F8DCDF;
+  --sky: #8FB3D1;
+  --sky-tint: #DCE8F1;
+  --butter: #E5C979;
+  --butter-tint: #F7ECCB;
+  --sage: #9CC3A4;
+  --peach: #F5D9C4;
+  --focus: #7A5C50;
+  --font-child: 'Baloo 2', 'Nunito', sans-serif;
+  --font-admin: 'Nunito', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-admin);
+}
+
+/* Visible focus ring for remote and keyboard navigation (T13 AC) */
+:focus-visible {
+  outline: 6px solid var(--focus);
+  outline-offset: 8px;
+}
+
+/* Slow, calm motion; disable for users who ask (C10) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
