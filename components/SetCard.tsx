@@ -2,24 +2,30 @@ import { mediaUrl } from '@/lib/media';
 
 export type SetCardData = { id: string; title: string; subtitle: string | null; heading_color: string; cover_path: string | null; count: number };
 
-/** Quiz set card shared by the child screen and the admin preview (ADR-023). */
-export function SetCard({ set, done }: { set: SetCardData; done?: boolean }) {
+const TINT = ['#F8DCDF', '#DCE8F1', '#F7ECCB'];
+
+/** Quiz set card shared by the child screen and the admin preview (ADR-023). Matches the QuizSets board. */
+export function SetCard({ set, index = 0, done }: { set: SetCardData; index?: number; done?: boolean }) {
   const cover = mediaUrl(set.cover_path);
   return (
-    <div style={{ position: 'relative', width: 520, height: 640, borderRadius: 56, background: '#fff', boxShadow: '0 14px 0 #EADCC8', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ height: 400, background: '#F7ECCB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {cover && <img src={cover} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-      </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '0 24px' }}>
-        <span style={{ fontSize: 72, fontWeight: 700, lineHeight: 1, color: set.heading_color }}>{set.title}</span>
-        {set.subtitle && <span style={{ fontSize: 36, fontWeight: 500, color: '#8A6A5E' }}>{set.subtitle}</span>}
-      </div>
+    <span
+      style={{ position: 'relative', width: 480, height: 700, borderRadius: 56, background: '#fff', boxShadow: '0 16px 0 #E3CFC0', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14, color: '#5A4038', boxSizing: 'border-box' }}
+    >
       {done && (
-        <svg aria-label="Finished" width="120" height="120" viewBox="0 0 24 24" fill="#EED79A" stroke="#C9A05A" strokeWidth="1" strokeLinejoin="round" style={{ position: 'absolute', top: 16, right: 16 }}>
-          <path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z" />
-        </svg>
+        <span style={{ position: 'absolute', top: -26, right: -26, width: 88, height: 88, borderRadius: 44, background: '#F6E2A6', border: '8px solid #FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
+          <svg aria-hidden="true" width="46" height="46" viewBox="0 0 24 24" fill="#EED79A" stroke="#B8903F" strokeWidth="1.5" strokeLinejoin="round"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z" /></svg>
+        </span>
       )}
-    </div>
+      <span style={{ width: 300, height: 300, borderRadius: 150, background: TINT[index % 3], display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10, overflow: 'hidden' }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {cover && <img src={cover} alt="" draggable={false} style={{ width: 210, height: 210, objectFit: 'contain' }} />}
+      </span>
+      <span style={{ fontSize: 64, fontWeight: 600, color: set.heading_color, lineHeight: 1 }}>{set.title}</span>
+      {set.subtitle && <span style={{ fontSize: 34, fontWeight: 500, color: '#9A8174', lineHeight: 1 }}>{set.subtitle}</span>}
+      <span style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, padding: '8px 22px 8px 16px', borderRadius: 999, background: '#FBF4E9', fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 24, color: '#6E5A4E' }}>
+        <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={set.heading_color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+        {set.count} questions
+      </span>
+    </span>
   );
 }

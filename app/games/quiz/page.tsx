@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { Stage } from '@/components/Stage';
-import { MusicToggle } from '@/components/MusicToggle';
+import { Hills } from '@/components/Hills';
 import { BackButton } from '@/components/BackButton';
 import { SetCard, type SetCardData } from '@/components/SetCard';
 
@@ -32,19 +32,23 @@ export default function QuizSets() {
 
   return (
     <Stage>
+      <Hills />
       <div style={{ position: 'absolute', top: 48, left: 56, right: 56, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <BackButton href="/games" />
-        <MusicToggle />
+        <BackButton href="/games" label="Back to games" />
+        <span style={{ display: 'flex', alignItems: 'center', gap: 16, height: 104, padding: '0 36px 0 24px', borderRadius: 52, background: '#fff', border: '8px solid #EBB7BC', boxSizing: 'border-box' }}>
+          <svg aria-hidden="true" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+          <span style={{ fontSize: 44, fontWeight: 600, color: '#B8737B', lineHeight: 1 }}>Quiz</span>
+        </span>
       </div>
       {sets && sets.length === 0 && (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 72, fontWeight: 600, color: '#8A6A5E' }}>
           New quizzes are coming soon!
         </div>
       )}
-      <div style={{ position: 'absolute', top: 220, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 64 }}>
-        {sets?.map((s) => (
-          <Link key={s.id} href={`/games/quiz/${s.id}`} aria-label={s.title}>
-            <SetCard set={s} done={done[s.id]} />
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 190, display: 'flex', justifyContent: 'center', gap: 64 }}>
+        {sets?.map((s, i) => (
+          <Link key={s.id} href={`/games/quiz/${s.id}`} className="hm-card" aria-label={`${s.title}, ${s.count} questions${done[s.id] ? ', completed' : ''}`} style={{ borderRadius: 56 }}>
+            <SetCard set={s} index={i} done={done[s.id]} />
           </Link>
         ))}
       </div>

@@ -1,4 +1,4 @@
-.piece { position: absolute; opacity: 0; animation-duration: 4.6s; animation-iteration-count: infinite; animation-fill-mode: both; }
+.piece { position: absolute; left: 960px; top: 470px; opacity: 0; animation-duration: 4.6s; animation-iteration-count: infinite; animation-fill-mode: both; }
 @media (prefers-reduced-motion: reduce) { .piece { animation: none; opacity: 0.9; } }
 @keyframes b0{0%{transform:translate(0,0) scale(.3);opacity:0;animation-timing-function:cubic-bezier(.05,.8,.25,1)}6%{opacity:1}30%{transform:translate(650px,14px) rotate(573deg) scale(1);animation-timing-function:cubic-bezier(.35,0,.8,.7)}75%{opacity:1}100%{transform:translate(728px,606px) rotate(1146deg) scale(.9);opacity:0}}
 @keyframes b1{0%{transform:translate(0,0) scale(.3);opacity:0;animation-timing-function:cubic-bezier(.05,.8,.25,1)}6%{opacity:1}30%{transform:translate(463px,-63px) rotate(538deg) scale(1);animation-timing-function:cubic-bezier(.35,0,.8,.7)}75%{opacity:1}100%{transform:translate(519px,531px) rotate(1076deg) scale(.9);opacity:0}}
