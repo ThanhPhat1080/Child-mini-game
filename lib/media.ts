@@ -6,6 +6,7 @@ export const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 /** Public URL for a path in the media bucket, or null when there is no file. */
 export function mediaUrl(path: string | null | undefined): string | null {
   if (!path) return null;
+  if (path.startsWith('seed/')) return `/${path}`; // bundled sample art
   const supabase = createSupabaseBrowserClient();
   return supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
 }

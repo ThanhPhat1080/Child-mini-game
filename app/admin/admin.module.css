@@ -1,5 +1,5 @@
 .page { min-height: 100vh; background: #fbf4e9; font-family: 'Nunito', sans-serif; color: #4a3830; }
-.brand { font-family: 'Baloo 2', 'Nunito', sans-serif; font-weight: 600; color: #8a5560; }
+.brand { white-space: nowrap; font-family: 'Baloo 2', 'Nunito', sans-serif; font-weight: 600; color: #8a5560; }
 .crownDot { border-radius: 50%; background: #f5d9c4; display: flex; align-items: center; justify-content: center; flex: none; }
 
 /* sign-in */
@@ -22,7 +22,7 @@
 /* panel */
 .shell { min-height: 100vh; background: #fbf4e9; font-family: 'Nunito', sans-serif; color: #4a3830; display: flex; flex-wrap: wrap; align-items: flex-start; }
 .nav { flex: 1 1 240px; max-width: 280px; min-width: 220px; padding: 28px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px; }
-.navBrand { display: flex; align-items: center; gap: 10px; padding: 0 12px 20px; font-size: 22px; }
+.navBrand { white-space: nowrap; display: flex; align-items: center; gap: 10px; padding: 0 12px 20px; font-size: 22px; }
 .navLink { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; color: #4a3830; font-weight: 600; text-decoration: none; background: transparent; border: none; font-family: 'Nunito', sans-serif; font-size: 16px; cursor: pointer; text-align: left; }
 .navLink:hover { background: #f6eadc; }
 .navActive { background: #fff; font-weight: 700; box-shadow: 0 1px 0 #eadcc8; }
