@@ -13,12 +13,17 @@ import { ohOh, yay, speakKid } from '@/lib/sfx';
 import { Confetti } from '@/components/Confetti';
 
 type Answer = { slot: number; image_path: string | null; is_correct: boolean };
-type Question = { id: string; position: number; prompt_text: string | null; prompt_image_path: string | null; answers: Answer[] };
+type Question = { id: string; position: number; prompt_text: string | null; prompt_image_path: string | null; prompt_audio_path: string | null; answers: Answer[] };
 
 const BADGE = ['#C77D85', '#5F86A8', '#8A6A2A'];
 const SHADOW = ['#D9A0A6', '#7FA0BE', '#D2B466'];
 
-const speak = (t: string | null) => { if (t) speakKid(t, { pitch: 1.5, rate: 0.8 }); };
+let voiceEl: HTMLAudioElement | null = null;
+function speak(t: string | null, audioUrl?: string | null) {
+  voiceEl?.pause();
+  if (audioUrl) { voiceEl = new Audio(audioUrl); voiceEl.play().catch(() => undefined); return; }
+  if (t) speakKid(t, { pitch: 1.5, rate: 0.8 });
+}
 
 /** Question screen (C4/C5/C6). */
 export default function QuestionPage() {
@@ -32,12 +37,12 @@ export default function QuestionPage() {
   useEffect(() => {
     createSupabaseBrowserClient()
       .from('questions')
-      .select('id, position, prompt_text, prompt_image_path, answers(slot, image_path, is_correct)')
+      .select('id, position, prompt_text, prompt_image_path, prompt_audio_path, answers(slot, image_path, is_correct)')
       .eq('set_id', setId)
       .order('position')
       .then(({ data }) => {
         const rows = ((data as unknown as Question[]) ?? []).map((r) => ({ ...r, answers: [...r.answers].sort((a, b) => a.slot - b.slot) }));
-        setQs(rows);
+        setQs(rows.filter((r) => (!!r.prompt_text?.trim() || !!r.prompt_audio_path) && r.answers.length >= 2 && r.answers.every((a) => a.image_path) && r.answers.filter((a) => a.is_correct).length === 1));
       });
   }, [setId]);
 
@@ -79,7 +84,7 @@ export default function QuestionPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [pick, next, result, last]);
 
-  useEffect(() => { if (cur) speak(cur.prompt_text); }, [cur]);
+  useEffect(() => { if (cur) speak(cur.prompt_text, mediaUrl(cur.prompt_audio_path)); }, [cur]);
 
   if (!cur || !qs) return <Stage><span /></Stage>;
   const qImg = mediaUrl(cur.prompt_image_path);
@@ -102,12 +107,12 @@ export default function QuestionPage() {
       <MusicButton />
 
       <div style={{ position: 'absolute', top: 172, left: 0, right: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 72 }}>
-        <div style={{ width: 400, height: 300, boxSizing: 'border-box', padding: 20, overflow: 'hidden', borderRadius: 44, background: '#fff', boxShadow: '0 12px 0 #EADCC8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        {qImg && <div style={{ width: 600, height: 300, boxSizing: 'border-box', padding: 20, overflow: 'hidden', borderRadius: 44, background: '#fff', boxShadow: '0 12px 0 #EADCC8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {qImg && <img src={qImg} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />}
-        </div>
+          <img src={qImg} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+        </div>}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28 }}>
-          <button type="button" className="hm-tap hm-breathe" aria-label="Hear the question again" onClick={() => { speak(cur.prompt_text); setPing((n) => n + 1); }} style={{ width: 120, height: 120, borderRadius: 60, border: 'none', background: '#EBB7BC', boxShadow: '0 10px 0 #D9A0A6', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <button type="button" className="hm-tap hm-breathe" aria-label="Hear the question again" onClick={() => { speak(cur.prompt_text, mediaUrl(cur.prompt_audio_path)); setPing((n) => n + 1); }} style={{ width: 120, height: 120, borderRadius: 60, border: 'none', background: '#EBB7BC', boxShadow: '0 10px 0 #D9A0A6', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             {ping > 0 && <span key={ping} className="hm-ping" aria-hidden="true" />}
             <svg aria-hidden="true" width="68" height="68" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H3v6h3l5 4z" fill="#fff" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M18.5 5.5a9 9 0 0 1 0 13" /></svg>
           </button>

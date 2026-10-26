@@ -9,7 +9,12 @@ import { BackButton } from '@/components/BackButton';
 import { SetCard, type SetCardData } from '@/components/SetCard';
 import { MusicButton } from '@/components/MusicButton';
 
-type Row = Omit<SetCardData, 'count'> & { questions: { count: number }[] };
+type Row = Omit<SetCardData, 'count'> & { questions: { prompt_text: string | null; prompt_audio_path: string | null; answers: { image_path: string | null; is_correct: boolean }[] }[] };
+
+function isComplete(q: Row['questions'][number]): boolean {
+  const a = q.answers;
+  return (!!q.prompt_text?.trim() || !!q.prompt_audio_path) && a.length >= 2 && a.length <= 3 && a.every((x) => x.image_path) && a.filter((x) => x.is_correct).length === 1;
+}
 
 /** Quiz set selection (C3/C11). Only published sets are visible to anon (RLS). */
 export default function QuizSets() {
@@ -19,11 +24,11 @@ export default function QuizSets() {
   useEffect(() => {
     createSupabaseBrowserClient()
       .from('quiz_sets')
-      .select('id, title, subtitle, heading_color, cover_path, questions(count)')
+      .select('id, title, subtitle, heading_color, cover_path, questions(prompt_text, prompt_audio_path, answers(image_path, is_correct))')
       .eq('status', 'published')
       .order('position')
       .then(({ data }) => {
-        const rows = ((data as unknown as Row[]) ?? []).map((r) => ({ ...r, count: r.questions?.[0]?.count ?? 0 })).filter((r) => r.count > 0);
+        const rows = ((data as unknown as Row[]) ?? []).map((r) => ({ ...r, count: r.questions.filter(isComplete).length })).filter((r) => r.count > 0);
         setSets(rows);
         const d: Record<string, boolean> = {};
         try { rows.forEach((r) => { if (localStorage.getItem(`hamy:done:${r.id}`)) d[r.id] = true; }); } catch { /* storage blocked */ }
