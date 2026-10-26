@@ -77,3 +77,7 @@ a { text-decoration: none; }
   .hm-ans,.hm-card,.hm-tap{transition:none}
   .hm-view *{transition:none !important}
 }
+@keyframes hm-ping{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.9);opacity:0}}
+.hm-ping{position:absolute;inset:0;border-radius:50%;border:8px solid #EBB7BC;animation:hm-ping .9s ease-out both;pointer-events:none}
+button.hm-tap:active{transform:scale(.94)}
+@media (prefers-reduced-motion: reduce){.hm-ping{animation:none;opacity:0}}

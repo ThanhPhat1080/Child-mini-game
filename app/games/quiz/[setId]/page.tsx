@@ -8,6 +8,8 @@ import { mediaUrl } from '@/lib/media';
 import { SLOT_COLORS } from '@/lib/tokens';
 import { Stage } from '@/components/Stage';
 import { BackButton } from '@/components/BackButton';
+import { MusicToggle } from '@/components/MusicToggle';
+import { ohOh, yay, speakKid } from '@/lib/sfx';
 import { Confetti } from '@/components/Confetti';
 
 type Answer = { slot: number; image_path: string | null; is_correct: boolean };
@@ -16,13 +18,7 @@ type Question = { id: string; position: number; prompt_text: string | null; prom
 const BADGE = ['#C77D85', '#5F86A8', '#8A6A2A'];
 const SHADOW = ['#D9A0A6', '#7FA0BE', '#D2B466'];
 
-function speak(text: string | null) {
-  if (!text || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.rate = 0.8;
-  window.speechSynthesis.speak(u);
-}
+const speak = (t: string | null) => { if (t) speakKid(t, { pitch: 1.5, rate: 0.8 }); };
 
 /** Question screen (C4/C5/C6). */
 export default function QuestionPage() {
@@ -30,6 +26,7 @@ export default function QuestionPage() {
   const [qs, setQs] = useState<Question[] | null>(null);
   const [q, setQ] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
+  const [ping, setPing] = useState(0);
   const [result, setResult] = useState<'wrong' | 'correct' | null>(null);
 
   useEffect(() => {
@@ -54,9 +51,18 @@ export default function QuestionPage() {
       if (!a) return;
       setPicked(i);
       setResult(a.is_correct ? 'correct' : 'wrong');
+      if (a.is_correct) yay(); else ohOh();
     },
     [cur, result],
   );
+
+  useEffect(() => {
+    if (result !== 'wrong') return;
+    const t = setTimeout(() => { setResult(null); setPicked(null); }, 2000);
+    return () => clearTimeout(t);
+  }, [result, picked]);
+
+  const jump = (i: number) => { setQ(i); setPicked(null); setResult(null); };
 
   const next = useCallback(() => {
     setQ((v) => v + 1);
@@ -82,12 +88,17 @@ export default function QuestionPage() {
     <Stage>
       <div style={{ position: 'absolute', top: 48, left: 56, right: 56, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <BackButton href="/games/quiz" label="Back to quiz sets" />
-        <div style={{ display: 'flex', gap: 20 }} aria-label={`Question ${q + 1} of ${qs.length}`}>
-          {qs.map((_, i) => (
-            <span key={i} style={{ width: 40, height: 40, borderRadius: 20, boxSizing: 'border-box', border: '6px solid', ...(i < q || (i === q && result === 'correct') ? { background: '#EED79A', borderColor: '#E5C979' } : i === q ? { background: '#fff', borderColor: '#E59AA1' } : { background: '#F1E7DA', borderColor: '#F1E7DA' }) }} />
-          ))}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+          <div style={{ display: 'flex', gap: 8 }} role="group" aria-label={`Question ${q + 1} of ${qs.length}`}>
+            {qs.map((_, i) => (
+              <button key={i} type="button" className="hm-tap" aria-label={`Go to question ${i + 1}`} aria-current={i === q} onClick={() => jump(i)} style={{ padding: 8, border: 'none', background: 'none', borderRadius: 28 }}>
+                <span style={{ display: 'block', width: 40, height: 40, borderRadius: 20, boxSizing: 'border-box', border: '6px solid', ...(i < q || (i === q && result === 'correct') ? { background: '#EED79A', borderColor: '#E5C979' } : i === q ? { background: '#fff', borderColor: '#E59AA1' } : { background: '#F1E7DA', borderColor: '#D9C9B6' }) }} />
+              </button>
+            ))}
+          </div>
+          <span style={{ fontSize: 48, fontWeight: 600, color: '#8A6A5E', minWidth: 110 }}>{q + 1} / {qs.length}</span>
         </div>
-        <span style={{ width: 104 }} />
+        <MusicToggle />
       </div>
 
       <div style={{ position: 'absolute', top: 172, left: 0, right: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 72 }}>
@@ -96,7 +107,8 @@ export default function QuestionPage() {
           {qImg && <img src={qImg} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28 }}>
-          <button type="button" className="hm-tap hm-breathe" aria-label="Hear the question again" onClick={() => speak(cur.prompt_text)} style={{ width: 120, height: 120, borderRadius: 60, border: 'none', background: '#EBB7BC', boxShadow: '0 10px 0 #D9A0A6', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <button type="button" className="hm-tap hm-breathe" aria-label="Hear the question again" onClick={() => { speak(cur.prompt_text); setPing((n) => n + 1); }} style={{ width: 120, height: 120, borderRadius: 60, border: 'none', background: '#EBB7BC', boxShadow: '0 10px 0 #D9A0A6', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            {ping > 0 && <span key={ping} className="hm-ping" aria-hidden="true" />}
             <svg aria-hidden="true" width="68" height="68" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H3v6h3l5 4z" fill="#fff" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M18.5 5.5a9 9 0 0 1 0 13" /></svg>
           </button>
           <span style={{ fontSize: 56, fontWeight: 500, color: '#8A6A5E', maxWidth: 620, lineHeight: 1.1, textAlign: 'center' }}>{cur.prompt_text}</span>

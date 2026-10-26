@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { Stage } from '@/components/Stage';
 import { Hills } from '@/components/Hills';
+import { applause, speakKid } from '@/lib/sfx';
 import { Confetti } from '@/components/Confetti';
 
 const STAR = 'M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z';
@@ -15,11 +16,20 @@ const btn = { width: 160, height: 160, borderRadius: 80, display: 'flex', alignI
 export default function Done() {
   const { setId } = useParams<{ setId: string }>();
   const [name, setName] = useState('');
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     try { localStorage.setItem(`hamy:done:${setId}`, '1'); } catch { /* storage blocked */ }
-    createSupabaseBrowserClient().from('settings').select('child_name').eq('id', 1).single().then(({ data }) => setName(data?.child_name ?? ''));
+    createSupabaseBrowserClient().from('settings').select('child_name').eq('id', 1).single().then(({ data }) => { setName(data?.child_name ?? ''); setLoaded(true); });
   }, [setId]);
+
+  const spoken = useRef(false);
+  useEffect(() => {
+    if (spoken.current || !loaded) return;
+    spoken.current = true;
+    applause(3);
+    speakKid(`You did it${name ? `, ${name}` : ''}!`, { pitch: 1.9, rate: 0.9 });
+  }, [loaded, name]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') window.location.href = '/games/quiz'; };
@@ -30,7 +40,7 @@ export default function Done() {
   return (
     <Stage>
       <Hills variant="double" />
-      <Confetti count={140} delayStep={0.22} />
+      <Confetti count={36} delayStep={0.6} />
       <div className="hm-float" style={{ position: 'absolute', left: 130, top: 340, width: 289, height: 682 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/images/girl.webp" alt="" width={289} height={682} style={{ display: 'block', width: 289, height: 682 }} />
