@@ -6,7 +6,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { mediaUrl } from '@/lib/media';
 import { playOnce, startMusic } from '@/lib/audio';
 import { Stage } from '@/components/Stage';
-import { MusicToggle } from '@/components/MusicToggle';
+import { MusicButton } from '@/components/MusicButton';
 import styles from './welcome.module.css';
 
 type Settings = { child_name: string; greeting_path: string | null; music_path: string | null; music_volume: number; avatar_path: string | null };
@@ -70,7 +70,7 @@ export default function Welcome() {
           </svg>
         </div>
 
-        <MusicToggle corner="bottom-left" />
+        <MusicButton />
 
         {!entered ? (
           <div className={`${styles.center} ${styles.enterWrap}`}>

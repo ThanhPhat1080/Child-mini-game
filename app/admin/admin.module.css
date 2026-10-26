@@ -48,6 +48,7 @@
 .playBtn { width: 44px; height: 44px; border-radius: 22px; border: none; background: #ebb7bc; display: flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
 .ghost { height: 40px; padding: 0 16px; border-radius: 10px; border: 1.5px solid #e3d5c4; background: #fff; color: #4a3830; font-weight: 700; font-family: 'Nunito', sans-serif; font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; }
 .ghost:hover { background: #f6eadc; }
+.ghost:disabled { opacity: 0.5; cursor: default; background: #fff; }
 .hidden { display: none; }
 .volume { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding-top: 6px; }
 .volume input[type='range'] { flex: 0 1 260px; accent-color: #8a5560; }

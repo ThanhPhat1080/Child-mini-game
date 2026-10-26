@@ -8,6 +8,7 @@ import { Stage } from '@/components/Stage';
 import { Hills } from '@/components/Hills';
 import { applause, speakKid } from '@/lib/sfx';
 import { Confetti } from '@/components/Confetti';
+import { MusicButton } from '@/components/MusicButton';
 
 const STAR = 'M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z';
 const btn = { width: 160, height: 160, borderRadius: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' } as const;
@@ -64,6 +65,7 @@ export default function Done() {
           </Link>
         </div>
       </div>
+      <MusicButton />
     </Stage>
   );
 }

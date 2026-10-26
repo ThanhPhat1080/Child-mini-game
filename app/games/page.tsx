@@ -8,6 +8,7 @@ import { mediaUrl } from '@/lib/media';
 import { Stage } from '@/components/Stage';
 import { Hills } from '@/components/Hills';
 import { BackButton } from '@/components/BackButton';
+import { MusicButton } from '@/components/MusicButton';
 
 const PITCH = 712;
 const N = 3;
@@ -118,6 +119,7 @@ export default function Games() {
           {avatar ? <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
         </span>
       </div>
+      <MusicButton />
     </Stage>
   );
 }

@@ -8,7 +8,7 @@ import { mediaUrl } from '@/lib/media';
 import { SLOT_COLORS } from '@/lib/tokens';
 import { Stage } from '@/components/Stage';
 import { BackButton } from '@/components/BackButton';
-import { MusicToggle } from '@/components/MusicToggle';
+import { MusicButton } from '@/components/MusicButton';
 import { ohOh, yay, speakKid } from '@/lib/sfx';
 import { Confetti } from '@/components/Confetti';
 
@@ -98,8 +98,8 @@ export default function QuestionPage() {
           </div>
           <span style={{ fontSize: 48, fontWeight: 600, color: '#8A6A5E', minWidth: 110 }}>{q + 1} / {qs.length}</span>
         </div>
-        <MusicToggle />
       </div>
+      <MusicButton />
 
       <div style={{ position: 'absolute', top: 172, left: 0, right: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 72 }}>
         <div style={{ width: 400, height: 300, boxSizing: 'border-box', padding: 20, overflow: 'hidden', borderRadius: 44, background: '#fff', boxShadow: '0 12px 0 #EADCC8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>

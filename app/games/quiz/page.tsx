@@ -7,6 +7,7 @@ import { Stage } from '@/components/Stage';
 import { Hills } from '@/components/Hills';
 import { BackButton } from '@/components/BackButton';
 import { SetCard, type SetCardData } from '@/components/SetCard';
+import { MusicButton } from '@/components/MusicButton';
 
 type Row = Omit<SetCardData, 'count'> & { questions: { count: number }[] };
 
@@ -52,6 +53,7 @@ export default function QuizSets() {
           </Link>
         ))}
       </div>
+      <MusicButton />
     </Stage>
   );
 }

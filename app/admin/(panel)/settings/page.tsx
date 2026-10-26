@@ -50,6 +50,16 @@ export default function SettingsPage() {
     say('Saved.');
   }
 
+  /** Drops unsaved name and volume edits and goes back to the last saved values. */
+  function revert() {
+    if (!row) return;
+    setChildName(row.child_name);
+    setVolume(row.music_volume);
+    say('Changes reverted.');
+  }
+
+  const dirty = !!row && (childName.trim() !== row.child_name || volume !== row.music_volume);
+
   async function upload(kind: 'greeting' | 'music', event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = '';
@@ -122,7 +132,10 @@ export default function SettingsPage() {
           <h1>Settings</h1>
           <p className={styles.sub}>What the child sees and hears on the Welcome screen.</p>
         </div>
-        <button type="button" className={styles.primary} style={{ height: 46 }} onClick={save}>Save changes</button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button type="button" className={styles.ghost} style={{ height: 46 }} onClick={revert} disabled={!dirty}>Revert</button>
+          <button type="button" className={styles.primary} style={{ height: 46 }} onClick={save}>Save changes</button>
+        </div>
       </div>
 
       <section className={`${styles.section} ${styles.profile}`}>
