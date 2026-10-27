@@ -89,7 +89,7 @@ export default function QuestionPage() {
         };
         if (a.is_correct) show(); else setTimeout(show, 1000); // wrong: pause 1 s after her answer is read
       };
-      if (cur.read_answers && a.text?.trim()) speakKid(a.text.trim(), { pitch: 1.5, rate: 0.8, onEnd: finish });
+      if (a.text?.trim()) speakKid(a.text.trim(), { pitch: 1.5, rate: 0.8, onEnd: finish });
       else finish();
     },
     [cur, result, reading],

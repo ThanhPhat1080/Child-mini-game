@@ -60,7 +60,7 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 - AC: prompt text and/or audio, 2-3 answers each with an image, exactly one correct.
 - AC: question image is optional and small: 600x300 px frame (2:1), fitted not cropped, PNG/JPG/WebP, max 2 MB; its absence never blocks Save.
 - AC: prompt voice is upload only (mp3/m4a/wav); no in-browser recording.
-- AC: a "Read the answers aloud" checkbox per question (default on, column `questions.read_answers`); when off, only the question is read, answers are not read in sequence or on pick (their text still shows on the cards).
+- AC: a "Read the answers aloud" checkbox per question (default on, column `questions.read_answers`); when off, only the question is read and the answers are not read one by one after it. The answer the child picks is always read aloud, regardless of the checkbox.
 - AC: each answer has an optional text field ("Answer text (read aloud)"); it is saved with the answer and does not block completeness.
 - AC: the sticky page header keeps Save, Revert and Preview as child visible while scrolling the set and question editors.
 - AC: "Preview as child" opens the child quiz in a new browser tab.
@@ -88,7 +88,7 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 ### T10 Question screen (C4-C6, C9, C10, C12; ADR-007, 019, 021, 025)
 - AC: three bands (header, question row, answers) with no overlap at 1920x1080; prompt audio plays if present, with a replay button.
 - AC: 2-3 answers show image + number + fixed color (1 rose, 2 sky, 3 butter); click/tap and keys 1/2/3 answer; no timer.
-- AC: answer reading only happens when the question's "Read the answers aloud" is on.
+- AC: the reading of all answers after the question happens only when the question's "Read the answers aloud" is on; the picked answer is always read.
 - AC: on a new question the app waits 0.5 s, reads the question aloud (recorded voice if uploaded, else kid voice), then reads each answer's text aloud with 1 s between answers (the card being read bounces and wiggles with a glowing ring and sound bars, the others dim slightly; static ring with reduced motion); the replay button repeats this; picking an answer stops the reading.
 - AC: when the child picks an answer, the app first reads that answer's text aloud (if any), then shows the Hooray popup right away, or the Oh-oh popup 1 s after the reading ends, each with its sound; further picks are ignored while it reads.
 - AC: the "Oh-oh… try again!" popup is centered on the screen and disappears after 2 s.
