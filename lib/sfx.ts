@@ -48,8 +48,15 @@ export function speakKid(text: string, opts: { pitch?: number; rate?: number; on
   synth.speak(u);
 }
 
-/** Soft descending "oh-oh" (two wobbly notes). */
-export function ohOh(): void {
+/** Plays an uploaded sound file once. */
+export function playFile(url: string): void {
+  const a = new Audio(url);
+  a.play().catch(() => undefined);
+}
+
+/** Soft descending "oh-oh" (two wobbly notes), or the uploaded track. */
+export function ohOh(customUrl?: string | null): void {
+  if (customUrl) return playFile(customUrl);
   const c = ac();
   if (!c) return;
   const t = c.currentTime;
@@ -58,8 +65,9 @@ export function ohOh(): void {
   speakKid('Oh-oh!', { pitch: 1.6, rate: 0.8 });
 }
 
-/** Happy rising sparkle plus a cheerful "Yay, hooray!". */
-export function yay(): void {
+/** Happy rising sparkle plus a cheerful "Yay, hooray!", or the uploaded track. */
+export function yay(customUrl?: string | null): void {
+  if (customUrl) return playFile(customUrl);
   const c = ac();
   if (!c) return;
   const t = c.currentTime;

@@ -5,7 +5,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { mediaUrl, uploadMedia } from '@/lib/media';
 import styles from '../../admin.module.css';
 
-type Row = { child_name: string; greeting_path: string | null; music_path: string | null; music_volume: number; avatar_path: string | null };
+type Row = { child_name: string; greeting_path: string | null; music_path: string | null; music_volume: number; avatar_path: string | null; hooray_path: string | null; ohoh_path: string | null; complete_path: string | null };
 
 const baseName = (p: string | null) => (p ? p.split('/').pop() ?? p : null);
 
@@ -17,6 +17,7 @@ export default function SettingsPage() {
   const greetingInput = useRef<HTMLInputElement>(null);
   const musicInput = useRef<HTMLInputElement>(null);
   const avatarInput = useRef<HTMLInputElement>(null);
+  const soundInputs = useRef<Record<string, HTMLInputElement | null>>({});
   const preview = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
 
@@ -28,7 +29,7 @@ export default function SettingsPage() {
   useEffect(() => {
     createSupabaseBrowserClient()
       .from('settings')
-      .select('child_name, greeting_path, music_path, music_volume, avatar_path')
+      .select('child_name, greeting_path, music_path, music_volume, avatar_path, hooray_path, ohoh_path, complete_path')
       .eq('id', 1)
       .single()
       .then(({ data, error }) => {
@@ -60,13 +61,25 @@ export default function SettingsPage() {
 
   const dirty = !!row && (childName.trim() !== row.child_name || volume !== row.music_volume);
 
-  async function upload(kind: 'greeting' | 'music', event: ChangeEvent<HTMLInputElement>) {
+  type AudioKind = 'greeting' | 'music' | 'hooray' | 'ohoh' | 'complete';
+  const COLUMN: Record<AudioKind, keyof Row> = { greeting: 'greeting_path', music: 'music_path', hooray: 'hooray_path', ohoh: 'ohoh_path', complete: 'complete_path' };
+
+  async function removeSound(kind: AudioKind) {
+    const column = COLUMN[kind];
+    if (playing && playing === row?.[column]) { preview.current?.pause(); preview.current = null; setPlaying(null); }
+    const { error } = await createSupabaseBrowserClient().from('settings').update({ [column]: null }).eq('id', 1);
+    if (error) return say(error.message, true);
+    setRow((r) => (r ? { ...r, [column]: null } : r));
+    say('Back to the built-in sound.');
+  }
+
+  async function upload(kind: AudioKind, event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
     try {
       const path = await uploadMedia(kind, file);
-      const column = kind === 'greeting' ? 'greeting_path' : 'music_path';
+      const column = COLUMN[kind];
       const { error } = await createSupabaseBrowserClient().from('settings').update({ [column]: path }).eq('id', 1);
       if (error) throw new Error(error.message);
       setRow((r) => (r ? { ...r, [column]: path } : r));
@@ -201,6 +214,31 @@ export default function SettingsPage() {
           <input id="vol" type="range" min={0} max={100} value={volume} onChange={(e) => setVolume(Number(e.target.value))} />
           <span className={styles.note}>{volume}% · kept low on purpose</span>
         </div>
+      </section>
+
+      <section className={styles.section}>
+        <div>
+          <h2>Feedback sounds</h2>
+          <p>Optional. Upload your own track for each moment; without one, the built-in sound plays.</p>
+        </div>
+        {([
+          { kind: 'hooray', title: 'Hooray', hint: 'Plays when the child picks the correct answer.', path: row?.hooray_path ?? null },
+          { kind: 'ohoh', title: 'Oh-oh', hint: 'Plays when the child picks a wrong answer.', path: row?.ohoh_path ?? null },
+          { kind: 'complete', title: 'You did it', hint: 'Plays when a quiz set is finished (replaces the applause and spoken praise).', path: row?.complete_path ?? null },
+        ] as const).map((it) => (
+          <div key={it.kind} className={styles.row}>
+            {it.path && (
+              <button type="button" className={styles.playBtn} aria-label={`${playing === it.path ? 'Pause' : 'Play'} ${it.title} sound`} onClick={() => toggle(it.path)}>{icon(it.path)}</button>
+            )}
+            <div className={styles.rowText}>
+              <div className={styles.rowTitle}>{it.title}: <span style={{ fontWeight: 600 }}>{baseName(it.path) ?? 'built-in sound'}</span></div>
+              <div className={styles.rowMeta}>{it.hint}</div>
+            </div>
+            <input ref={(el) => { soundInputs.current[it.kind] = el; }} className={styles.hidden} type="file" accept="audio/*" onChange={(e) => upload(it.kind, e)} />
+            <button type="button" className={styles.ghost} onClick={() => soundInputs.current[it.kind]?.click()}>{it.path ? 'Replace' : 'Upload'}</button>
+            {it.path && <button type="button" className={styles.ghost} onClick={() => removeSound(it.kind)}>Use built-in</button>}
+          </div>
+        ))}
       </section>
 
       {toast && <div role="status" className={`${styles.toast} ${toast.error ? styles.toastErr : ''}`}>{toast.text}</div>}

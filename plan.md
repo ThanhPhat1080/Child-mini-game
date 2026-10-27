@@ -47,6 +47,7 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 ### T3 Admin settings (A2)
 - AC: save child name; upload greeting audio and background music; each has play-to-check.
 - AC: values persist after reload and are readable by the child app.
+- AC: "Feedback sounds" section: optional custom audio track for "Hooray", "Oh-oh" and "You did it", each with play-to-check, Replace, and "Use built-in" (columns `settings.hooray_path`, `ohoh_path`, `complete_path`).
 
 ### T4 Admin set list and preview strip (A3; ADR-023)
 - AC: table shows name, question count, draft/published; actions new, edit, delete (with confirmation).
@@ -91,6 +92,7 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 - AC: the reading of all answers after the question happens only when the question's "Read the answers aloud" is on; the picked answer is always read.
 - AC: on a new question the app waits 0.5 s, reads the question aloud (recorded voice if uploaded, else kid voice), then reads each answer's text aloud with 1 s between answers (the card being read bounces and wiggles with a glowing ring and sound bars, the others dim slightly; static ring with reduced motion); the replay button repeats this; picking an answer stops the reading.
 - AC: when the child picks an answer, the app first reads that answer's text aloud (if any), then shows the Hooray popup right away, or the Oh-oh popup 1 s after the reading ends, each with its sound; further picks are ignored while it reads.
+- AC: the Hooray and Oh-oh sounds use the custom track from Settings when set, else the built-in sound.
 - AC: the "Oh-oh… try again!" popup is centered on the screen and disappears after 2 s.
 - AC: wrong answer dims the card gently with an "oh-oh" sound and the "Oh-oh… try again!" toast, which disappears after 2 s; retry allowed, no penalty.
 - AC: question dots are clickable to jump to that question, and "n / total" is shown; the replay-voice and music buttons are clickable with press animation.
@@ -100,6 +102,7 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 
 ### T11 Completed and back navigation (C7, C8, C12; ADR-026)
 - AC: completed screen shows girl image, light confetti (simpler and fewer than before), praise, and a way back to set selection; the set is marked finished (star).
+- AC: if a "You did it" custom track is set in Settings, the completed screen plays it instead of the built-in applause and spoken praise.
 - AC: completed screen plays applause and says "You did it, <child name>!".
 - AC: Esc/Back key and a picture button go from set selection to game list and from a question to set selection.
 

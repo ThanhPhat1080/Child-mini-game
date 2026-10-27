@@ -47,9 +47,16 @@ export default function QuestionPage() {
   const [ping, setPing] = useState(0);
   const [reading, setReading] = useState(false);
   const token = useRef(0);
+  const [sounds, setSounds] = useState<{ hooray: string | null; ohoh: string | null }>({ hooray: null, ohoh: null });
   const readToken = useRef(0);
   const [readIdx, setReadIdx] = useState<number | null>(null);
   const [result, setResult] = useState<'wrong' | 'correct' | null>(null);
+
+  useEffect(() => {
+    createSupabaseBrowserClient().from('settings').select('hooray_path, ohoh_path').eq('id', 1).single().then(({ data }) => {
+      if (data) setSounds({ hooray: mediaUrl(data.hooray_path), ohoh: mediaUrl(data.ohoh_path) });
+    });
+  }, []);
 
   useEffect(() => {
     createSupabaseBrowserClient()
@@ -85,14 +92,14 @@ export default function QuestionPage() {
           if (mine !== token.current) return;
           setReading(false);
           setResult(a.is_correct ? 'correct' : 'wrong');
-          if (a.is_correct) yay(); else ohOh();
+          if (a.is_correct) yay(sounds.hooray); else ohOh(sounds.ohoh);
         };
-        if (a.is_correct) show(); else setTimeout(show, 1000); // wrong: pause 1 s after her answer is read
+        if (a.is_correct) show(); else setTimeout(show, 200); // wrong: pause 200 ms after her answer is read
       };
       if (a.text?.trim()) speakKid(a.text.trim(), { pitch: 1.5, rate: 0.8, onEnd: finish });
       else finish();
     },
-    [cur, result, reading],
+    [cur, result, reading, sounds],
   );
 
   useEffect(() => {

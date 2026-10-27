@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { Stage } from '@/components/Stage';
 import { Hills } from '@/components/Hills';
-import { applause, speakKid } from '@/lib/sfx';
+import { applause, playFile, speakKid } from '@/lib/sfx';
+import { mediaUrl } from '@/lib/media';
 import { Confetti } from '@/components/Confetti';
 import { MusicButton } from '@/components/MusicButton';
 
@@ -18,19 +19,21 @@ export default function Done() {
   const { setId } = useParams<{ setId: string }>();
   const [name, setName] = useState('');
   const [loaded, setLoaded] = useState(false);
+  const [custom, setCustom] = useState<string | null>(null);
 
   useEffect(() => {
     try { localStorage.setItem(`hamy:done:${setId}`, '1'); } catch { /* storage blocked */ }
-    createSupabaseBrowserClient().from('settings').select('child_name').eq('id', 1).single().then(({ data }) => { setName(data?.child_name ?? ''); setLoaded(true); });
+    createSupabaseBrowserClient().from('settings').select('child_name, complete_path').eq('id', 1).single().then(({ data }) => { setName(data?.child_name ?? ''); setCustom(mediaUrl(data?.complete_path)); setLoaded(true); });
   }, [setId]);
 
   const spoken = useRef(false);
   useEffect(() => {
     if (spoken.current || !loaded) return;
     spoken.current = true;
+    if (custom) { playFile(custom); return; }
     applause(3);
     speakKid(`You did it${name ? `, ${name}` : ''}!`, { pitch: 1.9, rate: 0.9 });
-  }, [loaded, name]);
+  }, [loaded, name, custom]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') window.location.href = '/games/quiz'; };
