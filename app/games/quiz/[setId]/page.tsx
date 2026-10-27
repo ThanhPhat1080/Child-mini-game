@@ -19,10 +19,23 @@ const BADGE = ['#C77D85', '#5F86A8', '#8A6A2A'];
 const SHADOW = ['#D9A0A6', '#7FA0BE', '#D2B466'];
 
 let voiceEl: HTMLAudioElement | null = null;
-function speak(t: string | null, audioUrl?: string | null) {
+const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+/** Speaks text (or plays a recorded file) and resolves when finished. */
+function say(t: string | null, audioUrl?: string | null): Promise<void> {
+  return new Promise((resolve) => {
+    voiceEl?.pause();
+    if (audioUrl) {
+      voiceEl = new Audio(audioUrl);
+      voiceEl.onended = () => resolve();
+      voiceEl.onerror = () => resolve();
+      voiceEl.play().catch(() => resolve());
+    } else if (t?.trim()) speakKid(t, { pitch: 1.5, rate: 0.8, onEnd: resolve });
+    else resolve();
+  });
+}
+function stopVoice() {
   voiceEl?.pause();
-  if (audioUrl) { voiceEl = new Audio(audioUrl); voiceEl.play().catch(() => undefined); return; }
-  if (t) speakKid(t, { pitch: 1.5, rate: 0.8 });
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) window.speechSynthesis.cancel();
 }
 
 /** Question screen (C4/C5/C6). */
@@ -34,6 +47,8 @@ export default function QuestionPage() {
   const [ping, setPing] = useState(0);
   const [reading, setReading] = useState(false);
   const token = useRef(0);
+  const readToken = useRef(0);
+  const [readIdx, setReadIdx] = useState<number | null>(null);
   const [result, setResult] = useState<'wrong' | 'correct' | null>(null);
 
   useEffect(() => {
@@ -57,6 +72,9 @@ export default function QuestionPage() {
       const a = cur.answers[i];
       if (!a) return;
       if (reading) return;
+      readToken.current++;
+      stopVoice();
+      setReadIdx(null);
       setPicked(i);
       setReading(true);
       // read the child's answer aloud first, then show hooray / oh-oh with its sound
@@ -102,7 +120,30 @@ export default function QuestionPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [pick, next, result, last]);
 
-  useEffect(() => { if (cur) speak(cur.prompt_text, mediaUrl(cur.prompt_audio_path)); }, [cur]);
+  const readAll = useCallback(async (qq: Question) => {
+    const my = ++readToken.current;
+    const alive = () => my === readToken.current;
+    stopVoice();
+    await wait(500); // half a second, then read the question
+    if (!alive()) return;
+    await say(qq.prompt_text, mediaUrl(qq.prompt_audio_path));
+    for (let i = 0; i < qq.answers.length; i++) {
+      const t = qq.answers[i].text?.trim();
+      if (!t) continue;
+      await wait(1000); // 1 s between answers
+      if (!alive()) return;
+      setReadIdx(i);
+      await say(t);
+      if (!alive()) return;
+      setReadIdx(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    const rt = readToken;
+    if (cur) void readAll(cur);
+    return () => { rt.current++; stopVoice(); setReadIdx(null); };
+  }, [cur, readAll]);
 
   if (!cur || !qs) return <Stage><span /></Stage>;
   const qImg = mediaUrl(cur.prompt_image_path);
@@ -130,7 +171,7 @@ export default function QuestionPage() {
           <img src={qImg} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
         </div>}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28 }}>
-          <button type="button" className="hm-tap hm-breathe" aria-label="Hear the question again" onClick={() => { speak(cur.prompt_text, mediaUrl(cur.prompt_audio_path)); setPing((n) => n + 1); }} style={{ width: 120, height: 120, borderRadius: 60, border: 'none', background: '#EBB7BC', boxShadow: '0 10px 0 #D9A0A6', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <button type="button" className="hm-tap hm-breathe" aria-label="Hear the question again" onClick={() => { void readAll(cur); setPing((n) => n + 1); }} style={{ width: 120, height: 120, borderRadius: 60, border: 'none', background: '#EBB7BC', boxShadow: '0 10px 0 #D9A0A6', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             {ping > 0 && <span key={ping} className="hm-ping" aria-hidden="true" />}
             <svg aria-hidden="true" width="68" height="68" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 5L6 9H3v6h3l5 4z" fill="#fff" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M18.5 5.5a9 9 0 0 1 0 13" /></svg>
           </button>
@@ -144,7 +185,7 @@ export default function QuestionPage() {
           const dim = result === 'wrong' && picked === i;
           const img = mediaUrl(a.image_path);
           return (
-            <button key={a.slot} type="button" className={`hm-ans${dim ? ' hm-wobble' : ''}`} aria-label={`Answer ${i + 1}`} onClick={() => pick(i)} style={{ position: 'relative', width: 460, height: 400, borderRadius: 56, border: `14px solid ${c.ring}`, background: c.bg, boxShadow: `0 16px 0 ${SHADOW[i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box', opacity: dim ? 0.55 : 1 }}>
+            <button key={a.slot} type="button" className={`hm-ans${dim ? ' hm-wobble' : ''}${readIdx === i ? ' hm-breathe' : ''}`} aria-label={`Answer ${i + 1}`} onClick={() => pick(i)} style={{ position: 'relative', width: 460, height: 400, borderRadius: 56, border: `14px solid ${c.ring}`, background: c.bg, boxShadow: `0 16px 0 ${SHADOW[i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box', opacity: dim ? 0.55 : 1 }}>
               <span style={{ position: 'absolute', top: -34, left: -34, width: 104, height: 104, borderRadius: 52, background: BADGE[i], color: '#fff', border: '8px solid #FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, fontWeight: 600, boxSizing: 'border-box' }}>{i + 1}</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {img && <img src={img} alt="" style={{ maxWidth: '100%', maxHeight: a.text?.trim() ? 250 : '100%', objectFit: 'contain' }} />}
