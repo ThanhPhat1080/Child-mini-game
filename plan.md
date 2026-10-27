@@ -139,6 +139,11 @@ Files are uploaded as soon as they are picked, but only a successful Save/commit
 - AC: validation runs before anything changes and lists every problem with its question number (invalid JSON, no questions, answers not 2-3, not exactly one correct, image that is not blank or an `https://` URL, file over 1 MB, more than 50 questions). Nothing is imported when there is any error.
 - AC: a valid file shows "N questions ready"; "Import" appends them to the end of the current set as unsaved changes (Save and Revert behave as usual); incomplete ones (blank image or text) show in the completeness checklist and can be finished by hand.
 - AC: image URLs from the internet are stored as-is and render in the editor and the child app; they are never deleted by T15.
+- AC: `image` may also be raw SVG code (`<svg ...>...</svg>`). It is checked (starts with `<svg`, ends with `</svg>`, valid XML, at most 30,000 characters, no script, event handler, foreignObject, DOCTYPE or link to outside files; `xmlns` is added when missing) and any error is listed with its question and answer number.
+- AC: SVG code is not stored in the database. On import it becomes a local preview like any picked file and is uploaded as a small `.svg` file on Save.
+- AC: identical SVG code (ignoring spacing) used in several answers and/or the question image creates ONE pending file and ONE uploaded file, and all those fields point to the same path; a different drawing gets its own file.
+- AC: a file shared by several answers is deleted only when none of them uses it any more (T15).
+- AC: uploaded file names are unique (timestamp plus random suffix), so several files saved in the same moment never collide.
 - AC: SVG uploads are accepted in the editor and Settings (bucket allows `image/svg+xml` via a new migration).
 - AC: unit tests cover the parser/validator (valid file, each error, blank images, URLs, the template file itself).
 

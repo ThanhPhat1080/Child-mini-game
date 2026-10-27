@@ -9,14 +9,43 @@ export type ImportResult = { questions: EQuestion[]; errors: string[] };
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
-/** Blank means "upload later". Anything else must be an https:// link. Returns the cleaned value or an error. */
+export const SVG_MAX_CHARS = 30000;
+
+/** True when the text is raw SVG code (starts with <svg, optionally after an <?xml ...?> line). */
+export const isInlineSvg = (s: string): boolean => /^\s*(<\?xml[^>]*\?>\s*)?<svg[\s>]/i.test(s);
+
+/**
+ * Checks raw SVG code and returns it cleaned (one line, xmlns added when missing).
+ * SVG is only ever shown through <img>, where scripts do not run, but unsafe parts are rejected anyway.
+ */
+function checkSvg(raw: string): { svg: string } | { error: string } {
+  let s = raw.trim().replace(/^<\?xml[^>]*\?>\s*/i, '');
+  if (s.length > SVG_MAX_CHARS) return { error: `SVG code is longer than ${SVG_MAX_CHARS.toLocaleString('en-US')} characters (minify it first, for example with SVGO)` };
+  if (!/<\/svg>\s*$/i.test(s)) return { error: 'SVG code must end with </svg>' };
+  if (/<script|<foreignObject|<iframe|<embed|<object|<!(?!--)|javascript:|@import/i.test(s)) return { error: 'SVG code may not contain scripts, foreignObject, embedded content or a DOCTYPE' };
+  if (/\son[a-z]+\s*=/i.test(s)) return { error: 'SVG code may not contain event handlers such as onclick' };
+  if (/href\s*=\s*(["'])\s*(?!#)/i.test(s) || /url\(\s*["']?\s*(?!#)/i.test(s)) return { error: 'SVG code may not link to other files or web addresses (only #id references are allowed)' };
+  if (typeof DOMParser !== 'undefined') {
+    const doc = new DOMParser().parseFromString(s, 'image/svg+xml');
+    if (doc.getElementsByTagName('parsererror').length || doc.documentElement?.localName !== 'svg') return { error: 'SVG code is not valid (check the quotes and closing tags)' };
+  }
+  if (!/^<svg\b[^>]*\sxmlns\s*=/i.test(s)) s = s.replace(/^<svg/i, '<svg xmlns="http://www.w3.org/2000/svg"');
+  // identical drawings must produce identical text, so they can share one file
+  return { svg: s.replace(/\s+/g, ' ').replace(/>\s+</g, '><') };
+}
+
+/** Blank means "upload later". Otherwise an https:// link or raw SVG code. Returns the cleaned value or an error. */
 function readImage(v: unknown): { value: string | null } | { error: string } {
   if (v === undefined || v === null) return { value: null };
-  if (typeof v !== 'string') return { error: 'image must be text (a link) or left blank' };
+  if (typeof v !== 'string') return { error: 'image must be text (a link or SVG code) or left blank' };
   const s = v.trim();
   if (!s) return { value: null };
+  if (isInlineSvg(s)) {
+    const r = checkSvg(s);
+    return 'error' in r ? r : { value: r.svg };
+  }
   if (/^http:\/\//i.test(s)) return { error: 'image link must start with https:// (http:// links are blocked by browsers)' };
-  if (!/^https:\/\//i.test(s)) return { error: 'image must be blank or a link starting with https://' };
+  if (!/^https:\/\//i.test(s)) return { error: 'image must be blank, a link starting with https://, or SVG code starting with <svg' };
   if (s.length > MAX_URL) return { error: 'image link is too long' };
   try { new URL(s); } catch { return { error: 'image link is not a valid address' }; }
   return { value: s };

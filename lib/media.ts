@@ -19,6 +19,23 @@ export function addPending(file: File): string {
 
 export const pendingName = (token: string): string => pending.get(token)?.file.name ?? 'New file';
 
+/** Raw SVG code -> its single pending token, so identical drawings share one file and one upload. */
+const svgTokens = new Map<string, string>();
+
+export function svgToPending(svg: string): string {
+  const known = svgTokens.get(svg);
+  if (known && pending.has(known)) return known;
+  const token = addPending(new File([svg], 'image.svg', { type: 'image/svg+xml' }));
+  svgTokens.set(svg, token);
+  return token;
+}
+
+/** Turns SVG code in imported questions into pending files (identical code reuses the same one). */
+export function materializeSvg<T extends { qimg: string | null; imgs: (string | null)[] }>(qs: T[]): T[] {
+  const conv = (p: string | null) => (p && p.startsWith('<') ? svgToPending(p) : p);
+  return qs.map((q) => ({ ...q, qimg: conv(q.qimg), imgs: q.imgs.map(conv) }));
+}
+
 /** Forgets picked files (all, or all except `keep`) and frees their previews. */
 export function clearPending(keep: string[] = []): void {
   for (const [token, p] of pending) {
@@ -26,6 +43,7 @@ export function clearPending(keep: string[] = []): void {
     URL.revokeObjectURL(p.url);
     pending.delete(token);
   }
+  for (const [svg, token] of svgTokens) if (!pending.has(token)) svgTokens.delete(svg);
 }
 
 /** Public URL for a path in the media bucket, or null when there is no file. */
@@ -46,7 +64,7 @@ export async function uploadMedia(folder: string, file: File): Promise<string> {
   const supabase = createSupabaseBrowserClient();
   const dot = file.name.lastIndexOf('.');
   const ext = dot >= 0 ? file.name.slice(dot + 1).toLowerCase() : 'bin';
-  const path = `${folder}/${Date.now()}.${ext}`;
+  const path = `${folder}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
   const { error } = await supabase.storage
     .from(MEDIA_BUCKET)
     .upload(path, file, { contentType: file.type, upsert: false });

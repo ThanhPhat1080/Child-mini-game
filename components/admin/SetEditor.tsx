@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { addPending, clearPending, commitPendingMedia, mediaUrl, removeMedia } from '@/lib/media';
+import { addPending, clearPending, commitPendingMedia, materializeSvg, mediaUrl, removeMedia } from '@/lib/media';
 import { pathsToDelete, setMediaPaths } from '@/lib/mediaPaths';
 import { SetCard } from '@/components/SetCard';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
@@ -331,7 +331,8 @@ export function SetEditor({ setId }: { setId: string }) {
       {importOpen && (
         <ImportDialog
           onCancel={() => setImportOpen(false)}
-          onImport={(qs) => {
+          onImport={(imported) => {
+            const qs = materializeSvg(imported); // SVG code becomes one pending file per distinct drawing
             setD({ ...d, qs: [...d.qs, ...qs] });
             setCur(d.qs.length);
             setImportOpen(false);

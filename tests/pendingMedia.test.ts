@@ -8,7 +8,7 @@ vi.mock('@/lib/supabase/client', () => ({
   }),
 }));
 
-import { addPending, clearPending, commitPendingMedia, mediaUrl, pendingName } from '@/lib/media';
+import { addPending, clearPending, commitPendingMedia, materializeSvg, mediaUrl, pendingName } from '@/lib/media';
 import { mapSetMedia } from '@/lib/mediaPaths';
 
 const file = (name: string, type = 'image/svg+xml', size = 10) => {
@@ -62,10 +62,10 @@ describe('commitPendingMedia (Save)', () => {
     const folders = upload.mock.calls.map((c) => (c[0] as string).split('/')[0]).sort();
     expect(folders).toEqual(['answers', 'covers', 'voices']);
     expect(uploaded).toHaveLength(3);
-    expect(out.cover).toMatch(/^covers\/\d+\.svg$/);
-    expect(out.qs[0].imgs[0]).toMatch(/^answers\/\d+\.svg$/);
+    expect(out.cover).toMatch(/^covers\/\d+-[0-9a-f]{8}\.svg$/);
+    expect(out.qs[0].imgs[0]).toMatch(/^answers\/\d+-[0-9a-f]{8}\.svg$/);
     expect(out.qs[0].imgs[1]).toBe('answers/old.png');
-    expect(out.qs[0].voice).toMatch(/^voices\/\d+\.mp3$/);
+    expect(out.qs[0].voice).toMatch(/^voices\/\d+-[0-9a-f]{8}\.mp3$/);
     expect(JSON.stringify(out)).not.toContain('pending:');
   });
 
@@ -103,6 +103,58 @@ describe('commitPendingMedia (Save)', () => {
     clearPending();
     await expect(commitPendingMedia(d)).rejects.toThrow(/choose it again/);
     expect(upload).not.toHaveBeenCalled();
+  });
+});
+
+describe('SVG code from Quick import: one file per distinct drawing', () => {
+  const A = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 8 8\"><rect width=\"8\" height=\"8\"/></svg>";
+  const B = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 8 8\"><circle r=\"4\"/></svg>";
+  const qs = (imgs: (string | null)[], qimg: string | null = null) => [{ qimg, voice: null as string | null, imgs }];
+
+  it('gives identical SVG one placeholder, and different SVG its own', () => {
+    const [q] = materializeSvg(qs([A, A, B], A));
+    expect(q.imgs[0]).toMatch(/^pending:/);
+    expect(q.imgs[1]).toBe(q.imgs[0]);
+    expect(q.qimg).toBe(q.imgs[0]);
+    expect(q.imgs[2]).not.toBe(q.imgs[0]);
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it('reuses the placeholder across separate imports', () => {
+    const [a] = materializeSvg(qs([A, null, null]));
+    const [b] = materializeSvg(qs([null, A, null]));
+    expect(b.imgs[1]).toBe(a.imgs[0]);
+  });
+
+  it('uploads three identical answers (and the question image) as ONE file', async () => {
+    const [q] = materializeSvg(qs([A, A, A], A));
+    const { d, uploaded } = await commitPendingMedia({ cover: null as string | null, qs: [q] });
+    expect(upload).toHaveBeenCalledTimes(1);
+    expect(uploaded).toHaveLength(1);
+    const path = uploaded[0];
+    expect(path).toMatch(/\.svg$/);
+    expect(d.qs[0].imgs).toEqual([path, path, path]);
+    expect(d.qs[0].qimg).toBe(path);
+  });
+
+  it('uploads two different drawings as two files', async () => {
+    const [q] = materializeSvg(qs([A, B, A]));
+    const { d } = await commitPendingMedia({ cover: null as string | null, qs: [q] });
+    expect(upload).toHaveBeenCalledTimes(2);
+    expect(d.qs[0].imgs[0]).toBe(d.qs[0].imgs[2]);
+    expect(d.qs[0].imgs[0]).not.toBe(d.qs[0].imgs[1]);
+  });
+
+  it('forgets the placeholder once pending files are cleared', () => {
+    const [a] = materializeSvg(qs([A, null, null]));
+    clearPending();
+    const [b] = materializeSvg(qs([A, null, null]));
+    expect(b.imgs[0]).not.toBe(a.imgs[0]);
+  });
+
+  it('leaves links, saved paths and blanks alone', () => {
+    const [q] = materializeSvg(qs(['https://x.test/a.svg', 'answers/1.svg', null]));
+    expect(q.imgs).toEqual(['https://x.test/a.svg', 'answers/1.svg', null]);
   });
 });
 
