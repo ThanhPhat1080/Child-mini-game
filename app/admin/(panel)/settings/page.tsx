@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { mediaUrl, uploadMedia } from '@/lib/media';
-import { applause, ohOh, speakKid, yay } from '@/lib/sfx';
+import { applause, ohOh, speakKid, yay, type SoundHandle } from '@/lib/sfx';
 import styles from '../../admin.module.css';
 
 type Row = { child_name: string; greeting_path: string | null; music_path: string | null; music_volume: number; avatar_path: string | null; hooray_path: string | null; ohoh_path: string | null; complete_path: string | null };
@@ -90,14 +90,32 @@ export default function SettingsPage() {
     }
   }
 
-  /** Preview of the built-in sound when no custom track is set. */
+  /** Preview of the built-in sound when no custom track is set. Play / pause like the other rows. */
+  const builtIn = useRef<SoundHandle | null>(null);
+  const builtInTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function stopBuiltIn() {
+    builtIn.current?.stop();
+    builtIn.current = null;
+    if (builtInTimer.current) clearTimeout(builtInTimer.current);
+  }
   function previewBuiltIn(kind: 'hooray' | 'ohoh' | 'complete') {
+    const key = `builtin:${kind}`;
+    const wasPlaying = playing === key;
     preview.current?.pause();
     preview.current = null;
-    setPlaying(null);
-    if (kind === 'hooray') yay();
-    else if (kind === 'ohoh') ohOh();
-    else { applause(3); speakKid(`You did it${row?.child_name ? `, ${row.child_name}` : ''}!`, { pitch: 1.9, rate: 0.9 }); }
+    stopBuiltIn();
+    if (wasPlaying) { setPlaying(null); return; }
+    let h: SoundHandle | void;
+    if (kind === 'hooray') h = yay();
+    else if (kind === 'ohoh') h = ohOh();
+    else {
+      h = applause(3);
+      speakKid(`You did it${row?.child_name ? `, ${row.child_name}` : ''}!`, { pitch: 1.9, rate: 0.9 });
+    }
+    if (!h) return;
+    builtIn.current = h;
+    setPlaying(key);
+    builtInTimer.current = setTimeout(() => setPlaying((p) => (p === key ? null : p)), h.ms);
   }
 
   /** Play / pause a preview. Music previews follow the volume slider live. */
@@ -111,6 +129,7 @@ export default function SettingsPage() {
       return;
     }
     preview.current?.pause();
+    stopBuiltIn();
     const audio = new Audio(url);
     audio.volume = path === row?.music_path ? volume / 100 : 1;
     audio.onended = () => setPlaying((p) => (p === path ? null : p));
@@ -123,7 +142,7 @@ export default function SettingsPage() {
     if (preview.current && playing && playing === row?.music_path) preview.current.volume = volume / 100;
   }, [volume, playing, row?.music_path]);
 
-  useEffect(() => () => preview.current?.pause(), []);
+  useEffect(() => () => { preview.current?.pause(); builtIn.current?.stop(); }, []);
 
   async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -142,8 +161,8 @@ export default function SettingsPage() {
     }
   }
 
-  const icon = (path: string | null) =>
-    path && playing === path ? (
+  const icon = (key: string | null) =>
+    key && playing === key ? (
       <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
     ) : (
       <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M8 5.5v13l10.5-6.5z" /></svg>
@@ -238,7 +257,7 @@ export default function SettingsPage() {
           { kind: 'complete', title: 'You did it', hint: 'Plays when a quiz set is finished (replaces the applause and spoken praise).', path: row?.complete_path ?? null },
         ] as const).map((it) => (
           <div key={it.kind} className={styles.row}>
-            <button type="button" className={styles.playBtn} aria-label={`${it.path && playing === it.path ? 'Pause' : 'Play'} ${it.title} sound`} onClick={() => (it.path ? toggle(it.path) : previewBuiltIn(it.kind))}>{icon(it.path)}</button>
+            <button type="button" className={styles.playBtn} aria-label={`${playing === (it.path ?? `builtin:${it.kind}`) ? 'Pause' : 'Play'} ${it.title} sound`} onClick={() => (it.path ? toggle(it.path) : previewBuiltIn(it.kind))}>{icon(it.path ?? `builtin:${it.kind}`)}</button>
             <div className={styles.rowText}>
               <div className={styles.rowTitle}>{it.title}: <span style={{ fontWeight: 600 }}>{baseName(it.path) ?? 'built-in sound'}</span></div>
               <div className={styles.rowMeta}>{it.hint}</div>
