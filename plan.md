@@ -47,7 +47,7 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 ### T3 Admin settings (A2)
 - AC: save child name; upload greeting audio and background music; each has play-to-check.
 - AC: values persist after reload and are readable by the child app.
-- AC: "Feedback sounds" section: optional custom audio track for "Hooray", "Oh-oh" and "You did it", each with play-to-check, Replace, and "Use built-in" (columns `settings.hooray_path`, `ohoh_path`, `complete_path`).
+- AC: "Feedback sounds" section: optional custom audio track for "Hooray", "Oh-oh" and "You did it", each with a play button (previews the custom track, or the built-in sound when none is set), Replace, and "Use built-in" (columns `settings.hooray_path`, `ohoh_path`, `complete_path`).
 
 ### T4 Admin set list and preview strip (A3; ADR-023)
 - AC: table shows name, question count, draft/published; actions new, edit, delete (with confirmation).
