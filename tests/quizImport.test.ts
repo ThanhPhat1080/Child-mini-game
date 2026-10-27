@@ -129,6 +129,27 @@ describe('parseQuizImport', () => {
       expect(withImg(code).errors[0]).toMatch(msg);
     });
 
+    it.each([
+      ['a CDATA <style> (Illustrator, Figma)', "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'><style><![CDATA[ .a{fill:#4F7A9E} ]]></style><rect class='a' width='8' height='8'/></svg>"],
+      ['an <?xml ?> line and a simple DOCTYPE', '<?xml version="1.0"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8"/></svg>'],
+      ['a leading comment', "<!-- made by me --><svg viewBox='0 0 8 8'><rect width='8' height='8'/></svg>"],
+      ['Inkscape metadata and namespaces', '<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns="http://www.w3.org/2000/svg" width="84" height="84"><metadata><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><dc:title>x</dc:title></rdf:RDF></metadata><circle cx="42" cy="42" r="30"/></svg>'],
+      ['xlink:href to an #id', "<svg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 8 8'><defs><circle id='c' r='2'/></defs><use xlink:href='#c'/></svg>"],
+      ['&nbsp; (converted)', "<svg viewBox='0 0 8 8'><text>a&nbsp;b</text></svg>"],
+      ['width/height without a viewBox', "<svg width='84' height='84'><circle cx='42' cy='42' r='30'/></svg>"],
+    ])('accepts %s', (_n, code) => {
+      const r = withImg(code);
+      expect(r.errors).toEqual([]);
+      expect(r.questions[0].imgs[0]).toMatch(/^<svg /);
+      expect(r.questions[0].imgs[0]).not.toMatch(/DOCTYPE|<\?xml/);
+    });
+
+    it('explains why a DOCTYPE with definitions, embedded pictures and HTML entities are rejected', () => {
+      expect(withImg('<!DOCTYPE svg [<!ENTITY x "y">]><svg viewBox="0 0 8 8"><rect/></svg>').errors[0]).toMatch(/DOCTYPE|ENTITY/);
+      expect(withImg("<svg viewBox='0 0 8 8'><image href='data:image/png;base64,iVBORw0KGgo='/></svg>").errors[0]).toMatch(/embed pictures/);
+      expect(withImg("<svg viewBox='0 0 8 8'><text>&copy;</text></svg>").errors[0]).toMatch(/not valid XML.*&copy;/);
+    });
+
     it('allows #id references (gradients, <use>)', () => {
       expect(withImg("<svg viewBox='0 0 8 8'><defs><linearGradient id='g'/></defs><rect fill='url(#g)'/><use href='#g'/></svg>").errors).toEqual([]);
     });

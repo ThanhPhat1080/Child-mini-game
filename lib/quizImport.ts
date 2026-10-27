@@ -11,23 +11,38 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object
 
 export const SVG_MAX_CHARS = 30000;
 
-/** True when the text is raw SVG code (starts with <svg, optionally after an <?xml ...?> line). */
-export const isInlineSvg = (s: string): boolean => /^\s*(<\?xml[^>]*\?>\s*)?<svg[\s>]/i.test(s);
+/** Removes what may legally come before <svg>: an <?xml ?> line, comments and a simple DOCTYPE (no internal subset). */
+function stripProlog(raw: string): string {
+  let s = raw.trim();
+  for (;;) {
+    const next = s
+      .replace(/^<\?xml[^>]*\?>\s*/i, '')
+      .replace(/^<!--[\s\S]*?-->\s*/, '')
+      .replace(/^<!DOCTYPE[^\[>]*>\s*/i, '');
+    if (next === s) return s;
+    s = next;
+  }
+}
+
+/** True when the text is raw SVG code (starts with <svg, optionally after an <?xml ?> line, comments or a DOCTYPE). */
+export const isInlineSvg = (s: string): boolean => /^\s*<(svg[\s>]|\?xml|!doctype|!--)/i.test(s);
 
 /**
  * Checks raw SVG code and returns it cleaned (one line, xmlns added when missing).
  * SVG is only ever shown through <img>, where scripts do not run, but unsafe parts are rejected anyway.
  */
 function checkSvg(raw: string): { svg: string } | { error: string } {
-  let s = raw.trim().replace(/^<\?xml[^>]*\?>\s*/i, '');
+  let s = stripProlog(raw).replace(/&nbsp;/g, '&#160;'); // the one HTML entity designers' tools often leave in
   if (s.length > SVG_MAX_CHARS) return { error: `SVG code is longer than ${SVG_MAX_CHARS.toLocaleString('en-US')} characters (minify it first, for example with SVGO)` };
   if (!/<\/svg>\s*$/i.test(s)) return { error: 'SVG code must end with </svg>' };
-  if (/<script|<foreignObject|<iframe|<embed|<object|<!(?!--)|javascript:|@import/i.test(s)) return { error: 'SVG code may not contain scripts, foreignObject, embedded content or a DOCTYPE' };
+  if (/<!DOCTYPE|<!ENTITY/i.test(s)) return { error: 'SVG code may not contain a DOCTYPE with extra definitions or ENTITY declarations' };
+  if (/<script|<foreignObject|<iframe|<embed|<object|javascript:|@import/i.test(s)) return { error: 'SVG code may not contain scripts, foreignObject or embedded content' };
   if (/\son[a-z]+\s*=/i.test(s)) return { error: 'SVG code may not contain event handlers such as onclick' };
+  if (/href\s*=\s*(["'])\s*data:/i.test(s)) return { error: 'SVG code may not embed pictures (data: links); draw shapes instead, or upload the picture as a PNG/JPG/WebP' };
   if (/href\s*=\s*(["'])\s*(?!#)/i.test(s) || /url\(\s*["']?\s*(?!#)/i.test(s)) return { error: 'SVG code may not link to other files or web addresses (only #id references are allowed)' };
   if (typeof DOMParser !== 'undefined') {
     const doc = new DOMParser().parseFromString(s, 'image/svg+xml');
-    if (doc.getElementsByTagName('parsererror').length || doc.documentElement?.localName !== 'svg') return { error: 'SVG code is not valid (check the quotes and closing tags)' };
+    if (doc.getElementsByTagName('parsererror').length || doc.documentElement?.localName !== 'svg') return { error: 'SVG code is not valid XML (check the quotes and closing tags; HTML entities such as &copy; are not allowed, use the character itself)' };
   }
   if (!/^<svg\b[^>]*\sxmlns\s*=/i.test(s)) s = s.replace(/^<svg/i, '<svg xmlns="http://www.w3.org/2000/svg"');
   // identical drawings must produce identical text, so they can share one file
