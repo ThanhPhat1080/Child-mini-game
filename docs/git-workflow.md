@@ -9,8 +9,16 @@ Authoritative rules for branches, PRs and deploys. Claude must follow this exact
 | `develop` | Integration/development. Default target for all work. | Vercel Preview |
 | feature/fix branches (incl. `claude/*`) | Short-lived work, branched from `develop`. | Vercel Preview |
 
+## Start of every task (always, before editing anything)
+1. `git fetch origin` then `git checkout develop` and `git pull origin develop` (the user's local `develop`).
+2. Create the task branch from it: `git checkout -b <branch>` (`claude/*` name when the session assigns one).
+3. Only then change files. Do not keep working on an old feature branch.
+
+## Deploying
+Never deploy on my own. Do not create Vercel deployments, change Vercel project settings or env vars, or promote anything until the user says "deploy". Writing code, tests and docs never implies permission to deploy. Note: Vercel's Git integration builds a Preview for every pushed branch automatically; avoid pushing until the work is ready or the user asks.
+
 ## Rules
-1. Branch every change from the latest `develop` (`git fetch origin develop`).
+1. Branch every change from the latest `develop` (see "Start of every task").
 2. Open every PR with **base = `develop`**. Never open a PR from a feature branch into `main`.
 3. The only PR allowed into `main` is **`develop` -> `main`**, and only when the user asks for a release.
 4. Never push directly to `main` or `develop`; never force-push either one.
