@@ -126,9 +126,8 @@ export default function QuestionPage() {
   // Hooray: count 3 -> 2 -> 1, then continue automatically
   useEffect(() => {
     if (result !== 'correct') return;
-    setCount(3);
     const t = setInterval(() => setCount((c) => c - 1), 1000);
-    return () => clearInterval(t);
+    return () => { clearInterval(t); setCount(3); }; // reset so the next Hooray starts at 3, not at the old 0
   }, [result, q]);
   useEffect(() => {
     if (result === 'correct' && count <= 0) go();
