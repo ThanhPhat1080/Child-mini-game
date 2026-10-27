@@ -12,7 +12,7 @@ Authoritative rules for branches, PRs and deploys. Claude must follow this exact
 ## Flow for every change (Claude follows this exactly)
 1. **Branch from the user's local `develop`.** `git fetch origin`, `git checkout develop`, `git pull origin develop`, then `git checkout -b <branch>` (use the `claude/*` name the session assigns, otherwise `claude/<short-topic>`). Do this before editing anything, and never keep working on an old feature branch. The user can then `git fetch` and check out the branch to test locally.
 2. **Change and check.** Edit, then run `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`. Fix failures before going on.
-3. **Commit and push** the branch. Tell the user the branch name and how to test it locally (`git fetch origin && git checkout <branch>`, then `npm ci && npm run dev`).
+3. **Commit and push** the branch. **Every time a new branch is created, tell the user so, with the exact commands to switch their local git to it** (`git fetch origin && git checkout <branch>`), and how to test (`npm ci && npm run dev`). Keep it short.
 4. **Open a PR** with base `develop` and head the new branch (use the PR template if one exists) and show the user the PR link.
 5. **Deploy that branch.** Claude may create a Vercel **Preview** deployment of the new branch and share its URL.
 6. **Wait for the user's OK.** Never merge before it. If the user asks for changes, push more commits to the same branch and update the PR.
