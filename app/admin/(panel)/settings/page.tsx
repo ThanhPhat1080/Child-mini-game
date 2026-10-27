@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { mediaUrl, uploadMedia } from '@/lib/media';
+import { mediaUrl, removeMedia, uploadMedia } from '@/lib/media';
 import { applause, ohOh, speakKid, yay, type SoundHandle } from '@/lib/sfx';
 import styles from '../../admin.module.css';
 
@@ -68,10 +68,12 @@ export default function SettingsPage() {
   async function removeSound(kind: AudioKind) {
     const column = COLUMN[kind];
     if (playing && playing === row?.[column]) { preview.current?.pause(); preview.current = null; setPlaying(null); }
+    const old = row?.[column] as string | null | undefined;
     const { error } = await createSupabaseBrowserClient().from('settings').update({ [column]: null }).eq('id', 1);
     if (error) return say(error.message, true);
     setRow((r) => (r ? { ...r, [column]: null } : r));
-    say('Back to the built-in sound.');
+    const failed = await removeMedia([old]);
+    say(failed ? 'Back to the built-in sound, but the old file could not be removed from storage.' : 'Back to the built-in sound.', !!failed);
   }
 
   async function upload(kind: AudioKind, event: ChangeEvent<HTMLInputElement>) {
@@ -81,10 +83,12 @@ export default function SettingsPage() {
     try {
       const path = await uploadMedia(kind, file);
       const column = COLUMN[kind];
+      const old = row?.[column] as string | null | undefined;
       const { error } = await createSupabaseBrowserClient().from('settings').update({ [column]: path }).eq('id', 1);
-      if (error) throw new Error(error.message);
+      if (error) { void removeMedia([path]); throw new Error(error.message); }
       setRow((r) => (r ? { ...r, [column]: path } : r));
-      say('Uploaded.');
+      const failed = old && old !== path ? await removeMedia([old]) : null;
+      say(failed ? 'Uploaded, but the old file could not be removed from storage.' : 'Uploaded.', !!failed);
     } catch (e) {
       say(e instanceof Error ? e.message : 'Upload failed', true);
     }
@@ -148,14 +152,16 @@ export default function SettingsPage() {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) return say('Use a PNG, JPG or WebP image.', true);
+    if (!['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp'].includes(file.type)) return say('Use an SVG, PNG, JPG or WebP image.', true);
     if (file.size > 2 * 1024 * 1024) return say('Image must be 2 MB or smaller.', true);
     try {
       const path = await uploadMedia('avatar', file);
+      const old = row?.avatar_path;
       const { error } = await createSupabaseBrowserClient().from('settings').update({ avatar_path: path }).eq('id', 1);
-      if (error) throw new Error(error.message);
+      if (error) { void removeMedia([path]); throw new Error(error.message); }
       setRow((r) => (r ? { ...r, avatar_path: path } : r));
-      say('Avatar updated.');
+      const failed = old && old !== path ? await removeMedia([old]) : null;
+      say(failed ? 'Avatar updated, but the old file could not be removed from storage.' : 'Avatar updated.', !!failed);
     } catch (e) {
       say(e instanceof Error ? e.message : 'Upload failed', true);
     }
@@ -196,7 +202,7 @@ export default function SettingsPage() {
             <input id="cn" className={`${styles.input} ${styles.nameInput}`} type="text" value={childName} onChange={(e) => setChildName(e.target.value)} />
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-            <input ref={avatarInput} className={styles.hidden} type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadAvatar} />
+            <input ref={avatarInput} className={styles.hidden} type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp" onChange={uploadAvatar} />
             <button type="button" className={styles.ghost} onClick={() => avatarInput.current?.click()}>{row?.avatar_path ? 'Replace avatar' : 'Upload avatar'}</button>
             <span className={styles.note}>PNG, JPG or WebP, square, up to 2 MB</span>
           </div>
