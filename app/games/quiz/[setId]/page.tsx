@@ -63,9 +63,13 @@ export default function QuestionPage() {
       const mine = token.current;
       const finish = () => {
         if (mine !== token.current) return;
-        setReading(false);
-        setResult(a.is_correct ? 'correct' : 'wrong');
-        if (a.is_correct) yay(); else ohOh();
+        const show = () => {
+          if (mine !== token.current) return;
+          setReading(false);
+          setResult(a.is_correct ? 'correct' : 'wrong');
+          if (a.is_correct) yay(); else ohOh();
+        };
+        if (a.is_correct) show(); else setTimeout(show, 1000); // wrong: pause 1 s after her answer is read
       };
       if (a.text?.trim()) speakKid(a.text.trim(), { pitch: 1.5, rate: 0.8, onEnd: finish });
       else finish();
