@@ -28,8 +28,8 @@ function tone(c: AudioContext, t: number, f0: number, f1: number, dur: number, t
 }
 
 /** Child-like voice: high pitch, slightly slow, English female voice if present. */
-export function speakKid(text: string, opts: { pitch?: number; rate?: number } = {}): void {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window) || !text) return;
+export function speakKid(text: string, opts: { pitch?: number; rate?: number; onEnd?: () => void } = {}): void {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window) || !text) { opts.onEnd?.(); return; }
   const synth = window.speechSynthesis;
   synth.cancel();
   const u = new SpeechSynthesisUtterance(text);
@@ -38,6 +38,13 @@ export function speakKid(text: string, opts: { pitch?: number; rate?: number } =
   u.pitch = opts.pitch ?? 1.9;
   u.rate = opts.rate ?? 0.95;
   u.volume = 1;
+  if (opts.onEnd) {
+    let done = false;
+    const fin = () => { if (!done) { done = true; opts.onEnd?.(); } };
+    u.onend = fin;
+    u.onerror = fin;
+    setTimeout(fin, 4000); // never leave the child waiting
+  }
   synth.speak(u);
 }
 

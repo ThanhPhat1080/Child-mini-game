@@ -173,7 +173,7 @@ export function SetEditor({ setId }: { setId: string }) {
   return (
     <Shell>
       <input ref={fileRef} type="file" hidden onChange={onFile} />
-      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
+      <div style={{ position: 'sticky', top: 0, zIndex: 20, background: '#FBF4E9', padding: '12px 0', margin: '-12px 0', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, boxShadow: '0 8px 8px -8px rgba(90,64,56,0.18)' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <Link href="/admin/sets" className={s.link} style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
             <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5l-7 7 7 7" /></svg>Quiz sets
@@ -185,7 +185,7 @@ export function SetEditor({ setId }: { setId: string }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'flex-end' }}>
               <span style={{ padding: '6px 14px', borderRadius: 999, fontSize: 13, fontWeight: 700, background: chip.bg, color: chip.fg }}>{chip.text}</span>
               {canPreview ? (
-                <Link href={`/games/quiz/${d.id}`} className={s.ghost} style={{ height: 44, padding: '0 18px', borderRadius: 12, border: '1.5px solid #E3D5C4', background: '#fff', color: '#4A3830', fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8, boxSizing: 'border-box' }}>
+                <Link href={`/games/quiz/${d.id}`} target="_blank" rel="noopener noreferrer" className={s.ghost} style={{ height: 44, padding: '0 18px', borderRadius: 12, border: '1.5px solid #E3D5C4', background: '#fff', color: '#4A3830', fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8, boxSizing: 'border-box' }}>
                   <Eye />Preview as child
                 </Link>
               ) : (

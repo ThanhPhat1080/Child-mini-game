@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { mediaUrl } from '@/lib/media';
 import { SLOT_COLORS } from '@/lib/tokens';
@@ -12,7 +12,7 @@ import { MusicButton } from '@/components/MusicButton';
 import { ohOh, yay, speakKid } from '@/lib/sfx';
 import { Confetti } from '@/components/Confetti';
 
-type Answer = { slot: number; image_path: string | null; is_correct: boolean };
+type Answer = { slot: number; image_path: string | null; text: string | null; is_correct: boolean };
 type Question = { id: string; position: number; prompt_text: string | null; prompt_image_path: string | null; prompt_audio_path: string | null; answers: Answer[] };
 
 const BADGE = ['#C77D85', '#5F86A8', '#8A6A2A'];
@@ -32,12 +32,14 @@ export default function QuestionPage() {
   const [q, setQ] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
   const [ping, setPing] = useState(0);
+  const [reading, setReading] = useState(false);
+  const token = useRef(0);
   const [result, setResult] = useState<'wrong' | 'correct' | null>(null);
 
   useEffect(() => {
     createSupabaseBrowserClient()
       .from('questions')
-      .select('id, position, prompt_text, prompt_image_path, prompt_audio_path, answers(slot, image_path, is_correct)')
+      .select('id, position, prompt_text, prompt_image_path, prompt_audio_path, answers(slot, image_path, text, is_correct)')
       .eq('set_id', setId)
       .order('position')
       .then(({ data }) => {
@@ -54,11 +56,21 @@ export default function QuestionPage() {
       if (!cur || result === 'correct') return;
       const a = cur.answers[i];
       if (!a) return;
+      if (reading) return;
       setPicked(i);
-      setResult(a.is_correct ? 'correct' : 'wrong');
-      if (a.is_correct) yay(); else ohOh();
+      setReading(true);
+      // read the child's answer aloud first, then show hooray / oh-oh with its sound
+      const mine = token.current;
+      const finish = () => {
+        if (mine !== token.current) return;
+        setReading(false);
+        setResult(a.is_correct ? 'correct' : 'wrong');
+        if (a.is_correct) yay(); else ohOh();
+      };
+      if (a.text?.trim()) speakKid(a.text.trim(), { pitch: 1.5, rate: 0.8, onEnd: finish });
+      else finish();
     },
-    [cur, result],
+    [cur, result, reading],
   );
 
   useEffect(() => {
@@ -67,9 +79,11 @@ export default function QuestionPage() {
     return () => clearTimeout(t);
   }, [result, picked]);
 
-  const jump = (i: number) => { setQ(i); setPicked(null); setResult(null); };
+  const jump = (i: number) => { token.current++; setReading(false); setQ(i); setPicked(null); setResult(null); };
 
   const next = useCallback(() => {
+    token.current++;
+    setReading(false);
     setQ((v) => v + 1);
     setPicked(null);
     setResult(null);
@@ -129,16 +143,19 @@ export default function QuestionPage() {
             <button key={a.slot} type="button" className={`hm-ans${dim ? ' hm-wobble' : ''}`} aria-label={`Answer ${i + 1}`} onClick={() => pick(i)} style={{ position: 'relative', width: 460, height: 400, borderRadius: 56, border: `14px solid ${c.ring}`, background: c.bg, boxShadow: `0 16px 0 ${SHADOW[i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box', opacity: dim ? 0.55 : 1 }}>
               <span style={{ position: 'absolute', top: -34, left: -34, width: 104, height: 104, borderRadius: 52, background: BADGE[i], color: '#fff', border: '8px solid #FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, fontWeight: 600, boxSizing: 'border-box' }}>{i + 1}</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {img && <img src={img} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />}
+              {img && <img src={img} alt="" style={{ maxWidth: '100%', maxHeight: a.text?.trim() ? 250 : '100%', objectFit: 'contain' }} />}
+              {a.text?.trim() && <span style={{ position: 'absolute', left: 0, right: 0, bottom: 14, textAlign: 'center', fontSize: 44, fontWeight: 600, color: '#5A4038' }}>{a.text}</span>}
             </button>
           );
         })}
       </div>
 
       {result === 'wrong' && (
-        <div role="status" className="hm-rise" style={{ position: 'absolute', left: '50%', bottom: 20, transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 24, padding: '24px 48px 24px 28px', borderRadius: 60, background: '#fff', boxShadow: '0 8px 0 #EADCC8' }}>
-          <svg aria-hidden="true" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" fill="#F8DCDF" /><path d="M8.5 15.5c1-1 2.2-1.4 3.5-1.4s2.5.4 3.5 1.4" /><path d="M9 9.5h.01" /><path d="M15 9.5h.01" /></svg>
-          <span style={{ fontSize: 48, fontWeight: 500, color: '#8A6A5E' }}>Oh-oh… try again!</span>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', background: 'rgba(251,244,233,0.55)' }}>
+          <div role="status" className="hm-rise" style={{ display: 'flex', alignItems: 'center', gap: 28, padding: '36px 64px 36px 40px', borderRadius: 80, background: '#fff', boxShadow: '0 12px 0 #EADCC8' }}>
+            <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" fill="#F8DCDF" /><path d="M8.5 15.5c1-1 2.2-1.4 3.5-1.4s2.5.4 3.5 1.4" /><path d="M9 9.5h.01" /><path d="M15 9.5h.01" /></svg>
+            <span style={{ fontSize: 80, fontWeight: 600, color: '#8A6A5E' }}>Oh-oh… try again!</span>
+          </div>
         </div>
       )}
 

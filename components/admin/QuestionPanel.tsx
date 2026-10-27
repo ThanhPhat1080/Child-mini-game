@@ -157,6 +157,10 @@ export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAs
                         )}
                       </div>
                       <button type="button" className={s.ghost} onClick={() => onPick({ kind: 'answer', i })} style={{ ...ghostBtn, fontSize: 13 }}>Upload image</button>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <label htmlFor={`at${i}`} style={{ fontSize: 13, fontWeight: 700 }}>Answer text <span style={{ fontWeight: 600, color: '#7A6458' }}>(read aloud)</span></label>
+                        <input id={`at${i}`} className={s.in} type="text" value={q.texts[i]} placeholder="e.g. Apple" onChange={(e) => onEdit({ texts: q.texts.map((t, k) => (k === i ? e.target.value : t)) })} style={{ ...inputStyle, height: 40, fontSize: 15 }} />
+                      </div>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
                         <input type="radio" name="correct" checked={q.correct === i} onChange={() => onEdit({ correct: i })} style={{ width: 18, height: 18, accentColor: '#3F6B48' }} />Correct answer
                       </label>

@@ -60,6 +60,9 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 - AC: prompt text and/or audio, 2-3 answers each with an image, exactly one correct.
 - AC: question image is optional and small: 600x300 px frame (2:1), fitted not cropped, PNG/JPG/WebP, max 2 MB; its absence never blocks Save.
 - AC: prompt voice is upload only (mp3/m4a/wav); no in-browser recording.
+- AC: each answer has an optional text field ("Answer text (read aloud)"); it is saved with the answer and does not block completeness.
+- AC: the sticky page header keeps Save, Revert and Preview as child visible while scrolling the set and question editors.
+- AC: "Preview as child" opens the child quiz in a new browser tab.
 - AC: the answer image button reads "Upload image" (also "Upload" when empty), never "Replace image".
 - AC: a "Revert" button sits next to "Save" and discards unsaved edits back to the last saved state.
 - AC: completeness checklist lists what is missing; Save is disabled until complete.
@@ -84,6 +87,8 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 ### T10 Question screen (C4-C6, C9, C10, C12; ADR-007, 019, 021, 025)
 - AC: three bands (header, question row, answers) with no overlap at 1920x1080; prompt audio plays if present, with a replay button.
 - AC: 2-3 answers show image + number + fixed color (1 rose, 2 sky, 3 butter); click/tap and keys 1/2/3 answer; no timer.
+- AC: when the child picks an answer, the app first reads that answer's text aloud (if any), then shows the Hooray or Oh-oh popup with its sound; further picks are ignored while it reads.
+- AC: the "Oh-oh… try again!" popup is centered on the screen and disappears after 2 s.
 - AC: wrong answer dims the card gently with an "oh-oh" sound and the "Oh-oh… try again!" toast, which disappears after 2 s; retry allowed, no penalty.
 - AC: question dots are clickable to jump to that question, and "n / total" is shown; the replay-voice and music buttons are clickable with press animation.
 - AC: correct answer plays a kid-voice "Yay, hooray!" sound with slow pastel confetti, then advances. Sounds are synthesized/browser voice for now; recorded kid-voice files can replace them later.
