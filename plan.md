@@ -122,7 +122,9 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 ### T15 Free replaced and removed media (storage hygiene; A2, A4, A5)
 Files are uploaded as soon as they are picked, but only a successful Save/commit decides what stays. Never delete before Save, so Revert keeps working.
 - AC: on Save of a set, every file that the last saved state referenced but the saved state no longer does (replaced, removed, or belonging to a deleted question) is deleted from the `media` bucket; the database no longer points to it.
-- AC: files uploaded during an edit session and then replaced, removed or reverted before Save are deleted too (on Save or on Revert), so abandoned uploads do not pile up.
+- AC: choosing a picture or voice file (set editor: cover, question image, question voice, answer images; Settings: avatar) only shows a local preview. Nothing is sent to the bucket until the user presses Save (Settings: "Save changes"); a file replaced, removed or reverted before Save is never uploaded.
+- AC: on Save, the chosen files are uploaded first, then the database is written. If an upload fails, the files already uploaded in that attempt are deleted, the database is not written, and an error is shown.
+- AC: type and the 2 MB image limit are checked when the file is chosen, with an immediate message.
 - AC: deleting a set (from the set list or the editor) also deletes its cover, question images, question voices and answer images from the bucket.
 - AC: on Settings, replacing or removing the avatar, greeting, background music or a feedback sound ("Use built-in") deletes the old file right after the database update succeeds.
 - AC: only files inside the `media` bucket are ever deleted. Bundled sample art (`seed/...`) and external image URLs are never touched.

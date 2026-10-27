@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { mediaUrl, removeMedia, uploadMedia } from '@/lib/media';
+import { addPending, clearPending, commitPendingMedia, mediaUrl, removeMedia } from '@/lib/media';
 import { pathsToDelete, setMediaPaths } from '@/lib/mediaPaths';
 import { SetCard } from '@/components/SetCard';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
@@ -33,8 +33,6 @@ export function SetEditor({ setId }: { setId: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const target = useRef<Target | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  /** Files uploaded in this edit session; the ones the committed state does not use are deleted (T15). */
-  const uploaded = useRef(new Set<string>());
 
   const say = useCallback((text: string, error = false) => {
     setToast({ text, error });
@@ -50,6 +48,8 @@ export function SetEditor({ setId }: { setId: string }) {
     } catch (e) { say((e as Error).message, true); }
   }, [isNewRoute, setId, say]);
   useEffect(() => { void init(); }, [init]);
+  // picked files live in memory until Save (T15); free their previews when leaving
+  useEffect(() => () => clearPending(), []);
 
   const dirty = useMemo(() => (d && saved ? JSON.stringify(d) !== JSON.stringify(saved) : false), [d, saved]);
   useEffect(() => {
@@ -85,7 +85,17 @@ export function SetEditor({ setId }: { setId: string }) {
     if (!d || !saved) return;
     if (!d.name.trim()) { setNameError(true); return; }
     setBusy(true);
-    const err = await saveSet(d, saved.published && !d.isNew);
+    // picked files are only previews until now: upload them as part of Save
+    let toSave = d;
+    let uploaded: string[] = [];
+    try {
+      ({ d: toSave, uploaded } = await commitPendingMedia(d));
+    } catch (e) {
+      setBusy(false);
+      say((e as Error).message, true);
+      return;
+    }
+    const err = await saveSet(toSave, saved.published && !d.isNew);
     setBusy(false);
     if (err) say(err, true);
     let cleanupFailed = false;
@@ -93,9 +103,9 @@ export function SetEditor({ setId }: { setId: string }) {
       const fresh = await loadSet(d.id);
       if (fresh) {
         setD(fresh); setSaved(fresh); setHexText(null);
+        clearPending();
         // the database now decides what is still used; free everything else (T15)
-        const stale = pathsToDelete(setMediaPaths(saved), setMediaPaths(fresh), uploaded.current);
-        uploaded.current.clear();
+        const stale = pathsToDelete(setMediaPaths(saved), setMediaPaths(fresh), uploaded);
         cleanupFailed = !!(await removeMedia(stale));
       }
     } catch { /* keep local state */ }
@@ -106,8 +116,7 @@ export function SetEditor({ setId }: { setId: string }) {
 
   function revert() {
     if (!saved) return;
-    void removeMedia(pathsToDelete([], setMediaPaths(saved), uploaded.current));
-    uploaded.current.clear();
+    clearPending(); // nothing was uploaded, so there is nothing to delete
     setD(saved); setHexText(null); setNameError(false);
     setCur(saved.qs.length ? Math.min(Math.max(cur, 0), saved.qs.length - 1) : -1);
   }
@@ -128,9 +137,7 @@ export function SetEditor({ setId }: { setId: string }) {
     const okTypes = t.kind === 'voice' ? AUDIO_TYPES : IMG_TYPES;
     if (!okTypes.includes(file.type)) { say(t.kind === 'voice' ? 'Use an MP3, M4A, WAV or OGG audio file.' : 'Use an SVG, PNG, JPG or WebP image.', true); return; }
     try {
-      const folder = t.kind === 'cover' ? 'covers' : t.kind === 'voice' ? 'voices' : t.kind === 'qimg' ? 'questions' : 'answers';
-      const path = await uploadMedia(folder, file);
-      uploaded.current.add(path);
+      const path = addPending(file); // preview only; uploaded when you press Save
       if (t.kind === 'cover') edit({ cover: path });
       else if (t.kind === 'qimg') editQ(cur, { qimg: path });
       else if (t.kind === 'voice') editQ(cur, { voice: path });
@@ -169,8 +176,7 @@ export function SetEditor({ setId }: { setId: string }) {
       setConfirm(null);
       if (r.error) say(r.error, true);
       else {
-        void removeMedia([...uploaded.current]);
-        uploaded.current.clear();
+        clearPending();
         setSaved(d); setDeleted(true);
         if (r.warning) say(r.warning, true);
       }

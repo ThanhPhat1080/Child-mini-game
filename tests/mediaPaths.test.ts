@@ -63,3 +63,11 @@ describe('pathsToDelete', () => {
     expect(pathsToDelete(['a/1.png'], [], ['a/1.png'])).toEqual(['a/1.png']);
   });
 });
+
+describe('pending picks', () => {
+  it('are never treated as bucket files', () => {
+    expect(isBucketPath('pending:abc')).toBe(false);
+    expect(setMediaPaths(set({ cover: 'pending:abc' }))).not.toContain('pending:abc');
+    expect(pathsToDelete(['pending:abc'], [])).toEqual([]);
+  });
+});
