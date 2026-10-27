@@ -37,6 +37,7 @@ export type EQuestion = {
   qimg: string | null;
   imgs: (string | null)[]; // always length 3
   texts: string[]; // answer text read aloud, always length 3
+  readAnswers: boolean; // read the answers aloud (sequence + on pick)
   correct: number | null;
   count: 2 | 3;
 };
@@ -56,7 +57,7 @@ export function isQuestionComplete(q: { text: string; voice: string | null; imgs
 }
 
 export function newQuestion(): EQuestion {
-  return { id: crypto.randomUUID(), text: '', voice: null, qimg: null, imgs: [null, null, null], texts: ['', '', ''], correct: null, count: 3 };
+  return { id: crypto.randomUUID(), text: '', voice: null, qimg: null, imgs: [null, null, null], texts: ['', '', ''], readAnswers: true, correct: null, count: 3 };
 }
 export function blankSet(): ESet {
   return { id: crypto.randomUUID(), isNew: true, name: '', subtitle: '', color: PRESETS.rose.text, cover: null, published: false, qs: [] };
@@ -64,13 +65,13 @@ export function blankSet(): ESet {
 
 type Row = {
   id: string; title: string; subtitle: string | null; heading_color: string; cover_path: string | null; status: string;
-  questions: { id: string; position: number; prompt_text: string | null; prompt_image_path: string | null; prompt_audio_path: string | null; answers: { slot: number; image_path: string | null; text: string | null; is_correct: boolean }[] }[];
+  questions: { id: string; position: number; prompt_text: string | null; prompt_image_path: string | null; prompt_audio_path: string | null; read_answers: boolean; answers: { slot: number; image_path: string | null; text: string | null; is_correct: boolean }[] }[];
 };
 
 export async function loadSet(id: string): Promise<ESet | null> {
   const { data, error } = await createSupabaseBrowserClient()
     .from('quiz_sets')
-    .select('id, title, subtitle, heading_color, cover_path, status, questions(id, position, prompt_text, prompt_image_path, prompt_audio_path, answers(slot, image_path, text, is_correct))')
+    .select('id, title, subtitle, heading_color, cover_path, status, questions(id, position, prompt_text, prompt_image_path, prompt_audio_path, read_answers, answers(slot, image_path, text, is_correct))')
     .eq('id', id)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -82,7 +83,7 @@ export async function loadSet(id: string): Promise<ESet | null> {
     let correct: number | null = null;
     q.answers.forEach((a) => { imgs[a.slot - 1] = a.image_path; texts[a.slot - 1] = a.text ?? ''; if (a.is_correct) correct = a.slot - 1; });
     const slots = q.answers.length;
-    return { id: q.id, text: q.prompt_text ?? '', voice: q.prompt_audio_path, qimg: q.prompt_image_path, imgs, texts, correct, count: slots === 2 ? 2 : 3 };
+    return { id: q.id, text: q.prompt_text ?? '', voice: q.prompt_audio_path, qimg: q.prompt_image_path, imgs, texts, readAnswers: q.read_answers, correct, count: slots === 2 ? 2 : 3 };
   });
   return { id: r.id, isNew: false, name: r.title, subtitle: r.subtitle ?? '', color: r.heading_color, cover: r.cover_path, published: r.status === 'published', qs };
 }
@@ -118,7 +119,7 @@ export async function saveSet(d: ESet, wasPublished: boolean): Promise<string | 
   if (d.qs.length) {
     // one request = one transaction, so the deferred (set_id, position) key is safe
     const { error: e2 } = await sb.from('questions').upsert(
-      d.qs.map((q, i) => ({ id: q.id, set_id: d.id, position: i, prompt_text: q.text.trim() || null, prompt_image_path: q.qimg, prompt_audio_path: q.voice })),
+      d.qs.map((q, i) => ({ id: q.id, set_id: d.id, position: i, prompt_text: q.text.trim() || null, prompt_image_path: q.qimg, prompt_audio_path: q.voice, read_answers: q.readAnswers })),
       { onConflict: 'id' },
     );
     if (e2) return e2.message;

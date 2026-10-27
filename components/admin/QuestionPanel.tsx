@@ -137,6 +137,10 @@ export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAs
                   ))}
                 </span>
               </div>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}>
+                <input type="checkbox" checked={q.readAnswers} onChange={() => onEdit({ readAnswers: !q.readAnswers })} style={{ width: 20, height: 20, accentColor: '#3F6B48', marginTop: 2 }} />
+                <span><span style={{ display: 'block', fontWeight: 700, fontSize: 15 }}>Read the answers aloud</span><span style={{ display: 'block', fontSize: 13, color: '#7A6458' }}>After the question, the app reads each answer text, and reads the answer Hà My picks. Turn off to read only the question.</span></span>
+              </label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
                 {SLOTS.slice(0, q.count).map((c, i) => {
                   const img = q.imgs[i];
@@ -158,7 +162,7 @@ export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAs
                       </div>
                       <button type="button" className={s.ghost} onClick={() => onPick({ kind: 'answer', i })} style={{ ...ghostBtn, fontSize: 13 }}>Upload image</button>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <label htmlFor={`at${i}`} style={{ fontSize: 13, fontWeight: 700 }}>Answer text <span style={{ fontWeight: 600, color: '#7A6458' }}>(read aloud)</span></label>
+                        <label htmlFor={`at${i}`} style={{ fontSize: 13, fontWeight: 700 }}>Answer text <span style={{ fontWeight: 600, color: '#7A6458' }}>{q.readAnswers ? '(read aloud)' : '(shown, not read)'}</span></label>
                         <input id={`at${i}`} className={s.in} type="text" value={q.texts[i]} placeholder="e.g. Apple" onChange={(e) => onEdit({ texts: q.texts.map((t, k) => (k === i ? e.target.value : t)) })} style={{ ...inputStyle, height: 40, fontSize: 15 }} />
                       </div>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>

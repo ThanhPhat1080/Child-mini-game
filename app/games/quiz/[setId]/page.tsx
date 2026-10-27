@@ -13,7 +13,7 @@ import { ohOh, yay, speakKid } from '@/lib/sfx';
 import { Confetti } from '@/components/Confetti';
 
 type Answer = { slot: number; image_path: string | null; text: string | null; is_correct: boolean };
-type Question = { id: string; position: number; prompt_text: string | null; prompt_image_path: string | null; prompt_audio_path: string | null; answers: Answer[] };
+type Question = { id: string; position: number; prompt_text: string | null; prompt_image_path: string | null; prompt_audio_path: string | null; read_answers: boolean; answers: Answer[] };
 
 const BADGE = ['#C77D85', '#5F86A8', '#8A6A2A'];
 const SHADOW = ['#D9A0A6', '#7FA0BE', '#D2B466'];
@@ -54,7 +54,7 @@ export default function QuestionPage() {
   useEffect(() => {
     createSupabaseBrowserClient()
       .from('questions')
-      .select('id, position, prompt_text, prompt_image_path, prompt_audio_path, answers(slot, image_path, text, is_correct)')
+      .select('id, position, prompt_text, prompt_image_path, prompt_audio_path, read_answers, answers(slot, image_path, text, is_correct)')
       .eq('set_id', setId)
       .order('position')
       .then(({ data }) => {
@@ -89,7 +89,7 @@ export default function QuestionPage() {
         };
         if (a.is_correct) show(); else setTimeout(show, 1000); // wrong: pause 1 s after her answer is read
       };
-      if (a.text?.trim()) speakKid(a.text.trim(), { pitch: 1.5, rate: 0.8, onEnd: finish });
+      if (cur.read_answers && a.text?.trim()) speakKid(a.text.trim(), { pitch: 1.5, rate: 0.8, onEnd: finish });
       else finish();
     },
     [cur, result, reading],
@@ -127,6 +127,7 @@ export default function QuestionPage() {
     await wait(500); // half a second, then read the question
     if (!alive()) return;
     await say(qq.prompt_text, mediaUrl(qq.prompt_audio_path));
+    if (!qq.read_answers) return;
     for (let i = 0; i < qq.answers.length; i++) {
       const t = qq.answers[i].text?.trim();
       if (!t) continue;
