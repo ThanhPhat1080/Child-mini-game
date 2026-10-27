@@ -1,7 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { mediaUrl } from '@/lib/media';
@@ -41,6 +40,8 @@ function stopVoice() {
 /** Question screen (C4/C5/C6). */
 export default function QuestionPage() {
   const { setId } = useParams<{ setId: string }>();
+  const router = useRouter();
+  const [count, setCount] = useState(3);
   const [qs, setQs] = useState<Question[] | null>(null);
   const [q, setQ] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
@@ -118,14 +119,29 @@ export default function QuestionPage() {
     setResult(null);
   }, []);
 
+  const go = useCallback(() => {
+    if (last) { token.current++; router.push(`/games/quiz/${setId}/done`); } else next();
+  }, [last, next, router, setId]);
+
+  // Hooray: count 3 -> 2 -> 1, then continue automatically
+  useEffect(() => {
+    if (result !== 'correct') return;
+    setCount(3);
+    const t = setInterval(() => setCount((c) => c - 1), 1000);
+    return () => clearInterval(t);
+  }, [result, q]);
+  useEffect(() => {
+    if (result === 'correct' && count <= 0) go();
+  }, [result, count, go]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (['1', '2', '3'].includes(e.key)) pick(Number(e.key) - 1);
-      else if ((e.key === 'Enter' || e.key === 'ArrowRight') && result === 'correct' && !last) next();
+      else if ((e.key === 'Enter' || e.key === 'ArrowRight') && result === 'correct') go();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [pick, next, result, last]);
+  }, [pick, go, result]);
 
   const readAll = useCallback(async (qq: Question) => {
     const my = ++readToken.current;
@@ -214,25 +230,16 @@ export default function QuestionPage() {
       )}
 
       {result === 'correct' && (
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(251,244,233,0.78)', overflow: 'hidden' }}>
+        <div role="button" tabIndex={0} aria-label="Continue" onClick={go} style={{ position: 'absolute', inset: 0, background: 'rgba(251,244,233,0.78)', overflow: 'hidden', cursor: 'pointer' }}>
           <span className="hm-flash" aria-hidden="true" style={{ position: 'absolute', left: 560, top: 70, width: 800, height: 800, borderRadius: 400, background: 'radial-gradient(circle, rgba(246,226,166,0.9) 0%, rgba(246,226,166,0) 68%)' }} />
           <Confetti count={56} />
           <div role="status" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 30 }}>
             <svg className="hm-pop" aria-hidden="true" width="240" height="240" viewBox="0 0 24 24" fill="#EED79A" stroke="#C9A05A" strokeWidth="1" strokeLinejoin="round"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z" /></svg>
             <span className="hm-pop" style={{ fontSize: 140, fontWeight: 700, color: '#B8737B', lineHeight: 1 }}>Hooray!</span>
-            {last ? (
-              <Link href={`/games/quiz/${setId}/done`} className="hm-tap hm-breathe" aria-label="Finish the set" style={nextStyle}><Arrow /></Link>
-            ) : (
-              <button type="button" className="hm-tap hm-breathe" autoFocus aria-label="Next question" onClick={next} style={{ ...nextStyle, border: 'none' }}><Arrow /></button>
-            )}
+            <span aria-live="polite" style={{ fontSize: 56, fontWeight: 600, color: '#8A6A5E', marginTop: 10 }}>Continue in {Math.max(count, 1)}s</span>
           </div>
         </div>
       )}
     </Stage>
   );
-}
-
-const nextStyle = { width: 176, height: 176, borderRadius: 88, background: '#9CC3A4', boxShadow: '0 12px 0 #7FA889', display: 'flex', alignItems: 'center', justifyContent: 'center' } as const;
-function Arrow() {
-  return <svg aria-hidden="true" width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /><path d="M13 6l6 6-6 6" /></svg>;
 }

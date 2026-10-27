@@ -19,7 +19,7 @@ Out of scope: play limit, cool-down, rest screen, PIN, Spot the Differences, Pha
 | C3 | Quiz set selection: cards of published sets: cover, name in heading color, optional sub-title, question-count pill, star if finished (ADR-020). Select with click, arrows + Enter. |
 | C4 | Question: shows prompt image/text and plays prompt audio if present. 2-3 answers, each an image + number + fixed color (1 rose, 2 sky, 3 butter, ADR-019). Choose by click/tap or keys 1/2/3 (ADR-007). No timer. |
 | C5 | Wrong answer: soft "Oh-oh", the wrong card dims gently, child tries again. No penalty, no lives. |
-| C6 | Correct answer: "Hooray!" with slow pastel confetti, then moves to the next question (ADR-021). |
+| C6 | Correct answer: "Hooray!" with slow pastel confetti, then a 3 s "Continue in 3s" countdown (click anywhere to skip) moves to the next question (ADR-021). |
 | C7 | Set completed screen with praise and a way back to set selection. The set is marked finished (star). |
 | C8 | Navigation back (Esc/Back key and a picture button) from set selection to game list and from a question to set selection. |
 | C9 | No screen requires reading. Any text is decorative or admin-written. Vietnamese diacritics render correctly (ADR-017). |
