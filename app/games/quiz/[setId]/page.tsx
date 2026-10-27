@@ -185,7 +185,8 @@ export default function QuestionPage() {
           const dim = result === 'wrong' && picked === i;
           const img = mediaUrl(a.image_path);
           return (
-            <button key={a.slot} type="button" className={`hm-ans${dim ? ' hm-wobble' : ''}${readIdx === i ? ' hm-breathe' : ''}`} aria-label={`Answer ${i + 1}`} onClick={() => pick(i)} style={{ position: 'relative', width: 460, height: 400, borderRadius: 56, border: `14px solid ${c.ring}`, background: c.bg, boxShadow: `0 16px 0 ${SHADOW[i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box', opacity: dim ? 0.55 : 1 }}>
+            <button key={a.slot} type="button" className={`hm-ans${dim ? ' hm-wobble' : ''}${readIdx === i ? ' hm-reading' : ''}`} aria-label={`Answer ${i + 1}`} onClick={() => pick(i)} style={{ position: 'relative', width: 460, height: 400, borderRadius: 56, border: `14px solid ${c.ring}`, background: c.bg, boxShadow: `0 16px 0 ${SHADOW[i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box', opacity: dim ? 0.55 : readIdx !== null && readIdx !== i ? 0.7 : 1 }}>
+              {readIdx === i && (<><span className="hm-readring" aria-hidden="true" style={{ borderColor: c.ring }} /><span className="hm-bars" aria-hidden="true"><i /><i /><i /></span></>)}
               <span style={{ position: 'absolute', top: -34, left: -34, width: 104, height: 104, borderRadius: 52, background: BADGE[i], color: '#fff', border: '8px solid #FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, fontWeight: 600, boxSizing: 'border-box' }}>{i + 1}</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {img && <img src={img} alt="" style={{ maxWidth: '100%', maxHeight: a.text?.trim() ? 250 : '100%', objectFit: 'contain' }} />}
