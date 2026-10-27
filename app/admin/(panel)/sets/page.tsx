@@ -49,9 +49,9 @@ export default function SetsPage() {
   async function remove() {
     if (!confirm) return;
     setBusy(true);
-    const e = await deleteSet(confirm.id);
+    const r = await deleteSet(confirm.id);
     setBusy(false);
-    if (e) setError(e);
+    if (r.error || r.warning) setError(r.error ?? r.warning);
     setConfirm(null);
     await load();
   }

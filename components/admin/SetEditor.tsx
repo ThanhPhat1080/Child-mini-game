@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { mediaUrl, uploadMedia } from '@/lib/media';
+import { mediaUrl, removeMedia, uploadMedia } from '@/lib/media';
+import { pathsToDelete, setMediaPaths } from '@/lib/mediaPaths';
 import { SetCard } from '@/components/SetCard';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
+import { ImportDialog } from '@/components/admin/ImportDialog';
 import { PRESETS, type PresetKey, blankSet, deleteSet, isQuestionComplete, loadSet, luminance, newQuestion, presetKeyFor, saveSet, tintFor, type EQuestion, type ESet } from '@/lib/sets';
 import s from './admin-ui.module.css';
 import { QuestionPanel } from './QuestionPanel';
@@ -25,11 +27,14 @@ export function SetEditor({ setId }: { setId: string }) {
   const [confirm, setConfirm] = useState<{ type: 'set' } | { type: 'q'; i: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [deleted, setDeleted] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [missing, setMissing] = useState(false);
   const [toast, setToast] = useState<{ text: string; error: boolean } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const target = useRef<Target | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  /** Files uploaded in this edit session; the ones the committed state does not use are deleted (T15). */
+  const uploaded = useRef(new Set<string>());
 
   const say = useCallback((text: string, error = false) => {
     setToast({ text, error });
@@ -83,17 +88,26 @@ export function SetEditor({ setId }: { setId: string }) {
     const err = await saveSet(d, saved.published && !d.isNew);
     setBusy(false);
     if (err) say(err, true);
+    let cleanupFailed = false;
     try {
       const fresh = await loadSet(d.id);
-      if (fresh) { setD(fresh); setSaved(fresh); setHexText(null); }
+      if (fresh) {
+        setD(fresh); setSaved(fresh); setHexText(null);
+        // the database now decides what is still used; free everything else (T15)
+        const stale = pathsToDelete(setMediaPaths(saved), setMediaPaths(fresh), uploaded.current);
+        uploaded.current.clear();
+        cleanupFailed = !!(await removeMedia(stale));
+      }
     } catch { /* keep local state */ }
     if (err) return;
-    say('Saved');
+    if (cleanupFailed) say('Saved, but some old files could not be removed from storage.', true); else say('Saved');
     if (d.isNew) router.replace(`/admin/sets/${d.id}`);
   }
 
   function revert() {
     if (!saved) return;
+    void removeMedia(pathsToDelete([], setMediaPaths(saved), uploaded.current));
+    uploaded.current.clear();
     setD(saved); setHexText(null); setNameError(false);
     setCur(saved.qs.length ? Math.min(Math.max(cur, 0), saved.qs.length - 1) : -1);
   }
@@ -112,10 +126,11 @@ export function SetEditor({ setId }: { setId: string }) {
     const t = target.current;
     if (!file || !t || !d) return;
     const okTypes = t.kind === 'voice' ? AUDIO_TYPES : IMG_TYPES;
-    if (!okTypes.includes(file.type)) { say(t.kind === 'voice' ? 'Use an MP3, M4A, WAV or OGG audio file.' : 'Use a PNG, JPG or WebP image.', true); return; }
+    if (!okTypes.includes(file.type)) { say(t.kind === 'voice' ? 'Use an MP3, M4A, WAV or OGG audio file.' : 'Use an SVG, PNG, JPG or WebP image.', true); return; }
     try {
       const folder = t.kind === 'cover' ? 'covers' : t.kind === 'voice' ? 'voices' : t.kind === 'qimg' ? 'questions' : 'answers';
       const path = await uploadMedia(folder, file);
+      uploaded.current.add(path);
       if (t.kind === 'cover') edit({ cover: path });
       else if (t.kind === 'qimg') editQ(cur, { qimg: path });
       else if (t.kind === 'voice') editQ(cur, { voice: path });
@@ -149,10 +164,16 @@ export function SetEditor({ setId }: { setId: string }) {
       setConfirm(null);
     } else {
       setBusy(true);
-      const err = await deleteSet(d.id);
+      const r = await deleteSet(d.id);
       setBusy(false);
       setConfirm(null);
-      if (err) say(err, true); else { setSaved(d); setDeleted(true); }
+      if (r.error) say(r.error, true);
+      else {
+        void removeMedia([...uploaded.current]);
+        uploaded.current.clear();
+        setSaved(d); setDeleted(true);
+        if (r.warning) say(r.warning, true);
+      }
     }
   }
 
@@ -271,11 +292,10 @@ export function SetEditor({ setId }: { setId: string }) {
                 <span><span style={{ display: 'block', fontWeight: 700, fontSize: 15 }}>Published</span><span style={{ display: 'block', fontSize: 13, color: '#7A6458' }}>Draft sets are hidden from the child, but you can still use “Preview as child” after saving.</span></span>
               </label>
 
-              {!d.isNew && (
-                <div style={{ paddingTop: 18, borderTop: '1px solid #F1E7DA' }}>
-                  <button type="button" className={s.danger} onClick={() => setConfirm({ type: 'set' })} style={{ ...dangerBtn, height: 42, padding: '0 16px' }}>Delete this quiz set</button>
-                </div>
-              )}
+              <div style={{ paddingTop: 18, borderTop: '1px solid #F1E7DA', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                <button type="button" className={s.btn} onClick={() => setImportOpen(true)} style={{ height: 42, padding: '0 16px', borderRadius: 10, border: 'none', background: '#3F73B5', color: '#fff', fontWeight: 700, fontFamily: 'Nunito, sans-serif', fontSize: 14, cursor: 'pointer' }}>+ Quick import questions</button>
+                {!d.isNew && <button type="button" className={s.danger} onClick={() => setConfirm({ type: 'set' })} style={{ ...dangerBtn, height: 42, padding: '0 16px' }}>Delete this quiz set</button>}
+              </div>
             </div>
 
             <div style={{ flex: '0 0 300px', maxWidth: '100%', boxSizing: 'border-box', padding: '22px 20px 28px', borderRadius: 16, background: '#FBF4E9', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, margin: '0 auto' }}>
@@ -302,6 +322,17 @@ export function SetEditor({ setId }: { setId: string }) {
         </>
       )}
 
+      {importOpen && (
+        <ImportDialog
+          onCancel={() => setImportOpen(false)}
+          onImport={(qs) => {
+            setD({ ...d, qs: [...d.qs, ...qs] });
+            setCur(d.qs.length);
+            setImportOpen(false);
+            say(`Imported ${qs.length} ${qs.length === 1 ? 'question' : 'questions'}. Review them, then press Save.`);
+          }}
+        />
+      )}
       {confirm && <ConfirmDialog title={confirmTitle} body={confirmBody} button={confirmButton} busy={busy} onCancel={() => setConfirm(null)} onConfirm={confirmDelete} />}
       {toast && <div role="status" className={`${s.toast} ${toast.error ? s.toastErr : ''}`}>{toast.text}</div>}
     </Shell>

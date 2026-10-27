@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { mediaUrl } from '@/lib/media';
 
-export const IMG_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+export const IMG_TYPES = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp'];
 export const AUDIO_TYPES = ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/ogg'];
 
 export const panel = { background: '#fff', borderRadius: 18, boxShadow: '0 1px 0 #EADCC8', display: 'flex', flexDirection: 'column' } as const;

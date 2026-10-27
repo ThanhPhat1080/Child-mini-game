@@ -1,4 +1,6 @@
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { removeMedia } from '@/lib/media';
+import { setMediaPaths } from '@/lib/mediaPaths';
 
 export const PRESETS = {
   rose: { label: 'Rose', text: '#B8737B', tint: '#F8DCDF' },
@@ -143,7 +145,15 @@ export async function saveSet(d: ESet, wasPublished: boolean): Promise<string | 
   return null;
 }
 
-export async function deleteSet(id: string): Promise<string | null> {
+/** Deletes a set, then frees its files in the bucket. `warning` is set when only the file cleanup failed. */
+export async function deleteSet(id: string): Promise<{ error: string | null; warning: string | null }> {
+  let paths: string[] = [];
+  try {
+    const set = await loadSet(id);
+    if (set) paths = setMediaPaths(set);
+  } catch { /* delete anyway; files are then left behind */ }
   const { error } = await createSupabaseBrowserClient().from('quiz_sets').delete().eq('id', id);
-  return error ? error.message : null;
+  if (error) return { error: error.message, warning: null };
+  const failed = await removeMedia(paths);
+  return { error: null, warning: failed ? 'The set was deleted, but some of its files could not be removed from storage.' : null };
 }
