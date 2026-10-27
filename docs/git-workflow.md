@@ -9,20 +9,26 @@ Authoritative rules for branches, PRs and deploys. Claude must follow this exact
 | `develop` | Integration/development. Default target for all work. | Vercel Preview |
 | feature/fix branches (incl. `claude/*`) | Short-lived work, branched from `develop`. | Vercel Preview |
 
-## Start of every task (always, before editing anything)
-1. `git fetch origin` then `git checkout develop` and `git pull origin develop` (the user's local `develop`).
-2. Create the task branch from it: `git checkout -b <branch>` (`claude/*` name when the session assigns one).
-3. Only then change files. Do not keep working on an old feature branch.
+## Flow for every change (Claude follows this exactly)
+1. **Branch from the user's local `develop`.** `git fetch origin`, `git checkout develop`, `git pull origin develop`, then `git checkout -b <branch>` (use the `claude/*` name the session assigns, otherwise `claude/<short-topic>`). Do this before editing anything, and never keep working on an old feature branch. The user can then `git fetch` and check out the branch to test locally.
+2. **Change and check.** Edit, then run `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`. Fix failures before going on.
+3. **Commit and push** the branch. Tell the user the branch name and how to test it locally (`git fetch origin && git checkout <branch>`, then `npm ci && npm run dev`).
+4. **Open a PR** with base `develop` and head the new branch (use the PR template if one exists) and show the user the PR link.
+5. **Deploy that branch.** Claude may create a Vercel **Preview** deployment of the new branch and share its URL.
+6. **Wait for the user's OK.** Never merge before it. If the user asks for changes, push more commits to the same branch and update the PR.
+7. **After the OK:** merge the PR into `develop` (repository's default merge method), then create a Preview deployment of `develop`, share the URL, and start the next task again from step 1 with the fresh `develop`.
+8. **Release:** `develop` -> `main` only when the user asks (see "Release checklist").
 
-## Deploying
-Never deploy on my own. Do not create Vercel deployments, change Vercel project settings or env vars, or promote anything until the user says "deploy". Writing code, tests and docs never implies permission to deploy. Note: Vercel's Git integration builds a Preview for every pushed branch automatically; avoid pushing until the work is ready or the user asks.
+## Deploying: what Claude may and may not do
+- **May, without asking:** Preview deployments of the task branch (step 5) and of `develop` (step 7). Vercel's Git integration also builds a Preview automatically for every pushed branch.
+- **Only when the user asks:** deploying or promoting to **Production** (`main`), changing Vercel project settings, env vars, domains or Deployment Protection, and anything outside this repo's Vercel project.
 
 ## Rules
-1. Branch every change from the latest `develop` (see "Start of every task").
-2. Open every PR with **base = `develop`**. Never open a PR from a feature branch into `main`.
+1. Every change starts from the latest local `develop` on a new branch (step 1).
+2. Every PR has **base = `develop`**. Never open a PR from a feature branch into `main`.
 3. The only PR allowed into `main` is **`develop` -> `main`**, and only when the user asks for a release.
-4. Never push directly to `main` or `develop`; never force-push either one.
-5. Open a PR only when the user asks for it. Use the PR template if one exists.
+4. Never push directly to `main` or `develop`, and never force-push either one. `develop` changes only by merging a PR after the user's OK.
+5. Do not merge a PR the user has not approved.
 6. Before a release PR, `develop` must have green CI and a passing `npm run build`.
 7. Commits cite spec IDs (C1-C12, A1-A8) where relevant, per `CLAUDE.md`.
 
