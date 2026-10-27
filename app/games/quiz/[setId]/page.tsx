@@ -137,11 +137,10 @@ export default function QuestionPage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (['1', '2', '3'].includes(e.key)) pick(Number(e.key) - 1);
-      else if ((e.key === 'Enter' || e.key === 'ArrowRight') && result === 'correct') go();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [pick, go, result]);
+  }, [pick]);
 
   const readAll = useCallback(async (qq: Question) => {
     const my = ++readToken.current;
@@ -230,7 +229,7 @@ export default function QuestionPage() {
       )}
 
       {result === 'correct' && (
-        <div role="button" tabIndex={0} aria-label="Continue" onClick={go} style={{ position: 'absolute', inset: 0, background: 'rgba(251,244,233,0.78)', overflow: 'hidden', cursor: 'pointer' }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(251,244,233,0.78)', overflow: 'hidden' }}>
           <span className="hm-flash" aria-hidden="true" style={{ position: 'absolute', left: 560, top: 70, width: 800, height: 800, borderRadius: 400, background: 'radial-gradient(circle, rgba(246,226,166,0.9) 0%, rgba(246,226,166,0) 68%)' }} />
           <Confetti count={56} />
           <div role="status" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 30 }}>

@@ -93,7 +93,7 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 - AC: on a new question the app waits 0.5 s, reads the question aloud (recorded voice if uploaded, else kid voice), then reads each answer's text aloud with 1 s between answers (the card being read bounces and wiggles with a glowing ring and sound bars, the others dim slightly; static ring with reduced motion); the replay button repeats this; picking an answer stops the reading.
 - AC: when the child picks an answer, the app first reads that answer's text aloud (if any), then shows the Hooray popup right away, or the Oh-oh popup 1 s after the reading ends, each with its sound; further picks are ignored while it reads.
 - AC: the Hooray and Oh-oh sounds use the custom track from Settings when set, else the built-in sound.
-- AC: on the Hooray popup there is no button; it shows "Continue in 3s / 2s / 1s" with a 3 s countdown, then closes and goes to the next question (last question: goes to the completed screen). Clicking anywhere, Enter or Right Arrow continues immediately.
+- AC: on the Hooray popup there is no button; it shows "Continue in 3s / 2s / 1s" with a 3 s countdown, then closes and goes to the next question (last question: goes to the completed screen).
 - AC: the "Oh-oh… try again!" popup is centered on the screen and disappears after 2 s.
 - AC: wrong answer dims the card gently with an "oh-oh" sound and the "Oh-oh… try again!" toast, which disappears after 2 s; retry allowed, no penalty.
 - AC: question dots are clickable to jump to that question, and "n / total" is shown; the replay-voice and music buttons are clickable with press animation.
