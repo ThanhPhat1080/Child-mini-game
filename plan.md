@@ -99,6 +99,8 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 - AC: wrong answer dims the card gently with an "oh-oh" sound and the "Oh-oh… try again!" toast, which disappears after 2 s; retry allowed, no penalty.
 - AC: question dots are clickable to jump to that question, and "n / total" is shown; the replay-voice and music buttons are clickable with press animation.
 - AC: a question counts as finished only when the child picks its right answer. Its dot turns yellow then; every dot of a question not finished yet stays gray (the current one is gray with a pink ring), whatever the order the child played in. A wrong answer or jumping past a question never finishes it.
+- AC: the finished questions are kept on the device (localStorage `hamy:progress:<setId>`, per set, no identity): after a reload or coming back later the yellow dots are still there and the child resumes at the first unfinished question. Questions that no longer exist in the set are ignored; blocked storage never breaks the page; another device starts clean.
+- AC: when the set is completed the saved dots are cleared (the star stays), so "Play this set again" starts with all dots gray.
 - AC: after the Hooray popup the app goes to the next question that is not finished yet (continuing past the last one back to the first unfinished one); it never assumes earlier questions are done.
 - AC: correct answer plays a kid-voice "Yay, hooray!" sound with slow pastel confetti, then advances. Sounds are synthesized/browser voice for now; recorded kid-voice files can replace them later.
 - AC: with `prefers-reduced-motion`, confetti and transitions are disabled or reduced.
