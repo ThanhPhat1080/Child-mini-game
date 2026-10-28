@@ -9,6 +9,7 @@ import { Stage } from '@/components/Stage';
 import { Hills } from '@/components/Hills';
 import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
+import { AvatarSay } from '@/components/AvatarSay';
 
 const PITCH = 712;
 const N = 3;
@@ -106,18 +107,17 @@ export default function Games() {
         <svg aria-hidden="true" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#7A5C50" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
       </button>
 
-      <div aria-hidden="true" style={{ position: 'absolute', left: 0, right: 0, top: 896, display: 'flex', justifyContent: 'center', gap: 18 }}>
+      <div role="group" aria-label="Pick a game" style={{ position: 'absolute', left: 0, right: 0, top: 847, display: 'flex', justifyContent: 'center' }}>
         {[0, 1, 2].map((i) => (
-          <span key={i} style={{ height: 22, borderRadius: 11, transition: 'width .5s ease', width: i === idx ? 56 : 22, background: i === idx ? '#E59AA1' : '#E3D5C4' }} />
+          <button key={i} type="button" className="hm-tap" aria-label={`Go to game ${i + 1}`} aria-current={i === idx} onClick={() => { setIdx(i); setDx(0); setDragging(false); }} style={{ width: 120, height: 120, padding: 0, border: 'none', background: 'none', borderRadius: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ display: 'block', height: 22, borderRadius: 11, transition: 'width .5s ease', width: i === idx ? 56 : 22, background: i === idx ? '#E59AA1' : '#E3D5C4' }} />
+          </button>
         ))}
       </div>
 
-      <div style={{ position: 'absolute', top: 48, left: 56, right: 56, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <BackButton href="/" label="Back home" home />
-        <span style={{ width: 72, height: 72, borderRadius: 36, background: '#F5D9C4', border: '5px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 30, fontWeight: 600, color: '#B8737B', overflow: 'hidden', boxSizing: 'border-box' }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          {avatar ? <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
-        </span>
+      <div style={{ position: 'absolute', top: 40, left: 56, right: 56, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <span style={{ marginTop: 8 }}><BackButton href="/" label="Back home" home /></span>
+        <AvatarSay avatar={avatar} initials={initials} />
       </div>
       <MusicButton />
     </Stage>

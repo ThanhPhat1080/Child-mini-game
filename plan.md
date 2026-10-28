@@ -81,6 +81,8 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 ### T8 Game registry and carousel (C2; ADR-014, 018)
 - AC: only "Quiz" is listed, from the registry.
 - AC: Left/Right keys, click-and-hold drag, arrow buttons and dots all move it; a drag never triggers the card click; Enter/click opens the game.
+- AC: the carousel dots are real buttons (120x120 px hit area, visible focus ring, `aria-current` on the active one): clicking or pressing Enter on a dot moves the carousel to that game; the dot visuals are unchanged.
+- AC: on the game list the child's avatar is large (150 px) in the top-right corner; tapping it pops a light-pink cloud speech bubble with "Let's play with me!" (one constant, `AVATAR_SAY` in `components/AvatarSay.tsx`) that goes away by itself after about 4.5 s; tapping again shows it again; no audio is played; with `prefers-reduced-motion` the pop-in animation is off.
 
 ### T9 Set selection (C3, C11)
 - AC: published sets show cover, heading-colored name, optional sub-title, question-count pill, and a star when finished; selectable by click and by arrows + Enter.
