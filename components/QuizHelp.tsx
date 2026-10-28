@@ -79,10 +79,13 @@ const SLIDES: Slide[] = [
   },
 ];
 
+const playStyle = { height: 120, padding: '0 44px', borderRadius: 60, background: '#C77D85', boxShadow: '0 8px 0 #A8636B', display: 'flex', alignItems: 'center', gap: 14, color: '#fff', fontSize: 48, fontWeight: 700, textDecoration: 'none' } as const;
+const playIcon = <svg aria-hidden="true" width="48" height="48" viewBox="0 0 24 24" fill="#fff"><path d="M8 5.5v13l10.5-6.5z" /></svg>;
+
 const round = { width: 120, height: 120, borderRadius: 60, border: 'none', background: '#FBF4E9', boxShadow: '0 8px 0 #E3CFC0', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 } as const;
 
 /** Tutorial popup for the Quiz game: a short description plus a carousel of steps. */
-export function QuizHelp({ onClose }: { onClose: () => void }) {
+export function QuizHelp({ onClose, playHref = '/games/quiz' }: { onClose: () => void; /** Where "Play" goes; null when the popup is already on the quiz list, so "Play" just closes it. */ playHref?: string | null }) {
   const [i, setI] = useState(0);
   const dialog = useRef<HTMLDivElement>(null);
   const last = i === SLIDES.length - 1;
@@ -143,10 +146,17 @@ export function QuizHelp({ onClose }: { onClose: () => void }) {
             ))}
           </div>
           {last ? (
-            <Link href="/games/quiz" className="hm-tap" aria-label="Play Quiz" style={{ height: 120, padding: '0 44px', borderRadius: 60, background: '#C77D85', boxShadow: '0 8px 0 #A8636B', display: 'flex', alignItems: 'center', gap: 14, color: '#fff', fontSize: 48, fontWeight: 700, textDecoration: 'none' }}>
-              <svg aria-hidden="true" width="48" height="48" viewBox="0 0 24 24" fill="#fff"><path d="M8 5.5v13l10.5-6.5z" /></svg>
-              Play
-            </Link>
+            playHref ? (
+              <Link href={playHref} className="hm-tap" aria-label="Play Quiz" style={playStyle}>
+                {playIcon}
+                Play
+              </Link>
+            ) : (
+              <button type="button" className="hm-tap" aria-label="Play Quiz" onClick={onClose} style={{ ...playStyle, border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+                {playIcon}
+                Play
+              </button>
+            )
           ) : (
             <button type="button" className="hm-tap" aria-label="Next step" onClick={() => go(i + 1)} style={round}>
               <svg aria-hidden="true" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#7A5C50" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>

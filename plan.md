@@ -88,6 +88,7 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 
 ### T9 Set selection (C3, C11)
 - AC: published sets show cover, heading-colored name, optional sub-title, question-count pill, and a star when finished; selectable by click and by arrows + Enter.
+- AC: the "? Quiz" badge at the top right of the set selection screen is a real button (120 px high, press animation, visible focus ring). It opens the same "How to play Quiz" popup as the "?" on the game list; there its last button says "Play" and just closes the popup, since the child is already choosing a set. Esc / Back / Close / backdrop close it without leaving the screen.
 - AC: with no published sets, a friendly picture screen shows, not an error.
 
 ### T10 Question screen (C4-C6, C9, C10, C12; ADR-007, 019, 021, 025)
