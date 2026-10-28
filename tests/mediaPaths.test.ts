@@ -59,7 +59,20 @@ describe('pathsToDelete', () => {
   it('never returns seed art or external links', () => {
     expect(pathsToDelete(['seed/a.svg', 'https://x.test/a.svg', null], [], ['seed/b.svg'])).toEqual([]);
   });
+  it('keeps a file shared by several answers while any of them still uses it', () => {
+    const before = ['answers/x.svg', 'answers/x.svg', 'answers/x.svg'];
+    expect(pathsToDelete(before, ['answers/x.svg', 'answers/x.svg', 'answers/y.svg'])).toEqual([]);
+    expect(pathsToDelete(before, ['answers/y.svg'])).toEqual(['answers/x.svg']);
+  });
   it('does not repeat a path', () => {
     expect(pathsToDelete(['a/1.png'], [], ['a/1.png'])).toEqual(['a/1.png']);
+  });
+});
+
+describe('pending picks', () => {
+  it('are never treated as bucket files', () => {
+    expect(isBucketPath('pending:abc')).toBe(false);
+    expect(setMediaPaths(set({ cover: 'pending:abc' }))).not.toContain('pending:abc');
+    expect(pathsToDelete(['pending:abc'], [])).toEqual([]);
   });
 });

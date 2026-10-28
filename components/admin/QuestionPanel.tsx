@@ -102,7 +102,7 @@ export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAs
                     <button type="button" className={s.ghost} onClick={() => onPick({ kind: 'qimg' })} style={ghostBtn}>Upload image</button>
                     {q.qimg && <button type="button" className={s.ghost} onClick={() => onEdit({ qimg: null })} style={ghostBtn}>Remove</button>}
                   </div>
-                  <span style={{ fontSize: 13, color: '#6E5A4E', lineHeight: 1.45 }}>PNG, JPG or WebP, up to 2 MB. Best at 600 × 300 px (2:1). Larger images are scaled down to fit the frame, never cropped or stretched.</span>
+                  <span style={{ fontSize: 13, color: '#6E5A4E', lineHeight: 1.45 }}>SVG (best), PNG, JPG or WebP, up to 2 MB. Best at 600 × 300 px (2:1). Larger images are scaled down to fit the frame, never cropped or stretched.</span>
                 </div>
               </div>
             </div>

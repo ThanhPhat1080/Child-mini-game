@@ -122,7 +122,9 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 ### T15 Free replaced and removed media (storage hygiene; A2, A4, A5)
 Files are uploaded as soon as they are picked, but only a successful Save/commit decides what stays. Never delete before Save, so Revert keeps working.
 - AC: on Save of a set, every file that the last saved state referenced but the saved state no longer does (replaced, removed, or belonging to a deleted question) is deleted from the `media` bucket; the database no longer points to it.
-- AC: files uploaded during an edit session and then replaced, removed or reverted before Save are deleted too (on Save or on Revert), so abandoned uploads do not pile up.
+- AC: choosing a picture or voice file (set editor: cover, question image, question voice, answer images; Settings: avatar) only shows a local preview. Nothing is sent to the bucket until the user presses Save (Settings: "Save changes"); a file replaced, removed or reverted before Save is never uploaded.
+- AC: on Save, the chosen files are uploaded first, then the database is written. If an upload fails, the files already uploaded in that attempt are deleted, the database is not written, and an error is shown.
+- AC: type and the 2 MB image limit are checked when the file is chosen, with an immediate message.
 - AC: deleting a set (from the set list or the editor) also deletes its cover, question images, question voices and answer images from the bucket.
 - AC: on Settings, replacing or removing the avatar, greeting, background music or a feedback sound ("Use built-in") deletes the old file right after the database update succeeds.
 - AC: only files inside the `media` bucket are ever deleted. Bundled sample art (`seed/...`) and external image URLs are never touched.
@@ -137,6 +139,13 @@ Files are uploaded as soon as they are picked, but only a successful Save/commit
 - AC: validation runs before anything changes and lists every problem with its question number (invalid JSON, no questions, answers not 2-3, not exactly one correct, image that is not blank or an `https://` URL, file over 1 MB, more than 50 questions). Nothing is imported when there is any error.
 - AC: a valid file shows "N questions ready"; "Import" appends them to the end of the current set as unsaved changes (Save and Revert behave as usual); incomplete ones (blank image or text) show in the completeness checklist and can be finished by hand.
 - AC: image URLs from the internet are stored as-is and render in the editor and the child app; they are never deleted by T15.
+- AC: `image` may also be raw SVG code (`<svg ...>...</svg>`). It is checked (starts with `<svg`, ends with `</svg>`, valid XML, at most 30,000 characters, no script, event handler, foreignObject, DOCTYPE or link to outside files; `xmlns` is added when missing) and any error is listed with its question and answer number.
+- AC: SVG code exported by design tools is accepted: an `<?xml ?>` line, comments, a simple DOCTYPE, `<![CDATA[` in `<style>`, namespaces/metadata, `xlink:href="#id"`, and `&nbsp;` (converted). Rejected with a clear message: scripts, event handlers, foreignObject, DOCTYPE with definitions or ENTITY, embedded `data:` pictures, links to outside files, and HTML entities such as `&copy;`.
+- AC: the preview shows the SVG in the editor right after import (local preview); on Save the file is uploaded, the form is silently reloaded from the database, and the imported questions and pictures stay correct (verified end to end against a stand-in Supabase, including reload, a second import, and deleting a question).
+- AC: SVG code is not stored in the database. On import it becomes a local preview like any picked file and is uploaded as a small `.svg` file on Save.
+- AC: identical SVG code (ignoring spacing) used in several answers and/or the question image creates ONE pending file and ONE uploaded file, and all those fields point to the same path; a different drawing gets its own file.
+- AC: a file shared by several answers is deleted only when none of them uses it any more (T15).
+- AC: uploaded file names are unique (timestamp plus random suffix), so several files saved in the same moment never collide.
 - AC: SVG uploads are accepted in the editor and Settings (bucket allows `image/svg+xml` via a new migration).
 - AC: unit tests cover the parser/validator (valid file, each error, blank images, URLs, the template file itself).
 

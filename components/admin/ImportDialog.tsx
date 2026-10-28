@@ -48,6 +48,7 @@ export function ImportDialog({ onCancel, onImport }: { onCancel: () => void; onI
           <span style={{ fontSize: 14, fontWeight: 700, color: '#2F5D91', marginTop: 4 }}>Pictures</span>
           <ul style={{ margin: 0, paddingLeft: 20, fontSize: 14, lineHeight: 1.55, display: 'flex', flexDirection: 'column', gap: 4 }}>
             <li>Leave <code>&quot;image&quot;: &quot;&quot;</code> blank and upload the picture later in the editor, or paste a link from the internet that starts with <code>https://</code>.</li>
+            <li>Or paste <b>SVG code</b> (starting with <code>&lt;svg</code>) into <code>&quot;image&quot;</code>. Use single quotes inside the SVG, keep it on one line, and keep it under 30,000 characters. The same SVG used in several answers is saved as <b>one file</b>.</li>
             <li><b>Question image:</b> up to 2 MB, best at 600 × 300 px.</li>
             <li><b>Answer image:</b> 84 × 84 px.</li>
             <li>SVG is best because it stays sharp at any size. PNG, JPG and WebP also work.</li>
