@@ -47,7 +47,7 @@
 
 ## ADR updates (2026-10-28, Phase 1 closed)
 
-- **ADR-007, ADR-018:** the keys 1/2/3, Left/Right, Enter and Esc stay as keyboard shortcuts on the computer. They are no longer "TV remote" keys and are not verified on a real remote.
+- **ADR-007, ADR-018:** the keys 1/2/3, Left/Right arrows, Enter, Space and Esc are the child's laptop keyboard controls (arrows move between choices; Enter or Space picks). They are a supported requirement, no longer "TV remote" keys. Shared helper: `lib/keynav.ts`.
 - **ADR-012:** superseded by ADR-028. No webOS or TV testing.
 - **ADR-014, 015, 016:** accepted (built and in use in Phase 1).
 - **ADR-024, ADR-025:** the question image frame is 600x300 (2:1), and the answer images fill the card width (`object-fit: contain`). The older 4:3 and 400x300 figures are obsolete.

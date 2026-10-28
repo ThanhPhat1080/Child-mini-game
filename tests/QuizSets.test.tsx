@@ -147,4 +147,29 @@ describe('Quiz set selection (T9, C3, C11)', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(h.push).toHaveBeenCalledWith('/games');
   });
+
+  it('TC10: the first set is focused at once; arrows move between sets; Space and Enter open the focused one', async () => {
+    render(<QuizSets />);
+    const animals = await screen.findByRole('link', { name: 'Animals, 2 questions' });
+    const colors = screen.getByRole('link', { name: 'Colors, 1 questions' });
+    await waitFor(() => expect(document.activeElement).toBe(animals));
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(colors);
+    fireEvent.keyDown(window, { key: 'ArrowLeft' });
+    expect(document.activeElement).toBe(animals);
+    // Space on a link behaves like Enter (links only react to Enter by default)
+    const click = vi.fn((e: Event) => e.preventDefault());
+    animals.addEventListener('click', click);
+    fireEvent.keyDown(animals, { key: ' ' });
+    expect(click).toHaveBeenCalledTimes(1);
+  });
+
+  it('TC11: arrows do not move the sets while the help popup is open', async () => {
+    render(<QuizSets />);
+    const animals = await screen.findByRole('link', { name: 'Animals, 2 questions' });
+    await waitFor(() => expect(document.activeElement).toBe(animals));
+    fireEvent.click(screen.getByRole('button', { name: /What is Quiz/ }));
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(document.activeElement).not.toBe(screen.getByRole('link', { name: 'Colors, 1 questions' }));
+  });
 });
