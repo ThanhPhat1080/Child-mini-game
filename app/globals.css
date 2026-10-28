@@ -29,7 +29,7 @@ body {
   font-family: var(--font-admin);
 }
 
-/* Visible focus ring for remote and keyboard navigation (T13 AC) */
+/* Visible focus ring for keyboard navigation */
 :focus-visible {
   outline: 6px solid var(--focus);
   outline-offset: 8px;

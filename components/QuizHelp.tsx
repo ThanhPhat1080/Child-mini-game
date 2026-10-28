@@ -50,7 +50,7 @@ const SLIDES: Slide[] = [
   },
   {
     title: 'Pick an answer',
-    text: 'Tap a card, or press 1, 2 or 3 on the remote. A right answer makes a happy hooray. A wrong one makes a soft “oh-oh” and you try again.',
+    text: 'Tap a card, or press 1, 2 or 3 on the keyboard. A right answer makes a happy hooray. A wrong one makes a soft “oh-oh” and you try again.',
     art: (
       <span style={{ display: 'flex', gap: 28, alignItems: 'flex-end' }}>
         <Mini n={1} bg="#F8DCDF" ring={ROSE} ink="#C77D85" tapped><span style={{ width: 54, height: 54, borderRadius: 27, background: '#E5555F' }} /></Mini>

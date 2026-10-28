@@ -172,7 +172,7 @@ export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAs
                   );
                 })}
               </div>
-              <p style={{ margin: 0, fontSize: 13, color: '#6E5A4E' }}>Number and color are fixed by position (1 rose, 2 sky, 3 butter) so remote keys 1–3 always match what the child sees.</p>
+              <p style={{ margin: 0, fontSize: 13, color: '#6E5A4E' }}>Number and color are fixed by position (1 rose, 2 sky, 3 butter) so keys 1–3 always match what the child sees.</p>
             </div>
           </>
         )}

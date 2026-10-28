@@ -30,7 +30,7 @@ Authoritative rules for branches, PRs and deploys. Claude must follow this exact
 4. Never push directly to `main` or `develop`, and never force-push either one. `develop` changes only by merging a PR after the user's OK.
 5. Do not merge a PR the user has not approved.
 6. Before a release PR, `develop` must have green CI and a passing `npm run build`.
-7. Commits cite spec IDs (C1-C12, A1-A8) where relevant, per `CLAUDE.md`.
+7. Commits cite spec IDs (C1-C15, A1-A10) where relevant, per `CLAUDE.md`.
 
 ## One-time GitHub setup (owner does this; Claude's tools cannot set protection)
 Settings -> Branches -> Add branch ruleset (or classic rule) for `main`:
@@ -47,7 +47,7 @@ Then Settings -> General -> Default branch -> `develop`, so new PRs default to i
 - Env vars (Production, Preview, Development): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Nothing else may use `NEXT_PUBLIC_`. Never add the service role key.
 - Install is `npm ci`: keep `package-lock.json` in sync (run `npm install` after changing dependencies and commit the lockfile).
 - Production URL: `https://hamy-pht-trngs-projects.vercel.app`.
-- Deployment Protection (Vercel login) blocks the TV browser. Turn it off for the child-facing domain.
+- Deployment Protection (Vercel login) blocks the child from opening the page. Turn it off for the child-facing domain.
 
 ## Supabase (project `uhpsqaqejizcyzwhwnsl`)
 Authentication -> URL Configuration:
