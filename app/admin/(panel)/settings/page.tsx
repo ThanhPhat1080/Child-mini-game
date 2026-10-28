@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { mediaUrl, uploadMedia } from '@/lib/media';
+import { addPending, clearPending, mediaUrl, removeMedia, uploadMedia, uploadPending } from '@/lib/media';
 import { applause, ohOh, speakKid, yay, type SoundHandle } from '@/lib/sfx';
 import styles from '../../admin.module.css';
 
@@ -14,6 +14,8 @@ export default function SettingsPage() {
   const [row, setRow] = useState<Row | null>(null);
   const [childName, setChildName] = useState('');
   const [volume, setVolume] = useState(30);
+  /** Avatar picked but not saved yet: shown as a preview, uploaded on "Save changes". */
+  const [avatarPick, setAvatarPick] = useState<string | null>(null);
   const [toast, setToast] = useState<{ text: string; error: boolean } | null>(null);
   const greetingInput = useRef<HTMLInputElement>(null);
   const musicInput = useRef<HTMLInputElement>(null);
@@ -43,13 +45,23 @@ export default function SettingsPage() {
   }, []);
 
   async function save() {
-    const { error } = await createSupabaseBrowserClient()
-      .from('settings')
-      .update({ child_name: childName.trim(), music_volume: volume })
-      .eq('id', 1);
-    if (error) return say(error.message, true);
-    setRow((r) => (r ? { ...r, child_name: childName.trim(), music_volume: volume } : r));
-    say('Saved.');
+    const patch: Record<string, unknown> = { child_name: childName.trim(), music_volume: volume };
+    let newAvatar: string | null = null;
+    if (avatarPick) {
+      try { newAvatar = await uploadPending(avatarPick, 'avatar'); } catch (e) { return say(e instanceof Error ? e.message : 'Upload failed', true); }
+      patch.avatar_path = newAvatar;
+    }
+    const { error } = await createSupabaseBrowserClient().from('settings').update(patch).eq('id', 1);
+    if (error) {
+      if (newAvatar) void removeMedia([newAvatar]); // the save failed, so do not keep the upload
+      return say(error.message, true);
+    }
+    const old = row?.avatar_path;
+    setRow((r) => (r ? { ...r, child_name: childName.trim(), music_volume: volume, ...(newAvatar ? { avatar_path: newAvatar } : {}) } : r));
+    setAvatarPick(null);
+    clearPending();
+    const failed = newAvatar && old && old !== newAvatar ? await removeMedia([old]) : null;
+    say(failed ? 'Saved, but the old avatar could not be removed from storage.' : 'Saved.', !!failed);
   }
 
   /** Drops unsaved name and volume edits and goes back to the last saved values. */
@@ -57,10 +69,12 @@ export default function SettingsPage() {
     if (!row) return;
     setChildName(row.child_name);
     setVolume(row.music_volume);
+    setAvatarPick(null);
+    clearPending();
     say('Changes reverted.');
   }
 
-  const dirty = !!row && (childName.trim() !== row.child_name || volume !== row.music_volume);
+  const dirty = !!row && (childName.trim() !== row.child_name || volume !== row.music_volume || !!avatarPick);
 
   type AudioKind = 'greeting' | 'music' | 'hooray' | 'ohoh' | 'complete';
   const COLUMN: Record<AudioKind, keyof Row> = { greeting: 'greeting_path', music: 'music_path', hooray: 'hooray_path', ohoh: 'ohoh_path', complete: 'complete_path' };
@@ -68,10 +82,12 @@ export default function SettingsPage() {
   async function removeSound(kind: AudioKind) {
     const column = COLUMN[kind];
     if (playing && playing === row?.[column]) { preview.current?.pause(); preview.current = null; setPlaying(null); }
+    const old = row?.[column] as string | null | undefined;
     const { error } = await createSupabaseBrowserClient().from('settings').update({ [column]: null }).eq('id', 1);
     if (error) return say(error.message, true);
     setRow((r) => (r ? { ...r, [column]: null } : r));
-    say('Back to the built-in sound.');
+    const failed = await removeMedia([old]);
+    say(failed ? 'Back to the built-in sound, but the old file could not be removed from storage.' : 'Back to the built-in sound.', !!failed);
   }
 
   async function upload(kind: AudioKind, event: ChangeEvent<HTMLInputElement>) {
@@ -81,10 +97,12 @@ export default function SettingsPage() {
     try {
       const path = await uploadMedia(kind, file);
       const column = COLUMN[kind];
+      const old = row?.[column] as string | null | undefined;
       const { error } = await createSupabaseBrowserClient().from('settings').update({ [column]: path }).eq('id', 1);
-      if (error) throw new Error(error.message);
+      if (error) { void removeMedia([path]); throw new Error(error.message); }
       setRow((r) => (r ? { ...r, [column]: path } : r));
-      say('Uploaded.');
+      const failed = old && old !== path ? await removeMedia([old]) : null;
+      say(failed ? 'Uploaded, but the old file could not be removed from storage.' : 'Uploaded.', !!failed);
     } catch (e) {
       say(e instanceof Error ? e.message : 'Upload failed', true);
     }
@@ -142,22 +160,20 @@ export default function SettingsPage() {
     if (preview.current && playing && playing === row?.music_path) preview.current.volume = volume / 100;
   }, [volume, playing, row?.music_path]);
 
-  useEffect(() => () => { preview.current?.pause(); builtIn.current?.stop(); }, []);
+  useEffect(() => () => { preview.current?.pause(); builtIn.current?.stop(); clearPending(); }, []);
 
   async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) return say('Use a PNG, JPG or WebP image.', true);
+    if (!['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp'].includes(file.type)) return say('Use an SVG, PNG, JPG or WebP image.', true);
     if (file.size > 2 * 1024 * 1024) return say('Image must be 2 MB or smaller.', true);
     try {
-      const path = await uploadMedia('avatar', file);
-      const { error } = await createSupabaseBrowserClient().from('settings').update({ avatar_path: path }).eq('id', 1);
-      if (error) throw new Error(error.message);
-      setRow((r) => (r ? { ...r, avatar_path: path } : r));
-      say('Avatar updated.');
+      clearPending(); // a newer pick replaces the older preview
+      setAvatarPick(addPending(file));
+      say('Avatar chosen. Press Save changes to upload it.');
     } catch (e) {
-      say(e instanceof Error ? e.message : 'Upload failed', true);
+      say(e instanceof Error ? e.message : 'Could not use this file', true);
     }
   }
 
@@ -183,9 +199,9 @@ export default function SettingsPage() {
 
       <section className={`${styles.section} ${styles.profile}`}>
         <div className={styles.avatar}>
-          {mediaUrl(row?.avatar_path) ? (
+          {mediaUrl(avatarPick ?? row?.avatar_path) ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={mediaUrl(row?.avatar_path) ?? ''} alt="Avatar" className={styles.avatarImg} />
+            <img src={mediaUrl(avatarPick ?? row?.avatar_path) ?? ''} alt="Avatar" className={styles.avatarImg} />
           ) : (
             <svg aria-hidden="true" width="54" height="38" viewBox="0 0 60 42" fill="#F6E2A6" stroke="#B08A48" strokeWidth="2" strokeLinejoin="round"><path d="M4 38 L8 10 L20 24 L30 4 L40 24 L52 10 L56 38 Z" /></svg>
           )}
@@ -196,9 +212,9 @@ export default function SettingsPage() {
             <input id="cn" className={`${styles.input} ${styles.nameInput}`} type="text" value={childName} onChange={(e) => setChildName(e.target.value)} />
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-            <input ref={avatarInput} className={styles.hidden} type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadAvatar} />
-            <button type="button" className={styles.ghost} onClick={() => avatarInput.current?.click()}>{row?.avatar_path ? 'Replace avatar' : 'Upload avatar'}</button>
-            <span className={styles.note}>PNG, JPG or WebP, square, up to 2 MB</span>
+            <input ref={avatarInput} className={styles.hidden} type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp" onChange={uploadAvatar} />
+            <button type="button" className={styles.ghost} onClick={() => avatarInput.current?.click()}>{row?.avatar_path || avatarPick ? 'Replace avatar' : 'Upload avatar'}</button>
+            <span className={styles.note}>SVG, PNG, JPG or WebP, square, up to 2 MB. Uploaded when you press Save changes.</span>
           </div>
         </div>
       </section>

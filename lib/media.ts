@@ -1,12 +1,57 @@
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
+import { PENDING_PREFIX, isBucketPath, mapSetMedia, type SetPaths } from '@/lib/mediaPaths';
 
 export const MEDIA_BUCKET = 'media';
 export const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 
+/** Files the admin picked but has not saved yet. They are previewed from memory and uploaded on Save. */
+const pending = new Map<string, { file: File; url: string }>();
+
+export const isPending = (path: string | null | undefined): boolean => !!path && path.startsWith(PENDING_PREFIX);
+
+/** Keeps a picked file in memory and returns a placeholder path for it. Nothing is sent to the bucket. */
+export function addPending(file: File): string {
+  if (file.type.startsWith('image/') && file.size > MAX_IMAGE_BYTES) throw new Error('Image must be 2 MB or smaller.');
+  const token = PENDING_PREFIX + crypto.randomUUID();
+  pending.set(token, { file, url: URL.createObjectURL(file) });
+  return token;
+}
+
+export const pendingName = (token: string): string => pending.get(token)?.file.name ?? 'New file';
+
+/** Raw SVG code -> its single pending token, so identical drawings share one file and one upload. */
+const svgTokens = new Map<string, string>();
+
+export function svgToPending(svg: string): string {
+  const known = svgTokens.get(svg);
+  if (known && pending.has(known)) return known;
+  const token = addPending(new File([svg], 'image.svg', { type: 'image/svg+xml' }));
+  svgTokens.set(svg, token);
+  return token;
+}
+
+/** Turns SVG code in imported questions into pending files (identical code reuses the same one). */
+export function materializeSvg<T extends { qimg: string | null; imgs: (string | null)[] }>(qs: T[]): T[] {
+  const conv = (p: string | null) => (p && p.startsWith('<') ? svgToPending(p) : p);
+  return qs.map((q) => ({ ...q, qimg: conv(q.qimg), imgs: q.imgs.map(conv) }));
+}
+
+/** Forgets picked files (all, or all except `keep`) and frees their previews. */
+export function clearPending(keep: string[] = []): void {
+  for (const [token, p] of pending) {
+    if (keep.includes(token)) continue;
+    URL.revokeObjectURL(p.url);
+    pending.delete(token);
+  }
+  for (const [svg, token] of svgTokens) if (!pending.has(token)) svgTokens.delete(svg);
+}
+
 /** Public URL for a path in the media bucket, or null when there is no file. */
 export function mediaUrl(path: string | null | undefined): string | null {
   if (!path) return null;
+  if (path.startsWith(PENDING_PREFIX)) return pending.get(path)?.url ?? null; // local preview, not uploaded yet
   if (path.startsWith('seed/')) return `/${path}`; // bundled sample art
+  if (/^https?:\/\//i.test(path)) return path; // image link from the internet (Quick import)
   const supabase = createSupabaseBrowserClient();
   return supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path).data.publicUrl;
 }
@@ -19,10 +64,45 @@ export async function uploadMedia(folder: string, file: File): Promise<string> {
   const supabase = createSupabaseBrowserClient();
   const dot = file.name.lastIndexOf('.');
   const ext = dot >= 0 ? file.name.slice(dot + 1).toLowerCase() : 'bin';
-  const path = `${folder}/${Date.now()}.${ext}`;
+  const path = `${folder}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
   const { error } = await supabase.storage
     .from(MEDIA_BUCKET)
     .upload(path, file, { contentType: file.type, upsert: false });
   if (error) throw new Error(error.message);
   return path;
+}
+
+/**
+ * Deletes files from the media bucket to free storage. Bundled art and external links are skipped.
+ * Returns an error message, or null on success. Admin only (RLS, T1).
+ */
+export async function removeMedia(paths: (string | null | undefined)[]): Promise<string | null> {
+  const mine = [...new Set(paths.filter(isBucketPath))];
+  if (!mine.length) return null;
+  const { error } = await createSupabaseBrowserClient().storage.from(MEDIA_BUCKET).remove(mine);
+  return error ? error.message : null;
+}
+
+/** Uploads one picked file now (called on Save) and returns its bucket path. */
+export async function uploadPending(token: string, folder: string): Promise<string> {
+  const p = pending.get(token);
+  if (!p) throw new Error('A chosen file is no longer available. Please choose it again.');
+  return uploadMedia(folder, p.file);
+}
+
+/**
+ * Uploads every picked file in the set and swaps the placeholders for real paths.
+ * If any upload fails, the files uploaded so far are deleted and the error is thrown, so nothing is left behind.
+ */
+export async function commitPendingMedia<T extends SetPaths>(d: T): Promise<{ d: T; uploaded: string[] }> {
+  const wanted = new Map<string, string>();
+  mapSetMedia(d, (p, folder) => { if (p && isPending(p)) wanted.set(p, folder); return p; });
+  const done = new Map<string, string>();
+  try {
+    for (const [token, folder] of wanted) done.set(token, await uploadPending(token, folder));
+  } catch (e) {
+    await removeMedia([...done.values()]);
+    throw e;
+  }
+  return { d: mapSetMedia(d, (p) => (p ? done.get(p) ?? p : p)), uploaded: [...done.values()] };
 }

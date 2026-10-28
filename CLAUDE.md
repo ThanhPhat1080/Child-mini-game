@@ -44,3 +44,6 @@ Node 24 + npm 11 (tested). On this Windows machine npm is not on the Bash PATH; 
 
 ## Workflow
 Plan mode first; commit `plan.md` before code. Each ticket has Acceptance Criteria; do not mark done until they pass. When Claude makes the same mistake twice, add the fix to this file. Keep this file under one page.
+
+## Git & deploy (full rules: `docs/git-workflow.md`)
+`main` = production (protected, only PRs from `develop`). `develop` = development. For every change: branch from local `develop` (pull first) so the user can test it locally; commit, push (and always tell the user each new branch name with `git fetch origin && git checkout <branch>`), open a PR into `develop`, show it, and make a Preview deployment of the branch. Merge into `develop` and deploy `develop` only after the user's OK. Only PR into `main` is `develop` -> `main`, when asked. Never push to or force-push `main`/`develop`. Production deploys and Vercel settings/env changes only when the user asks.

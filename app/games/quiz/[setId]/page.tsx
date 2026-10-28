@@ -10,6 +10,7 @@ import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
 import { ohOh, yay, speakKid } from '@/lib/sfx';
 import { Confetti } from '@/components/Confetti';
+import { clearProgress, deviceStore, firstUnfinished, loadProgress, nextUnfinished, saveProgress } from '@/lib/quizProgress';
 
 type Answer = { slot: number; image_path: string | null; text: string | null; is_correct: boolean };
 type Question = { id: string; position: number; prompt_text: string | null; prompt_image_path: string | null; prompt_audio_path: string | null; read_answers: boolean; answers: Answer[] };
@@ -52,6 +53,9 @@ export default function QuestionPage() {
   const readToken = useRef(0);
   const [readIdx, setReadIdx] = useState<number | null>(null);
   const [result, setResult] = useState<'wrong' | 'correct' | null>(null);
+  /** Questions the child answered correctly. Only these count as finished (dot turns yellow). */
+  const [doneIds, setDoneIds] = useState<ReadonlySet<string>>(new Set());
+  const [restored, setRestored] = useState(false);
 
   useEffect(() => {
     createSupabaseBrowserClient().from('settings').select('hooray_path, ohoh_path').eq('id', 1).single().then(({ data }) => {
@@ -72,7 +76,6 @@ export default function QuestionPage() {
   }, [setId]);
 
   const cur = qs?.[q];
-  const last = qs ? q === qs.length - 1 : false;
 
   const pick = useCallback(
     (i: number) => {
@@ -111,17 +114,40 @@ export default function QuestionPage() {
 
   const jump = (i: number) => { token.current++; setReading(false); setQ(i); setPicked(null); setResult(null); };
 
-  const next = useCallback(() => {
+  // pick up the dots kept on this device and resume at the first question not finished yet
+  useEffect(() => {
+    if (!qs || restored) return;
+    const ids = qs.map((x) => x.id);
+    const saved = loadProgress(deviceStore(), setId, ids);
+    setDoneIds(saved);
+    if (saved.size) setQ(firstUnfinished(ids, saved));
+    setRestored(true);
+  }, [qs, restored, setId]);
+
+  // keep the dots on this device (only after they were restored, so an empty start never wipes them)
+  useEffect(() => {
+    if (restored) saveProgress(deviceStore(), setId, doneIds);
+  }, [restored, doneIds, setId]);
+
+  // a question is finished only when the child picks its right answer
+  useEffect(() => {
+    if (result !== 'correct' || !cur) return;
+    const id = cur.id;
+    setDoneIds((s) => (s.has(id) ? s : new Set(s).add(id)));
+  }, [result, cur]);
+
+  /** After Hooray: the next unfinished question; the set is complete only when every question is finished. */
+  const go = useCallback(() => {
+    if (!qs || !cur) return;
+    const done = new Set(doneIds).add(cur.id);
+    const to = nextUnfinished(qs.map((x) => x.id), q, done);
     token.current++;
+    if (to === null) { clearProgress(deviceStore(), setId); router.push(`/games/quiz/${setId}/done`); return; } // set done: playing it again starts fresh
     setReading(false);
-    setQ((v) => v + 1);
+    setQ(to);
     setPicked(null);
     setResult(null);
-  }, []);
-
-  const go = useCallback(() => {
-    if (last) { token.current++; router.push(`/games/quiz/${setId}/done`); } else next();
-  }, [last, next, router, setId]);
+  }, [qs, cur, doneIds, q, router, setId]);
 
   // Hooray: count 3 -> 2 -> 1, then continue automatically
   useEffect(() => {
@@ -177,8 +203,8 @@ export default function QuestionPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
           <div style={{ display: 'flex', gap: 8 }} role="group" aria-label={`Question ${q + 1} of ${qs.length}`}>
             {qs.map((_, i) => (
-              <button key={i} type="button" className="hm-tap" aria-label={`Go to question ${i + 1}`} aria-current={i === q} onClick={() => jump(i)} style={{ padding: 8, border: 'none', background: 'none', borderRadius: 28 }}>
-                <span style={{ display: 'block', width: 40, height: 40, borderRadius: 20, boxSizing: 'border-box', border: '6px solid', ...(i < q || (i === q && result === 'correct') ? { background: '#EED79A', borderColor: '#E5C979' } : i === q ? { background: '#fff', borderColor: '#E59AA1' } : { background: '#F1E7DA', borderColor: '#D9C9B6' }) }} />
+              <button key={i} type="button" className="hm-tap" aria-label={`Go to question ${i + 1}${doneIds.has(qs[i].id) ? ', finished' : ''}`} aria-current={i === q} onClick={() => jump(i)} style={{ padding: 8, border: 'none', background: 'none', borderRadius: 28 }}>
+                <span style={{ display: 'block', width: 40, height: 40, borderRadius: 20, boxSizing: 'border-box', border: '6px solid', ...(doneIds.has(qs[i].id) || (i === q && result === 'correct') ? { background: '#EED79A', borderColor: '#E5C979' } : i === q ? { background: '#F1E7DA', borderColor: '#E59AA1' } : { background: '#F1E7DA', borderColor: '#D9C9B6' }) }} />
               </button>
             ))}
           </div>
@@ -211,7 +237,7 @@ export default function QuestionPage() {
               {readIdx === i && (<><span className="hm-readring" aria-hidden="true" style={{ borderColor: c.ring }} /><span className="hm-bars" aria-hidden="true"><i /><i /><i /></span></>)}
               <span style={{ position: 'absolute', top: -34, left: -34, width: 104, height: 104, borderRadius: 52, background: BADGE[i], color: '#fff', border: '8px solid #FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, fontWeight: 600, boxSizing: 'border-box' }}>{i + 1}</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {img && <img src={img} alt="" style={{ maxWidth: '100%', maxHeight: a.text?.trim() ? 250 : '100%', objectFit: 'contain' }} />}
+              {img && <img src={img} alt="" style={{ width: '100%', maxHeight: a.text?.trim() ? 250 : '100%', objectFit: 'contain' }} />}
               {a.text?.trim() && <span style={{ position: 'absolute', left: 0, right: 0, bottom: 14, textAlign: 'center', fontSize: 44, fontWeight: 600, color: '#5A4038' }}>{a.text}</span>}
             </button>
           );
