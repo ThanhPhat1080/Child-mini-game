@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { Stage } from '@/components/Stage';
 import { Hills } from '@/components/Hills';
 import { BackButton } from '@/components/BackButton';
 import { SetCard, type SetCardData } from '@/components/SetCard';
 import { MusicButton } from '@/components/MusicButton';
+import { QuizHelp } from '@/components/QuizHelp';
 
 type Row = Omit<SetCardData, 'count'> & { questions: { prompt_text: string | null; prompt_audio_path: string | null; answers: { image_path: string | null; is_correct: boolean }[] }[] };
 
@@ -20,6 +21,8 @@ function isComplete(q: Row['questions'][number]): boolean {
 export default function QuizSets() {
   const [sets, setSets] = useState<SetCardData[] | null>(null);
   const [done, setDone] = useState<Record<string, boolean>>({});
+  const [help, setHelp] = useState(false);
+  const helpBtn = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     createSupabaseBrowserClient()
@@ -41,10 +44,17 @@ export default function QuizSets() {
       <Hills />
       <div style={{ position: 'absolute', top: 48, left: 56, right: 56, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <BackButton href="/games" label="Back to games" />
-        <span style={{ display: 'flex', alignItems: 'center', gap: 16, height: 104, padding: '0 36px 0 24px', borderRadius: 52, background: '#fff', border: '8px solid #EBB7BC', boxSizing: 'border-box' }}>
+        <button
+          ref={helpBtn}
+          type="button"
+          className="hm-tap"
+          aria-label="What is Quiz? Show how to play"
+          onClick={() => setHelp(true)}
+          style={{ display: 'flex', alignItems: 'center', gap: 16, height: 120, padding: '0 40px 0 28px', borderRadius: 60, background: '#fff', border: '8px solid #EBB7BC', boxShadow: '0 8px 0 #EADCC8', boxSizing: 'border-box', fontFamily: 'inherit' }}
+        >
           <svg aria-hidden="true" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
           <span style={{ fontSize: 44, fontWeight: 600, color: '#B8737B', lineHeight: 1 }}>Quiz</span>
-        </span>
+        </button>
       </div>
       {sets && sets.length === 0 && (
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 72, fontWeight: 600, color: '#8A6A5E' }}>
@@ -59,6 +69,7 @@ export default function QuizSets() {
         ))}
       </div>
       <MusicButton />
+      {help && <QuizHelp playHref={null} onClose={() => { setHelp(false); setTimeout(() => helpBtn.current?.focus(), 0); }} />}
     </Stage>
   );
 }
