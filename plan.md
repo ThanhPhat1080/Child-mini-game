@@ -1,7 +1,7 @@
 # Plan: HaMy Phase 1 (Quiz MVP + Admin)
 
 Source: `spec.md` (requirement IDs C1-C12, A1-A8), `docs/decision.md` (ADRs). Stack per ADR-027: Next.js + React + TypeScript, Supabase, Vercel.
-Status: draft for owner review. Nothing is scaffolded yet.
+Status: **Phase 1 CLOSED 2026-10-28 (PO decision).** All tickets below are built and deployed except the leftovers in section 4, which are parked. The platform is a computer browser (child may cast it to a TV, which is not a requirement; ADR-028), so all TV and webOS work was removed from scope.
 
 ## 1. Decisions to confirm
 Recommended defaults; the owner can override before T0 starts.
@@ -9,12 +9,12 @@ Recommended defaults; the owner can override before T0 starts.
 | Topic | Default |
 |-------|---------|
 | Router | Next.js App Router, TypeScript `strict` |
-| Styling | Plain CSS Modules + CSS variables for the spec section 6 tokens. No Tailwind (light bundle for TV) |
+| Styling | Plain CSS Modules + CSS variables for the spec section 6 tokens. No Tailwind (light bundle) |
 | Data access | Child routes are client-rendered and read-only through the Supabase anon client. Admin under `/admin/*`, guarded by middleware + Supabase Auth (`@supabase/ssr`) |
-| Browser targets | `browserslist` set to older Chromium so no very new JS/CSS ships (ADR-012) |
+| Browser targets | `browserslist` in `package.json` (Chrome >= 80, last 2 Edge/Firefox). Kept as is; it no longer comes from a TV requirement (ADR-012, ADR-028) |
 | Tooling | npm; Vitest + Testing Library (unit); Playwright (key flows); ESLint + `tsc --noEmit` |
 | Migrations | Supabase CLI, `supabase/migrations/*.sql` (ADR-008) |
-| Open spec questions | Star progress in localStorage; silent when no greeting/music; fixed question order; up/down buttons for reorder (A8) |
+| Open spec questions | Decided and built: star progress in localStorage; silent when no greeting/music; fixed question order; up/down buttons for reorder (A8) |
 
 ## 2. Architecture sketch
 - `app/(child)/`: Welcome, game list, set selection, question, completed. Read-only, unauthenticated.
@@ -29,7 +29,7 @@ Recommended defaults; the owner can override before T0 starts.
 Done only when every Acceptance Criterion (AC) passes.
 
 ### T0 Scaffold
-Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslist`, self-hosted Baloo 2 and Nunito, design tokens, global focus ring and `prefers-reduced-motion` base.
+Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e script placeholder), `browserslist`, self-hosted Baloo 2 and Nunito, design tokens, global focus ring and `prefers-reduced-motion` base.
 - AC: install, dev, build, lint, typecheck and test all run clean on a fresh clone.
 - AC: Vietnamese diacritics (e.g. "Hà My ơi, bé ngoan") render correctly in both fonts with no CDN request.
 - AC: `CLAUDE.md` "Commands" updated with the real commands, including single-test and migrations.
@@ -81,14 +81,14 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 ### T8 Game registry and carousel (C2; ADR-014, 018)
 - AC: only "Quiz" is listed, from the registry.
 - AC: Left/Right keys, click-and-hold drag, arrow buttons and dots all move it; a drag never triggers the card click; Enter/click opens the game.
-- AC: the carousel dots are real buttons (120x120 px hit area, visible focus ring, `aria-current` on the active one): clicking or pressing Enter on a dot moves the carousel to that game; the dot visuals are unchanged.
-- AC: the "?" on the Quiz card is a real button (not part of the card link, so it never starts the game; 130 px hit area, gentle pulse, visible focus ring). It opens a "How to play Quiz" popup (`components/QuizHelp.tsx`) with a backdrop: a short description plus a 4-step carousel (What is Quiz? / Listen first / Pick an answer / Fill the dots) with small pictures, Previous/Next buttons, clickable step dots, Left/Right keys, a "Play" button on the last step that opens the Quiz, and a Close button. All its buttons are at least 120 px.
+- AC: the carousel dots are real buttons (large hit area, visible focus ring, `aria-current` on the active one): clicking or pressing Enter on a dot moves the carousel to that game; the dot visuals are unchanged.
+- AC: the "?" on the Quiz card is a real button (not part of the card link, so it never starts the game; large hit area, gentle pulse, visible focus ring). It opens a "How to play Quiz" popup (`components/QuizHelp.tsx`) with a backdrop: a short description plus a 4-step carousel (What is Quiz? / Listen first / Pick an answer / Fill the dots) with small pictures, Previous/Next buttons, clickable step dots, Left/Right keys, a "Play" button on the last step that opens the Quiz, and a Close button. All its buttons are large.
 - AC: Esc, the Back key, the Close button and a click on the backdrop close the popup and return focus to the "?"; while it is open Esc never leaves the page and the arrow keys never move the games carousel.
 - AC: on the game list the child's avatar is large (150 px) in the top-right corner; tapping it pops a light-pink cloud speech bubble with "Let's play with me!" (one constant, `AVATAR_SAY` in `components/AvatarSay.tsx`) that goes away by itself after about 4.5 s; tapping again shows it again; no audio is played; with `prefers-reduced-motion` the pop-in animation is off.
 
 ### T9 Set selection (C3, C11)
 - AC: published sets show cover, heading-colored name, optional sub-title, question-count pill, and a star when finished; selectable by click and by arrows + Enter.
-- AC: the "? Quiz" badge at the top right of the set selection screen is a real button (120 px high, press animation, visible focus ring). It opens the same "How to play Quiz" popup as the "?" on the game list; there its last button says "Play" and just closes the popup, since the child is already choosing a set. Esc / Back / Close / backdrop close it without leaving the screen.
+- AC: the "? Quiz" badge at the top right of the set selection screen is a real button (large, press animation, visible focus ring). It opens the same "How to play Quiz" popup as the "?" on the game list; there its last button says "Play" and just closes the popup, since the child is already choosing a set. Esc / Back / Close / backdrop close it without leaving the screen.
 - AC: with no published sets, a friendly picture screen shows, not an error.
 
 ### T10 Question screen (C4-C6, C9, C10, C12; ADR-007, 019, 021, 025)
@@ -121,10 +121,9 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 ### T12 Preview as child (A7; ADR-022)
 - AC: enabled only after the set is saved; plays the set as the child sees it, including drafts, without publishing.
 
-### T13 Performance, TV pass, deploy (spec 7)
-- AC: images for the current and next question are preloaded; app interactive in under 3 s on a home network.
-- AC: buttons are at least 120 px high on TV screens; visible focus ring for remote navigation.
-- AC: deployed on Vercel; full flow works in Chromium cast to the TV; the URL opens once in the LG webOS browser with no major problems.
+### T13 Deploy (spec 7)
+- AC: deployed on Vercel; the full flow works in a computer browser (PO accepted 2026-10-28).
+- Parked, not built: preloading the next question's images and the "interactive in under 3 s" check (section 4).
 
 ### T14 Setup README (DoD 3)
 - AC: README covers creating the Supabase project, running migrations, creating the admin user, env vars, and deploying to Vercel.
@@ -160,19 +159,30 @@ Files are uploaded as soon as they are picked, but only a successful Save/commit
 - AC: SVG uploads are accepted in the editor and Settings (bucket allows `image/svg+xml` via a new migration).
 - AC: unit tests cover the parser/validator (valid file, each error, blank images, URLs, the template file itself).
 
-## 4. Out of scope (Phase 2)
-Play limit, cool-down, rest screen, PIN, Spot the Differences, Phaser, full webOS testing with the real remote.
+## 4. Phase 1 closure (2026-10-28) and parked leftovers
+Ticket status: T0-T16 built and deployed; Trello board updated the same day. The PO accepted the result without a formal DoD run.
 
-## 5. Risks
+Parked (not blocking the close; pick up only when the PO asks):
+- **T14 Setup README** (DoD 3): `README.md` is still empty. Needed before a second child's deployment.
+- **Preload and 3 s start** (was part of T13): images of the next question are not preloaded.
+- **Playwright e2e**: `npm run e2e` exists in `package.json` but Playwright is not installed or configured.
+- **CI**: no GitHub Actions workflow; `docs/git-workflow.md` asks for green CI before a release.
+- DoD 1 (child plays a full set unaided) and DoD 2 (5-question set in under 10 minutes) were never timed or recorded.
+
+Removed from scope by the PO: TV and LG webOS testing, Magic Remote, a 120 px TV hit-area rule, and TV-specific performance work (ADR-028).
+
+## 5. Phase 2: other games (redefined 2026-10-28)
+Phase 2 is now building further mini-games on top of the game registry (ADR-014); Spot the Differences with Phaser is the first candidate (ADR-002, ADR-005). The earlier Phase 2 items are parked: play-time limit and rest screen (ADR-003, ADR-010), PIN (ADR-004, ADR-011). Write `spec-phase2.md` and `plan-phase2.md` before any code.
+
+## 6. Risks
 - Browser autoplay policy: audio only after "tap to enter" (T7).
-- webOS browser may lack newer JS/CSS: keep `browserslist` conservative and check once on the TV (T13).
 - Draft preview vs RLS: preview must use the authenticated client (T12).
 - Large uploads: validate type and size on client and in Storage policy, compress before storing (T6).
 - Deleting a file still referenced elsewhere would break a picture: delete only paths the previous saved state owned and the new state no longer uses, and only after the database write succeeds (T15).
 - External image URLs can disappear or block hot-linking; the admin can replace them later. `http://` links are rejected because the site is served over HTTPS (T16).
 - SVG files are user-supplied: they are shown only through `<img>` tags (scripts do not run there) and only an authenticated admin can upload them (T16).
 
-## 6. Definition of done (spec 8)
+## 7. Definition of done (spec 8)
 1. Child goes from Welcome to the end of a set without anyone reading to her.
 2. A parent creates a set with at least 5 questions in under 10 minutes.
 3. A second child's deployment is set up from the README with no code changes.

@@ -1,9 +1,10 @@
 # Architecture & Design Decision Records (ADR)
 
 ## ADR-001: Choosing Web-Based Architecture over Native TV Apps
+* **Status:** Amended by ADR-028 (2026-10-28): the target is a computer browser, not Smart TV browsers.
 * **Context:** The app needs to run across multiple Smart TV brands (LG webOS, Samsung Tizen, Sony Android TV) while supporting rapid iteration and centralized database integration.
-* **Decision:** Build a web-based application accessible via Smart TV browsers instead of native platform SDK apps.
-* **Rationale:** Web standards provide cross-platform compatibility, eliminate complex app-store approval processes for TV vendors, and allow instant updates via cloud deployments.
+* **Decision:** Build a web-based application instead of native platform SDK apps.
+* **Rationale:** Web standards provide cross-platform compatibility, eliminate complex app-store approval processes, and allow instant updates via cloud deployments.
 
 ## ADR-002: Selecting Phaser.js over Unity WebGL
 * **Context:** The target devices include Smart TVs with limited RAM and processing power (especially older LG/Samsung models). 
@@ -44,6 +45,21 @@
 - **ADR-005 (Supabase):** confirmed. Firebase is not used (see ADR-008).
 - **ADR-007 (number keys 1/2/3):** each answer also shows an image and a color, because the child cannot read numbers yet.
 
+## ADR updates (2026-10-28, Phase 1 closed)
+
+- **ADR-007, ADR-018:** the keys 1/2/3, Left/Right, Enter and Esc stay as keyboard shortcuts on the computer. They are no longer "TV remote" keys and are not verified on a real remote.
+- **ADR-012:** superseded by ADR-028. No webOS or TV testing.
+- **ADR-014, 015, 016:** accepted (built and in use in Phase 1).
+- **ADR-024, ADR-025:** the question image frame is 600x300 (2:1), and the answer images fill the card width (`object-fit: contain`). The older 4:3 and 400x300 figures are obsolete.
+- **ADR-002, 003, 004, 010, 011:** Phaser (ADR-002) stays the plan for the next games. The play limit, rest screen and PIN (ADR-003, 004, 010, 011) are parked, not scheduled.
+
+### ADR-028: Computer browser is the target platform
+
+- **Status:** Accepted (2026-10-28, PO decision)
+- **Context:** Hà My plays on a computer; casting it to the TV already works well enough.
+- **Decision:** Support the latest Chromium-based desktop browsers. Do not test or design for LG webOS, other Smart TV browsers or the Magic Remote. Remove TV requirements from the spec and plan.
+- **Consequences:** Supersedes ADR-012. ADR-001's TV rationale no longer drives choices. Existing code (keyboard shortcuts, large buttons, `browserslist`, the scaled 1920x1080 stage) stays because it still works; nothing is built for TVs from now on.
+
 ### ADR-008: Use Supabase as the backend
 
 - **Status:** Accepted
@@ -73,9 +89,9 @@
 
 ### ADR-012: Chromium first, webOS later
 
-- **Status:** Accepted
-- **Decision:** Phase 1 runs on Chromium. Test by casting a MacBook to the TV and using a mouse. The TV's default browser is LG webOS. Open the URL there only to catch major problems. Full testing happens in Phase 2.
-- **Consequences:** Avoid very new JavaScript features. Number keys on the real remote are not verified until Phase 2.
+- **Status:** Superseded by ADR-028 (2026-10-28)
+- **Decision:** Phase 1 runs on Chromium. (Original plan: test by casting a MacBook to the TV; webOS in Phase 2. Dropped.)
+- **Consequences:** Avoid very new JavaScript features is no longer a requirement.
 
 ### ADR-013: Admin dashboard inside the app
 
@@ -86,19 +102,19 @@
 
 ### ADR-014: Build the quiz with React/DOM
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Decision:** The quiz uses React and CSS, not Phaser. Phaser starts in Phase 2.
-- **Consequences:** Lighter on the TV, and large tap targets and simple animations are easy to build. The hub needs a game registry so Phaser games can be added later.
+- **Consequences:** Light to load, and large tap targets and simple animations are easy to build. The hub needs a game registry so Phaser games can be added later.
 
 ### ADR-015: Admin sign-in with Supabase Auth
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Decision:** Parents sign in with email and password. The child's page needs no sign-in and only reads content. Write access is limited to admin accounts (RLS).
 - **Consequences:** The service role key must never be included in the frontend.
 
 ### ADR-016: "Tap to enter" gate for audio
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Context:** Chromium blocks audio from playing automatically until the user interacts with the page.
 - **Decision:** The Welcome screen has a large "tap to enter" button. Pressing it plays the greeting and background music, then shows the "Start game" button.
 - **Consequences:** Needs a shared audio manager for background music, voice, and sound effects.
@@ -107,14 +123,14 @@
 
 - **Status:** Accepted
 - **Context:** Names and labels contain Vietnamese diacritics; many display fonts render them badly.
-- **Decision:** Child UI uses Baloo 2 (rounded, full Vietnamese support). Admin uses Nunito. Self-host the font files so the TV does not depend on a CDN.
+- **Decision:** Child UI uses Baloo 2 (rounded, full Vietnamese support). Admin uses Nunito. Self-host the font files so the app does not depend on a CDN.
 - **Consequences:** Check diacritics on every new screen.
 
 ### ADR-018: Game list is a carousel with four input methods
 
 - **Status:** Accepted
-- **Decision:** Left/Right remote keys, mouse click-and-hold drag, arrow buttons and dots all move the game list. A drag must not trigger a click on the card underneath.
-- **Consequences:** Needs a click-versus-drag threshold and focus handling for the remote.
+- **Decision:** Left/Right keys, mouse click-and-hold drag, arrow buttons and dots all move the game list. A drag must not trigger a click on the card underneath.
+- **Consequences:** Needs a click-versus-drag threshold and focus handling for the keyboard.
 
 ### ADR-019: Answer slot colors are fixed by position
 
@@ -169,4 +185,4 @@
 - **Status:** Accepted (2026-10-26)
 - **Context:** The framework was open between Vite + React and Next.js (spec section 9, `docs/intent.md` open questions).
 - **Decision:** Build the app with Next.js, React and TypeScript, deployed on Vercel. The child app and the admin dashboard live in the same Next.js project.
-- **Consequences:** Browser-exposed env vars need the `NEXT_PUBLIC_` prefix; only the Supabase URL and anon key may use it, never the service role key (ADR-015). Keep the child pages light for the TV browser and set the build's browser targets so no very new JS/CSS ships (ADR-012). ADR-014 still applies: the quiz is React/DOM, Phaser only in Phase 2.
+- **Consequences:** Browser-exposed env vars need the `NEXT_PUBLIC_` prefix; only the Supabase URL and anon key may use it, never the service role key (ADR-015). Keep the child pages light. ADR-014 still applies: the quiz is React/DOM, Phaser only in Phase 2.
