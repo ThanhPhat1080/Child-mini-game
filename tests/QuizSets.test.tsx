@@ -1,0 +1,150 @@
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const h = vi.hoisted(() => ({ rows: [] as unknown[], eq: vi.fn(), push: vi.fn() }));
+
+vi.mock('@/lib/supabase/client', () => ({
+  createSupabaseBrowserClient: () => ({
+    from: () => ({
+      select: () => ({
+        eq: (...args: unknown[]) => {
+          h.eq(...args);
+          return { order: () => Promise.resolve({ data: h.rows, error: null }) };
+        },
+      }),
+    }),
+  }),
+}));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: h.push }), usePathname: () => '/games/quiz' }));
+vi.mock('next/link', () => ({
+  default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a>,
+}));
+vi.mock('@/lib/media', () => ({ mediaUrl: (p: string | null) => (p ? `/media/${p}` : null) }));
+vi.mock('@/components/MusicButton', () => ({ MusicButton: () => null }));
+
+import QuizSets from '@/app/games/quiz/page';
+
+const good = (n: number) => ({
+  prompt_text: `Question ${n}`, prompt_audio_path: null,
+  answers: [
+    { image_path: 'a.svg', is_correct: true },
+    { image_path: 'b.svg', is_correct: false },
+    { image_path: 'c.svg', is_correct: false },
+  ],
+});
+const bad = { prompt_text: '', prompt_audio_path: null, answers: [{ image_path: null, is_correct: false }, { image_path: 'b.svg', is_correct: true }] };
+const set = (id: string, title: string, subtitle: string | null, questions: unknown[]) => ({
+  id, title, subtitle, heading_color: '#E59AA1', cover_path: `${id}.svg`, questions,
+});
+
+beforeEach(() => {
+  h.eq.mockReset();
+  h.push.mockReset();
+  localStorage.clear();
+  h.rows = [set('s1', 'Animals', 'Farm and zoo', [good(1), good(2), bad]), set('s2', 'Colors', null, [good(1)])];
+});
+afterEach(cleanup);
+
+// T9 / C3, C11: quiz set selection.
+describe('Quiz set selection (T9, C3, C11)', () => {
+  it('TC1: each card shows cover, name, optional sub-title and a question-count pill', async () => {
+    render(<QuizSets />);
+    const animals = await screen.findByRole('link', { name: 'Animals, 2 questions' });
+    expect(animals.querySelector('img')?.getAttribute('src')).toBe('/media/s1.svg');
+    expect(within(animals).getByText('Animals')).toBeTruthy();
+    expect(within(animals).getByText('Farm and zoo')).toBeTruthy();
+    expect(within(animals).getByText('2 questions')).toBeTruthy();
+    const colors = screen.getByRole('link', { name: 'Colors, 1 questions' });
+    expect(within(colors).getByText('1 question')).toBeTruthy();
+    expect(within(colors).queryByText('Farm and zoo')).toBeNull();
+  });
+
+  it('TC2: only published sets are requested and incomplete questions are not counted', async () => {
+    h.rows = [set('s1', 'Animals', null, [good(1), bad]), set('s3', 'Only broken', null, [bad])];
+    render(<QuizSets />);
+    await screen.findByRole('link', { name: 'Animals, 1 questions' });
+    expect(h.eq).toHaveBeenCalledWith('status', 'published');
+    expect(screen.queryByRole('link', { name: /Only broken/ })).toBeNull();
+  });
+
+  it('TC3: a finished set shows the star and "completed"; an unfinished one does not', async () => {
+    localStorage.setItem('hamy:done:s1', '1');
+    render(<QuizSets />);
+    const animals = await screen.findByRole('link', { name: 'Animals, 2 questions, completed' });
+    expect(animals.querySelector('svg[fill="#EED79A"]')).toBeTruthy();
+    const colors = screen.getByRole('link', { name: 'Colors, 1 questions' });
+    expect(colors.querySelector('svg[fill="#EED79A"]')).toBeNull();
+  });
+
+  it('TC4: a card is a keyboard-focusable link that opens its set (click, or Tab + Enter)', async () => {
+    render(<QuizSets />);
+    const animals = await screen.findByRole('link', { name: 'Animals, 2 questions' });
+    expect(animals.tagName).toBe('A');
+    expect(animals.getAttribute('href')).toBe('/games/quiz/s1');
+    animals.focus();
+    expect(document.activeElement).toBe(animals);
+    expect(screen.getByRole('link', { name: 'Colors, 1 questions' }).getAttribute('href')).toBe('/games/quiz/s2');
+  });
+
+  it('TC5: blocked storage never breaks the page (no stars, cards still show)', async () => {
+    const spy = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
+    render(<QuizSets />);
+    expect(await screen.findByRole('link', { name: 'Animals, 2 questions' })).toBeTruthy();
+    spy.mockRestore();
+  });
+
+  it('TC6: with no published sets a friendly picture screen shows, not an error', async () => {
+    h.rows = [];
+    render(<QuizSets />);
+    expect(await screen.findByText('New quizzes are coming soon!')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('TC7: the "Quiz" badge opens the How-to-play popup; its last button just closes it', async () => {
+    render(<QuizSets />);
+    await screen.findByRole('link', { name: 'Animals, 2 questions' });
+    const badge = screen.getByRole('button', { name: /What is Quiz/ });
+    expect(badge.style.height).toBe('120px');
+    fireEvent.click(badge);
+    const dialog = screen.getByRole('dialog', { name: 'How to play Quiz' });
+    const dots = within(dialog).getAllByRole('button', { name: /Go to step/ });
+    fireEvent.click(dots[dots.length - 1]);
+    const play = within(dialog).getByRole('button', { name: 'Play Quiz' });
+    expect(within(dialog).queryByRole('link', { name: 'Play Quiz' })).toBeNull();
+    fireEvent.click(play);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(h.push).not.toHaveBeenCalled();
+  });
+
+  it('TC8: Esc, Close and the backdrop close the popup without leaving the page; focus returns to the badge', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    try {
+      render(<QuizSets />);
+      const badge = screen.getByRole('button', { name: /What is Quiz/ });
+      fireEvent.click(badge);
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(screen.queryByRole('dialog')).toBeNull();
+      vi.runAllTimers();
+      expect(document.activeElement).toBe(badge);
+      expect(h.push).not.toHaveBeenCalled();
+
+      fireEvent.click(badge);
+      fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+      expect(screen.queryByRole('dialog')).toBeNull();
+
+      fireEvent.click(badge);
+      const dialog = screen.getByRole('dialog');
+      fireEvent.mouseDown(dialog.parentElement as HTMLElement);
+      expect(screen.queryByRole('dialog')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('TC9: the back button links to the game list and Esc goes back when no popup is open', async () => {
+    render(<QuizSets />);
+    await waitFor(() => expect(screen.getByRole('link', { name: 'Back to games' }).getAttribute('href')).toBe('/games'));
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(h.push).toHaveBeenCalledWith('/games');
+  });
+});

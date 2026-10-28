@@ -88,9 +88,10 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e script placeho
 - AC: on the game list the child's avatar is large (150 px) in the top-right corner; tapping it pops a light-pink cloud speech bubble with "Let's play with me!" (one constant, `AVATAR_SAY` in `components/AvatarSay.tsx`) that goes away by itself after about 4.5 s; tapping again shows it again; no audio is played; with `prefers-reduced-motion` the pop-in animation is off.
 
 ### T9 Set selection (C3, C11)
-- AC: published sets show cover, heading-colored name, optional sub-title, question-count pill, and a star when finished; selectable by click and by arrows + Enter.
+- AC: published sets show cover, heading-colored name, optional sub-title, question-count pill, and a star when finished; selectable by click, or by Tab + Enter (cards are real links). Arrow-key movement was a TV-remote need and was dropped with ADR-028.
 - AC: the "? Quiz" badge at the top right of the set selection screen is a real button (large, press animation, visible focus ring). It opens the same "How to play Quiz" popup as the "?" on the game list; there its last button says "Play" and just closes the popup, since the child is already choosing a set. Esc / Back / Close / backdrop close it without leaving the screen.
 - AC: with no published sets, a friendly picture screen shows, not an error.
+- Tests: `tests/QuizSets.test.tsx` (TC1-TC9: card content, published/complete filtering, star, focusable links, blocked storage, empty state, help popup open/close/Play, Esc and back button).
 
 ### T10 Question screen (C4-C6, C9, C10, C12; ADR-007, 019, 021, 025)
 - AC: three bands (header, question row, answers) with no overlap at 1920x1080; prompt audio plays if present, with a replay button.

@@ -16,7 +16,7 @@ Out of scope for Phase 1: everything in Phase 2. Phase 2 is now "other games" (s
 |----|-------------|
 | C1 | Welcome: large "tap to enter" button. On press: greeting audio plays, background music starts (looping), then "Start game" appears (ADR-016). Princess illustration at the left. Shows the child's name from settings. |
 | C2 | Game list: carousel with only "Quiz". Moves with Left/Right keys, click-and-hold drag, arrow buttons, dots. A drag never triggers the card click (ADR-018). Enter/click opens the game. Registry-based so more games can be added later (ADR-014). |
-| C3 | Quiz set selection: cards of published sets: cover, name in heading color, optional sub-title, question-count pill, star if finished (ADR-020). Select with click, arrows + Enter. |
+| C3 | Quiz set selection: cards of published sets: cover, name in heading color, optional sub-title, question-count pill, star if finished (ADR-020). Select with click, or Tab + Enter. |
 | C4 | Question: shows prompt image/text and plays prompt audio if present. 2-3 answers, each an image + number + fixed color (1 rose, 2 sky, 3 butter, ADR-019). Choose by click or keys 1/2/3 (ADR-007). No timer. |
 | C5 | Wrong answer: soft "Oh-oh", the wrong card dims gently, child tries again. No penalty, no lives. |
 | C6 | Correct answer: "Hooray!" with slow pastel confetti, then a 3 s "Continue in 3s" countdown moves to the next question (ADR-021). |
