@@ -11,6 +11,7 @@ import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
 import { AvatarSay } from '@/components/AvatarSay';
 import { QuizHelp } from '@/components/QuizHelp';
+import { isPressKey } from '@/lib/keynav';
 
 const PITCH = 712;
 const N = 3;
@@ -61,7 +62,7 @@ export default function Games() {
         onKeyDown={(e) => {
           if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
           else if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
-          else if (e.key === 'Enter' && idx === 0) router.push('/games/quiz');
+          else if (isPressKey(e) && idx === 0 && e.target === e.currentTarget) { e.preventDefault(); router.push('/games/quiz'); }
         }}
         onPointerDown={(e) => { const r = e.currentTarget.getBoundingClientRect(); scale.current = r.width / 1920 || 1; startX.current = e.clientX; moved.current = false; setDragging(true); setDx(0); }}
         onPointerMove={(e) => { if (!dragging) return; const d = (e.clientX - startX.current) / scale.current; setDx(d); if (Math.abs(d) > 10) moved.current = true; }}

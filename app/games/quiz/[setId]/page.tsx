@@ -10,6 +10,7 @@ import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
 import { ohOh, yay, speakKid } from '@/lib/sfx';
 import { Confetti } from '@/components/Confetti';
+import { handleChoiceKey } from '@/lib/keynav';
 import { clearProgress, deviceStore, firstUnfinished, loadProgress, nextUnfinished, saveProgress } from '@/lib/quizProgress';
 
 type Answer = { slot: number; image_path: string | null; text: string | null; is_correct: boolean };
@@ -162,6 +163,8 @@ export default function QuestionPage() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (['1', '2', '3'].includes(e.key)) pick(Number(e.key) - 1);
+      // arrows move between the answers; Enter and Space press the focused answer (native button behavior)
+      else handleChoiceKey(e, Array.from(document.querySelectorAll<HTMLElement>('button[data-answer]')));
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -233,7 +236,7 @@ export default function QuestionPage() {
           const dim = result === 'wrong' && picked === i;
           const img = mediaUrl(a.image_path);
           return (
-            <button key={a.slot} type="button" className={`hm-ans${dim ? ' hm-wobble' : ''}${readIdx === i ? ' hm-reading' : ''}`} aria-label={`Answer ${i + 1}`} onClick={() => pick(i)} style={{ position: 'relative', width: 460, height: 400, borderRadius: 56, border: `14px solid ${c.ring}`, background: c.bg, boxShadow: `0 16px 0 ${SHADOW[i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box', opacity: dim ? 0.55 : readIdx !== null && readIdx !== i ? 0.7 : 1 }}>
+            <button key={a.slot} type="button" data-answer className={`hm-ans${dim ? ' hm-wobble' : ''}${readIdx === i ? ' hm-reading' : ''}`} aria-label={`Answer ${i + 1}`} onClick={() => pick(i)} style={{ position: 'relative', width: 460, height: 400, borderRadius: 56, border: `14px solid ${c.ring}`, background: c.bg, boxShadow: `0 16px 0 ${SHADOW[i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box', opacity: dim ? 0.55 : readIdx !== null && readIdx !== i ? 0.7 : 1 }}>
               {readIdx === i && (<><span className="hm-readring" aria-hidden="true" style={{ borderColor: c.ring }} /><span className="hm-bars" aria-hidden="true"><i /><i /><i /></span></>)}
               <span style={{ position: 'absolute', top: -34, left: -34, width: 104, height: 104, borderRadius: 52, background: BADGE[i], color: '#fff', border: '8px solid #FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, fontWeight: 600, boxSizing: 'border-box' }}>{i + 1}</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}

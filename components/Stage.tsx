@@ -5,7 +5,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 const W = 1920;
 const H = 1080;
 
-/** Fixed 1920x1080 TV canvas scaled to fit any window, like the prototype boards. */
+/** Fixed 1920x1080 canvas scaled to fit any window, like the prototype boards. */
 export function Stage({ children }: { children: ReactNode }) {
   const [scale, setScale] = useState(1);
 

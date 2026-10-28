@@ -9,6 +9,9 @@ import { BackButton } from '@/components/BackButton';
 import { SetCard, type SetCardData } from '@/components/SetCard';
 import { MusicButton } from '@/components/MusicButton';
 import { QuizHelp } from '@/components/QuizHelp';
+import { handleChoiceKey } from '@/lib/keynav';
+
+const cards = () => Array.from(document.querySelectorAll<HTMLElement>('a[data-set-card]'));
 
 type Row = Omit<SetCardData, 'count'> & { questions: { prompt_text: string | null; prompt_audio_path: string | null; answers: { image_path: string | null; is_correct: boolean }[] }[] };
 
@@ -39,6 +42,17 @@ export default function QuizSets() {
       });
   }, []);
 
+  // keyboard: start on the first set; arrows move between sets; Enter or Space opens the focused one
+  useEffect(() => {
+    if (sets && sets.length > 0) cards()[0]?.focus();
+  }, [sets]);
+  useEffect(() => {
+    if (help) return;
+    const onKey = (e: KeyboardEvent) => { handleChoiceKey(e, cards()); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [help]);
+
   return (
     <Stage>
       <Hills />
@@ -63,7 +77,7 @@ export default function QuizSets() {
       )}
       <div style={{ position: 'absolute', left: 0, right: 0, top: 190, display: 'flex', justifyContent: 'center', gap: 64 }}>
         {sets?.map((s, i) => (
-          <Link key={s.id} href={`/games/quiz/${s.id}`} className="hm-card" aria-label={`${s.title}, ${s.count} questions${done[s.id] ? ', completed' : ''}`} style={{ borderRadius: 56 }}>
+          <Link key={s.id} href={`/games/quiz/${s.id}`} data-set-card className="hm-card" aria-label={`${s.title}, ${s.count} questions${done[s.id] ? ', completed' : ''}`} style={{ borderRadius: 56 }}>
             <SetCard set={s} index={i} done={done[s.id]} />
           </Link>
         ))}
