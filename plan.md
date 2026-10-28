@@ -52,6 +52,7 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e script placeho
 ### T4 Admin set list and preview strip (A3; ADR-023)
 - AC: table shows name, question count, draft/published; actions new, edit, delete (with confirmation).
 - AC: preview strip renders with the same `SetCard` component as the child screen.
+- Tests: `tests/SetsPage.test.tsx` (TC1-TC9: table columns, incomplete count, New/Edit links, delete confirm/cancel/confirm/error, preview strip with `SetCard`, empty states).
 
 ### T5 Set editor (A4; ADR-020)
 - AC: name, optional sub-title, status, 6 color presets + picker + hex input, low-contrast warning.
