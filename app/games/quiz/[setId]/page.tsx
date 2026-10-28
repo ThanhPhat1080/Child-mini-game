@@ -211,7 +211,7 @@ export default function QuestionPage() {
               {readIdx === i && (<><span className="hm-readring" aria-hidden="true" style={{ borderColor: c.ring }} /><span className="hm-bars" aria-hidden="true"><i /><i /><i /></span></>)}
               <span style={{ position: 'absolute', top: -34, left: -34, width: 104, height: 104, borderRadius: 52, background: BADGE[i], color: '#fff', border: '8px solid #FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, fontWeight: 600, boxSizing: 'border-box' }}>{i + 1}</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {img && <img src={img} alt="" style={{ maxWidth: '100%', maxHeight: a.text?.trim() ? 250 : '100%', objectFit: 'contain' }} />}
+              {img && <img src={img} alt="" style={{ width: '100%', maxHeight: a.text?.trim() ? 250 : '100%', objectFit: 'contain' }} />}
               {a.text?.trim() && <span style={{ position: 'absolute', left: 0, right: 0, bottom: 14, textAlign: 'center', fontSize: 44, fontWeight: 600, color: '#5A4038' }}>{a.text}</span>}
             </button>
           );
