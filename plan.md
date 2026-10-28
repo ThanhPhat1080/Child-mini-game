@@ -82,6 +82,8 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 - AC: only "Quiz" is listed, from the registry.
 - AC: Left/Right keys, click-and-hold drag, arrow buttons and dots all move it; a drag never triggers the card click; Enter/click opens the game.
 - AC: the carousel dots are real buttons (120x120 px hit area, visible focus ring, `aria-current` on the active one): clicking or pressing Enter on a dot moves the carousel to that game; the dot visuals are unchanged.
+- AC: the "?" on the Quiz card is a real button (not part of the card link, so it never starts the game; 130 px hit area, gentle pulse, visible focus ring). It opens a "How to play Quiz" popup (`components/QuizHelp.tsx`) with a backdrop: a short description plus a 4-step carousel (What is Quiz? / Listen first / Pick an answer / Fill the dots) with small pictures, Previous/Next buttons, clickable step dots, Left/Right keys, a "Play" button on the last step that opens the Quiz, and a Close button. All its buttons are at least 120 px.
+- AC: Esc, the Back key, the Close button and a click on the backdrop close the popup and return focus to the "?"; while it is open Esc never leaves the page and the arrow keys never move the games carousel.
 - AC: on the game list the child's avatar is large (150 px) in the top-right corner; tapping it pops a light-pink cloud speech bubble with "Let's play with me!" (one constant, `AVATAR_SAY` in `components/AvatarSay.tsx`) that goes away by itself after about 4.5 s; tapping again shows it again; no audio is played; with `prefers-reduced-motion` the pop-in animation is off.
 
 ### T9 Set selection (C3, C11)

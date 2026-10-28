@@ -10,6 +10,7 @@ import { Hills } from '@/components/Hills';
 import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
 import { AvatarSay } from '@/components/AvatarSay';
+import { QuizHelp } from '@/components/QuizHelp';
 
 const PITCH = 712;
 const N = 3;
@@ -22,6 +23,8 @@ export default function Games() {
   const [dragging, setDragging] = useState(false);
   const [initials, setInitials] = useState('HM');
   const [avatar, setAvatar] = useState<string | null>(null);
+  const [help, setHelp] = useState(false);
+  const helpBtn = useRef<HTMLButtonElement>(null);
   const startX = useRef(0);
   const scale = useRef(1);
   const moved = useRef(false);
@@ -67,15 +70,28 @@ export default function Games() {
         onPointerLeave={() => { if (dragging) { setDragging(false); setDx(0); } }}
       >
         <div style={{ position: 'absolute', top: 210, left: 0, display: 'flex', gap: 72, transform: `translateX(${base + dx}px)`, transition: dragging ? 'none' : 'transform .7s cubic-bezier(.3,.7,.2,1)' }}>
-          <Link href="/games/quiz" draggable={false} aria-label="Play Quiz" onClick={(e) => { if (moved.current) e.preventDefault(); }} style={{ ...card(0), border: '14px solid #EBB7BC' }}>
+          <div style={{ position: 'relative', flex: 'none', width: 640, height: 640, transform: `scale(${idx === 0 ? 1 : 0.86})`, opacity: idx === 0 ? 1 : 0.7, transition: trans }}>
+          <Link href="/games/quiz" draggable={false} aria-label="Play Quiz" onClick={(e) => { if (moved.current) e.preventDefault(); }} style={{ ...card(0), transform: 'none', opacity: 1, transition: 'none', border: '14px solid #EBB7BC' }}>
             <span style={{ display: 'flex', gap: 20, alignItems: 'flex-end' }}>
               <span style={{ width: 120, height: 150, borderRadius: 24, background: '#EBB7BC', padding: 12, boxSizing: 'border-box', fontSize: 36, fontWeight: 600, color: '#fff', lineHeight: 1.1 }}>1</span>
               <span style={{ width: 120, height: 190, borderRadius: 24, background: '#A9C6DE', padding: 12, boxSizing: 'border-box', fontSize: 36, fontWeight: 600, color: '#fff', lineHeight: 1.1 }}>2</span>
               <span style={{ width: 120, height: 150, borderRadius: 24, background: '#EED79A', padding: 12, boxSizing: 'border-box', fontSize: 36, fontWeight: 600, color: '#8A6A2A', lineHeight: 1.1 }}>3</span>
             </span>
-            <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+            <span aria-hidden="true" style={{ width: 110, height: 110 }} />
             <span style={{ fontSize: 64, fontWeight: 600, color: '#B8737B', lineHeight: 1 }}>Quiz</span>
           </Link>
+          <button
+            ref={helpBtn}
+            type="button"
+            className="hm-tap hm-breathe"
+            aria-label="What is Quiz? Show how to play"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => setHelp(true)}
+            style={{ position: 'absolute', left: 255, top: 318, width: 130, height: 130, padding: 0, border: 'none', borderRadius: 65, background: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" fill="#F8DCDF" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+          </button>
+          </div>
 
           <div style={{ ...card(1), border: '14px solid #A9C6DE' }}>
             <div style={{ display: 'flex', gap: 18 }}>
@@ -120,6 +136,7 @@ export default function Games() {
         <AvatarSay avatar={avatar} initials={initials} />
       </div>
       <MusicButton />
+      {help && <QuizHelp onClose={() => { setHelp(false); setTimeout(() => helpBtn.current?.focus(), 0); }} />}
     </Stage>
   );
 }
