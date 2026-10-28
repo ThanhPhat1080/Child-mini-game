@@ -89,6 +89,7 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 ### T10 Question screen (C4-C6, C9, C10, C12; ADR-007, 019, 021, 025)
 - AC: three bands (header, question row, answers) with no overlap at 1920x1080; prompt audio plays if present, with a replay button.
 - AC: 2-3 answers show image + number + fixed color (1 rose, 2 sky, 3 butter); click/tap and keys 1/2/3 answer; no timer.
+- AC: each answer image fills the card width (`width: 100%`) and is scaled to fit inside the card, never cropped or stretched (`object-fit: contain`; height capped at 250 px when the answer has text, so it never covers the text); this makes SVGs with a fixed size (e.g. 84x84) or only a `viewBox` render at the same size.
 - AC: the reading of all answers after the question happens only when the question's "Read the answers aloud" is on; the picked answer is always read.
 - AC: on a new question the app waits 0.5 s, reads the question aloud (recorded voice if uploaded, else kid voice), then reads each answer's text aloud with 1 s between answers (the card being read bounces and wiggles with a glowing ring and sound bars, the others dim slightly; static ring with reduced motion); the replay button repeats this; picking an answer stops the reading.
 - AC: when the child picks an answer, the app first reads that answer's text aloud (if any), then shows the Hooray popup right away, or the Oh-oh popup 1 s after the reading ends, each with its sound; further picks are ignored while it reads.
