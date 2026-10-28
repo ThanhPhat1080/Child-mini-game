@@ -98,11 +98,14 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e), `browserslis
 - AC: the "Oh-oh… try again!" popup is centered on the screen and disappears after 2 s.
 - AC: wrong answer dims the card gently with an "oh-oh" sound and the "Oh-oh… try again!" toast, which disappears after 2 s; retry allowed, no penalty.
 - AC: question dots are clickable to jump to that question, and "n / total" is shown; the replay-voice and music buttons are clickable with press animation.
+- AC: a question counts as finished only when the child picks its right answer. Its dot turns yellow then; every dot of a question not finished yet stays gray (the current one is gray with a pink ring), whatever the order the child played in. A wrong answer or jumping past a question never finishes it.
+- AC: after the Hooray popup the app goes to the next question that is not finished yet (continuing past the last one back to the first unfinished one); it never assumes earlier questions are done.
 - AC: correct answer plays a kid-voice "Yay, hooray!" sound with slow pastel confetti, then advances. Sounds are synthesized/browser voice for now; recorded kid-voice files can replace them later.
 - AC: with `prefers-reduced-motion`, confetti and transitions are disabled or reduced.
 - AC: no screen depends on text; no hard-coded child-facing text.
 
 ### T11 Completed and back navigation (C7, C8, C12; ADR-026)
+- AC: the completed screen (and the star for the set) is reached only when every question of the set is finished, not when the last question in order is answered.
 - AC: completed screen shows girl image, light confetti (simpler and fewer than before), praise, and a way back to set selection; the set is marked finished (star).
 - AC: if a "You did it" custom track is set in Settings, the completed screen plays it instead of the built-in applause and spoken praise.
 - AC: completed screen plays applause and says "You did it, <child name>!".

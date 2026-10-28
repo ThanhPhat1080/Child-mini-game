@@ -10,6 +10,7 @@ import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
 import { ohOh, yay, speakKid } from '@/lib/sfx';
 import { Confetti } from '@/components/Confetti';
+import { nextUnfinished } from '@/lib/quizProgress';
 
 type Answer = { slot: number; image_path: string | null; text: string | null; is_correct: boolean };
 type Question = { id: string; position: number; prompt_text: string | null; prompt_image_path: string | null; prompt_audio_path: string | null; read_answers: boolean; answers: Answer[] };
@@ -52,6 +53,8 @@ export default function QuestionPage() {
   const readToken = useRef(0);
   const [readIdx, setReadIdx] = useState<number | null>(null);
   const [result, setResult] = useState<'wrong' | 'correct' | null>(null);
+  /** Questions the child answered correctly. Only these count as finished (dot turns yellow). */
+  const [doneIds, setDoneIds] = useState<ReadonlySet<string>>(new Set());
 
   useEffect(() => {
     createSupabaseBrowserClient().from('settings').select('hooray_path, ohoh_path').eq('id', 1).single().then(({ data }) => {
@@ -72,7 +75,6 @@ export default function QuestionPage() {
   }, [setId]);
 
   const cur = qs?.[q];
-  const last = qs ? q === qs.length - 1 : false;
 
   const pick = useCallback(
     (i: number) => {
@@ -111,17 +113,25 @@ export default function QuestionPage() {
 
   const jump = (i: number) => { token.current++; setReading(false); setQ(i); setPicked(null); setResult(null); };
 
-  const next = useCallback(() => {
+  // a question is finished only when the child picks its right answer
+  useEffect(() => {
+    if (result !== 'correct' || !cur) return;
+    const id = cur.id;
+    setDoneIds((s) => (s.has(id) ? s : new Set(s).add(id)));
+  }, [result, cur]);
+
+  /** After Hooray: the next unfinished question; the set is complete only when every question is finished. */
+  const go = useCallback(() => {
+    if (!qs || !cur) return;
+    const done = new Set(doneIds).add(cur.id);
+    const to = nextUnfinished(qs.map((x) => x.id), q, done);
     token.current++;
+    if (to === null) { router.push(`/games/quiz/${setId}/done`); return; }
     setReading(false);
-    setQ((v) => v + 1);
+    setQ(to);
     setPicked(null);
     setResult(null);
-  }, []);
-
-  const go = useCallback(() => {
-    if (last) { token.current++; router.push(`/games/quiz/${setId}/done`); } else next();
-  }, [last, next, router, setId]);
+  }, [qs, cur, doneIds, q, router, setId]);
 
   // Hooray: count 3 -> 2 -> 1, then continue automatically
   useEffect(() => {
@@ -177,8 +187,8 @@ export default function QuestionPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
           <div style={{ display: 'flex', gap: 8 }} role="group" aria-label={`Question ${q + 1} of ${qs.length}`}>
             {qs.map((_, i) => (
-              <button key={i} type="button" className="hm-tap" aria-label={`Go to question ${i + 1}`} aria-current={i === q} onClick={() => jump(i)} style={{ padding: 8, border: 'none', background: 'none', borderRadius: 28 }}>
-                <span style={{ display: 'block', width: 40, height: 40, borderRadius: 20, boxSizing: 'border-box', border: '6px solid', ...(i < q || (i === q && result === 'correct') ? { background: '#EED79A', borderColor: '#E5C979' } : i === q ? { background: '#fff', borderColor: '#E59AA1' } : { background: '#F1E7DA', borderColor: '#D9C9B6' }) }} />
+              <button key={i} type="button" className="hm-tap" aria-label={`Go to question ${i + 1}${doneIds.has(qs[i].id) ? ', finished' : ''}`} aria-current={i === q} onClick={() => jump(i)} style={{ padding: 8, border: 'none', background: 'none', borderRadius: 28 }}>
+                <span style={{ display: 'block', width: 40, height: 40, borderRadius: 20, boxSizing: 'border-box', border: '6px solid', ...(doneIds.has(qs[i].id) || (i === q && result === 'correct') ? { background: '#EED79A', borderColor: '#E5C979' } : i === q ? { background: '#F1E7DA', borderColor: '#E59AA1' } : { background: '#F1E7DA', borderColor: '#D9C9B6' }) }} />
               </button>
             ))}
           </div>
