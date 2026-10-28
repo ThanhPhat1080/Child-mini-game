@@ -10,7 +10,7 @@ import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
 import { ohOh, yay, speakKid } from '@/lib/sfx';
 import { Confetti } from '@/components/Confetti';
-import { nextUnfinished } from '@/lib/quizProgress';
+import { clearProgress, deviceStore, firstUnfinished, loadProgress, nextUnfinished, saveProgress } from '@/lib/quizProgress';
 
 type Answer = { slot: number; image_path: string | null; text: string | null; is_correct: boolean };
 type Question = { id: string; position: number; prompt_text: string | null; prompt_image_path: string | null; prompt_audio_path: string | null; read_answers: boolean; answers: Answer[] };
@@ -55,6 +55,7 @@ export default function QuestionPage() {
   const [result, setResult] = useState<'wrong' | 'correct' | null>(null);
   /** Questions the child answered correctly. Only these count as finished (dot turns yellow). */
   const [doneIds, setDoneIds] = useState<ReadonlySet<string>>(new Set());
+  const [restored, setRestored] = useState(false);
 
   useEffect(() => {
     createSupabaseBrowserClient().from('settings').select('hooray_path, ohoh_path').eq('id', 1).single().then(({ data }) => {
@@ -113,6 +114,21 @@ export default function QuestionPage() {
 
   const jump = (i: number) => { token.current++; setReading(false); setQ(i); setPicked(null); setResult(null); };
 
+  // pick up the dots kept on this device and resume at the first question not finished yet
+  useEffect(() => {
+    if (!qs || restored) return;
+    const ids = qs.map((x) => x.id);
+    const saved = loadProgress(deviceStore(), setId, ids);
+    setDoneIds(saved);
+    if (saved.size) setQ(firstUnfinished(ids, saved));
+    setRestored(true);
+  }, [qs, restored, setId]);
+
+  // keep the dots on this device (only after they were restored, so an empty start never wipes them)
+  useEffect(() => {
+    if (restored) saveProgress(deviceStore(), setId, doneIds);
+  }, [restored, doneIds, setId]);
+
   // a question is finished only when the child picks its right answer
   useEffect(() => {
     if (result !== 'correct' || !cur) return;
@@ -126,7 +142,7 @@ export default function QuestionPage() {
     const done = new Set(doneIds).add(cur.id);
     const to = nextUnfinished(qs.map((x) => x.id), q, done);
     token.current++;
-    if (to === null) { router.push(`/games/quiz/${setId}/done`); return; }
+    if (to === null) { clearProgress(deviceStore(), setId); router.push(`/games/quiz/${setId}/done`); return; } // set done: playing it again starts fresh
     setReading(false);
     setQ(to);
     setPicked(null);
