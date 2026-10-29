@@ -7,7 +7,7 @@
 
 ## Stack and commands
 Next.js + React + TypeScript (DOM/CSS; Phaser only for later games), Supabase (Postgres, Storage, Auth), Vercel. Node 24.
-`npm ci`, `npm run dev`, `npm run build`, `npm run typecheck`, `npm run lint`, `npm test` (single file: `npx vitest run tests/<file>`). Playwright e2e is not set up.
+`npm ci`, `npm run dev`, `npm run build`, `npm run typecheck`, `npm run lint`, `npm test` (single file: `npx vitest run tests/<file>`). E2E is set up: `npm run e2e` (Playwright, Chromium; builds and starts the app against a stand-in Supabase on port 54321, `e2e/support/`). On the cloud image set `PW_CHROMIUM_PATH` to the preinstalled Chromium; never run `playwright install` there.
 Schema changes only via new `supabase/migrations/*.sql`, never by hand in the dashboard.
 
 ## Rules
