@@ -35,10 +35,19 @@ describe('MemoryDone (M7)', () => {
     expect(screen.getByRole('heading').textContent).toBe('You did it!');
   });
 
-  it('shows the flip count as a number with an aria-label', () => {
+  it('shows "Total N times" with the number highlighted', () => {
     setup({ flips: 14 });
-    const el = screen.getByLabelText('14 flips');
-    expect(el.textContent).toContain('14');
+    expect(document.querySelector('[data-total]')?.textContent).toBe('Total 14 times');
+    expect(document.querySelector('[data-flips]')?.textContent).toBe('14');
+    expect(screen.queryByLabelText(/flips$/)).toBeNull();
+  });
+
+  it('shows the shared celebration: 3 stars and both characters', () => {
+    setup();
+    expect(screen.getByRole('img', { name: '3 stars earned' })).toBeTruthy();
+    const srcs = [...document.querySelectorAll('img')].map((i) => i.getAttribute('src'));
+    expect(srcs).toContain('/images/girl.webp');
+    expect(srcs).toContain('/images/girl-beret.webp');
   });
 
   it('has exactly two picture-only buttons', () => {

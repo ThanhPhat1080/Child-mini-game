@@ -17,6 +17,7 @@ test('15 active cards: all three levels can be chosen', async ({ page }) => {
   await page.goto('/games/memory');
   for (const n of [12, 24, 30]) {
     await expect(page.getByRole('link', { name: `${n} cards` })).toHaveAttribute('href', `/games/memory/${n}`);
+    await expect(page.getByText(`${n} cards`, { exact: true })).toBeVisible();
   }
 });
 
