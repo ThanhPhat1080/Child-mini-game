@@ -29,7 +29,7 @@ Authoritative rules for branches, PRs and deploys. Claude must follow this exact
 3. The only PR allowed into `main` is **`develop` -> `main`**, and only when the user asks for a release.
 4. Never push directly to `main` or `develop`, and never force-push either one. `develop` changes only by merging a PR after the user's OK.
 5. Do not merge a PR the user has not approved.
-6. Before a release PR, `develop` must have green CI and a passing `npm run build`.
+6. Before a release PR, `npm run typecheck`, `npm test` and `npm run build` must pass on `develop`. The GitHub Action only runs typecheck and tests after a push to `main`; Vercel's Git integration does the deploy (Production for `main`, Preview for other branches).
 7. Commits cite spec IDs (C1-C15, A1-A10) where relevant, per `CLAUDE.md`.
 
 ## One-time GitHub setup (owner does this; Claude's tools cannot set protection)
