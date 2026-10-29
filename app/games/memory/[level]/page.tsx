@@ -9,7 +9,7 @@ import { MusicButton } from '@/components/MusicButton';
 import { MemoryDone } from '@/components/memory/MemoryDone';
 import { MemoryTile } from '@/components/memory/MemoryTile';
 import { FlowerBack } from '@/components/memory/FlowerBack';
-import { fetchActiveCards, sayWord } from '@/lib/memory/cards';
+import { fetchActiveCards, sayWord, stopWord } from '@/lib/memory/cards';
 import { drawDeck, pairsOf, parseLevel, type Level } from '@/lib/memory/deck';
 import { flip, MISMATCH_MS, resolveMismatch, startGame, WIN_DELAY_MS, type GameEvent, type GameState } from '@/lib/memory/rules';
 import { preloadImages } from '@/lib/memory/preload';
@@ -23,11 +23,16 @@ const COLS: Record<Level, number> = { 12: 4, 24: 6, 30: 6 };
 /** Board area on the 1920x1080 stage, under the header band. */
 const TOP = 190;
 const AREA_W = 1700;
-const AREA_H = 880;
+/** Leaves room under the bottom row for the 6 px focus ring + 8 px offset (the Stage clips at 1080). */
+const AREA_H = 856;
 const GAP = 20;
 /** The word starts a little after the chime so the two do not overlap (M4). */
-const WORD_AFTER_CHIME_MS = 350;
+const WORD_AFTER_CHIME_MS = 550;
 const WIGGLE_MS = 700;
+/** After the last word ends, a short breath before the celebration starts (its sounds would cut the word). */
+const WORD_PAUSE_MS = 400;
+/** The celebration shows at the latest this long after the last match, even if the voice never reports its end. */
+const WIN_CAP_MS = 4000;
 
 const tileSize = (level: Level) => {
   const cols = COLS[level];
@@ -52,8 +57,14 @@ export default function MemoryPlay() {
   const [wiggle, setWiggle] = useState<number | null>(null);
   const [reduced, setReduced] = useState(false);
   const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
+  const alive = useRef(true);
+  /** Bumped by every match (and Play again), so only the newest word's end counts. */
+  const wordSeq = useRef(0);
+  /** The finished game waiting for both the win delay and the last word before the celebration shows. */
+  const finale = useRef<{ flips: number; delay: boolean; word: boolean } | null>(null);
 
   const later = useCallback((fn: () => void, ms: number) => {
+    if (!alive.current) return;
     const id = setTimeout(() => { timers.current.delete(id); fn(); }, ms);
     timers.current.add(id);
   }, []);
@@ -63,12 +74,15 @@ export default function MemoryPlay() {
   }, [level, router]);
 
   useEffect(() => {
+    alive.current = true;
     setReduced(reducedMotion());
     const pending = timers.current;
     return () => {
+      alive.current = false;
       for (const id of pending) clearTimeout(id);
       pending.clear();
       if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
+      stopWord();
     };
   }, []);
 
@@ -105,6 +119,8 @@ export default function MemoryPlay() {
 
   const again = useCallback(() => {
     game.current = null;
+    finale.current = null;
+    wordSeq.current++;
     setWon(null);
     setPraise(null);
     setPhase('loading');
@@ -119,6 +135,13 @@ export default function MemoryPlay() {
     return () => window.removeEventListener('keydown', onKey);
   }, [phase, level]);
 
+  /** Shows the celebration for this finished game, once (the cap and the normal path both call it). */
+  const celebrate = useCallback((f: NonNullable<typeof finale.current>, force = false) => {
+    if (finale.current !== f || !(force || (f.delay && f.word))) return;
+    finale.current = null;
+    setWon({ flips: f.flips });
+  }, []);
+
   const handle = useCallback((events: GameEvent[]) => {
     const s = game.current;
     if (!s) return;
@@ -127,7 +150,16 @@ export default function MemoryPlay() {
       else if (ev.type === 'matched') {
         const card = s.tiles[ev.indexes[0]].card;
         chime();
-        later(() => sayWord(card), WORD_AFTER_CHIME_MS);
+        const seq = ++wordSeq.current;
+        later(() => sayWord(card, () => {
+          // The last pair's word must be heard in full: the celebration's own sounds would cut it.
+          later(() => {
+            const f = finale.current;
+            if (!f || wordSeq.current !== seq) return;
+            f.word = true;
+            celebrate(f);
+          }, WORD_PAUSE_MS);
+        }), WORD_AFTER_CHIME_MS);
       } else if (ev.type === 'mismatch') {
         later(() => {
           if (!game.current) return;
@@ -139,11 +171,13 @@ export default function MemoryPlay() {
         const card = s.tiles.find((t) => t.card.id === ev.cardId)?.card;
         if (card) sayWord(card);
       } else if (ev.type === 'won') {
-        const flips = ev.flips;
-        later(() => setWon({ flips }), WIN_DELAY_MS);
+        const f = { flips: ev.flips, delay: false, word: false };
+        finale.current = f;
+        later(() => { f.delay = true; celebrate(f); }, WIN_DELAY_MS);
+        later(() => celebrate(f, true), WIN_CAP_MS);
       }
     }
-  }, [later, rerender]);
+  }, [celebrate, later, rerender]);
 
   const press = useCallback((index: number) => {
     if (!game.current) return;

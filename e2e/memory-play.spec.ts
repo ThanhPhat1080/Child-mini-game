@@ -164,3 +164,23 @@ test.describe('reduced motion', () => {
     await expectNoWords(page);
   });
 });
+
+test.describe('the focus ring fits on the stage', () => {
+  test.use({ viewport: { width: 1920, height: 1080 } });
+
+  for (const level of [24, 30]) {
+    test(`level ${level}: the last tile plus its ring ends inside the 1080 px stage`, async ({ page }) => {
+      await reset({ memory_cards: makeCards(15) });
+      await page.goto(`/games/memory/${level}`);
+      const tiles = page.locator('[data-tile]');
+      await expect(tiles.first()).toBeFocused();
+      await expect(tiles).toHaveCount(level);
+      const stage = (await root(page).boundingBox())!;
+      const last = (await tiles.last().boundingBox())!;
+      const scale = stage.height / 1080;
+      const bottom = (last.y + last.height - stage.y) / scale;
+      expect(Math.abs(last.width - last.height)).toBeLessThan(1); // tiles stay square
+      expect(bottom + 14).toBeLessThanOrEqual(1080); // 6 px ring + 8 px offset
+    });
+  }
+});

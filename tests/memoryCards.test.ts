@@ -17,7 +17,7 @@ vi.mock('@/lib/supabase/client', () => ({
 }));
 vi.mock('@/lib/sfx', () => ({ speakKid: h.speakKid }));
 
-import { fetchActiveCards, sayWord } from '@/lib/memory/cards';
+import { fetchActiveCards, sayWord, stopWord } from '@/lib/memory/cards';
 
 class FakeAudio {
   static instances: FakeAudio[] = [];
@@ -34,6 +34,8 @@ const flush = () => new Promise((r) => setTimeout(r, 0));
 
 beforeEach(() => {
   vi.clearAllMocks();
+  h.speakKid.mockReset();
+  stopWord();
   FakeAudio.instances = [];
   FakeAudio.playResult = 'resolve';
   vi.stubGlobal('Audio', FakeAudio);
@@ -127,5 +129,104 @@ describe('sayWord', () => {
     vi.stubGlobal('Audio', function Boom() { throw new Error('no audio'); });
     expect(() => sayWord({ word: 'cat', audio_path: 'seed/cat.mp3' })).not.toThrow();
     expect(h.speakKid).toHaveBeenCalledExactlyOnceWith('cat');
+  });
+});
+
+describe('sayWord onEnd (the page waits for the last word before the celebration)', () => {
+  it('spoken word: onEnd is passed to the voice and called once when it finishes', () => {
+    const onEnd = vi.fn();
+    sayWord({ word: 'cat', audio_path: null }, onEnd);
+    expect(h.speakKid).toHaveBeenCalledTimes(1);
+    expect(h.speakKid.mock.calls[0][0]).toBe('cat');
+    expect(onEnd).not.toHaveBeenCalled();
+    const opts = h.speakKid.mock.calls[0][1] as { onEnd: () => void };
+    opts.onEnd();
+    opts.onEnd();
+    expect(onEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('no recording and no voice available: onEnd is called right away, once', () => {
+    h.speakKid.mockImplementation((_t: string, o?: { onEnd?: () => void }) => o?.onEnd?.()); // as speakKid does without speechSynthesis
+    const onEnd = vi.fn();
+    sayWord({ word: 'cat', audio_path: null }, onEnd);
+    expect(onEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('recording: onEnd is called once when it ends, not before', async () => {
+    const onEnd = vi.fn();
+    sayWord({ word: 'cat', audio_path: 'seed/cat.mp3' }, onEnd);
+    await flush();
+    expect(onEnd).not.toHaveBeenCalled();
+    FakeAudio.instances[0].fire('ended');
+    FakeAudio.instances[0].fire('ended');
+    expect(onEnd).toHaveBeenCalledTimes(1);
+    expect(h.speakKid).not.toHaveBeenCalled();
+  });
+
+  it('recording error: the voice fallback carries onEnd, called once', async () => {
+    FakeAudio.playResult = 'reject';
+    const onEnd = vi.fn();
+    sayWord({ word: 'cat', audio_path: 'seed/cat.mp3' }, onEnd);
+    FakeAudio.instances[0].fire('error');
+    await flush();
+    expect(h.speakKid).toHaveBeenCalledTimes(1);
+    expect(onEnd).not.toHaveBeenCalled();
+    const opts = h.speakKid.mock.calls[0][1] as { onEnd: () => void };
+    opts.onEnd();
+    opts.onEnd();
+    expect(onEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('Audio failing and the voice throwing: onEnd is still called once, nothing throws', () => {
+    vi.stubGlobal('Audio', function Boom() { throw new Error('no audio'); });
+    h.speakKid.mockImplementation(() => { throw new Error('no voice'); });
+    const onEnd = vi.fn();
+    expect(() => sayWord({ word: 'cat', audio_path: 'seed/cat.mp3' }, onEnd)).not.toThrow();
+    expect(onEnd).toHaveBeenCalledTimes(1);
+  });
+
+  it('an onEnd that throws does not escape', async () => {
+    sayWord({ word: 'cat', audio_path: 'seed/cat.mp3' }, () => { throw new Error('x'); });
+    await flush();
+    expect(() => FakeAudio.instances[0].fire('ended')).not.toThrow();
+  });
+});
+
+describe('stopWord (M10: leaving the page silences the word)', () => {
+  it('pauses the playing recording and cancels speech', async () => {
+    const cancel = vi.fn();
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { cancel } });
+    sayWord({ word: 'cat', audio_path: 'seed/cat.mp3' });
+    await flush();
+    stopWord();
+    expect(FakeAudio.instances[0].pause).toHaveBeenCalledTimes(1);
+    expect(cancel).toHaveBeenCalledTimes(1);
+    stopWord(); // the reference was cleared: no second pause
+    expect(FakeAudio.instances[0].pause).toHaveBeenCalledTimes(1);
+    // @ts-expect-error test cleanup of the stub
+    delete window.speechSynthesis;
+  });
+
+  it('a recording that ended is forgotten (no pause on stop)', async () => {
+    sayWord({ word: 'cat', audio_path: 'seed/cat.mp3' });
+    await flush();
+    FakeAudio.instances[0].fire('ended');
+    stopWord();
+    expect(FakeAudio.instances[0].pause).not.toHaveBeenCalled();
+  });
+
+  it('a stopped recording that errors later does not speak', async () => {
+    sayWord({ word: 'cat', audio_path: 'seed/cat.mp3' });
+    stopWord();
+    FakeAudio.instances[0].fire('error');
+    await flush();
+    expect(h.speakKid).not.toHaveBeenCalled();
+  });
+
+  it('never throws, with nothing playing and no speechSynthesis, or when pause throws', async () => {
+    expect(() => stopWord()).not.toThrow();
+    sayWord({ word: 'cat', audio_path: 'seed/cat.mp3' });
+    FakeAudio.instances[0].pause.mockImplementation(() => { throw new Error('x'); });
+    expect(() => stopWord()).not.toThrow();
   });
 });

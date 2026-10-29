@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { reset } from './support/fixtures';
 
 test.beforeEach(async () => {
@@ -13,22 +13,35 @@ test('the game list shows Quiz and Memory Match as playable and Spot as coming',
   await expect(page.getByRole('link', { name: /Spot the Differences/ })).toHaveCount(0);
 });
 
-test('ArrowRight moves to Memory Match and Enter opens it', async ({ page }) => {
+/** The view takes focus in its mount effect, so a focused view means the page is hydrated and listens to keys. */
+async function openGames(page: Page) {
   await page.goto('/games');
-  await page.locator('.hm-view').focus();
+  await expect(page.locator('.hm-view')).toBeFocused();
+}
+const current = (page: Page, n: number) => expect(page.getByRole('button', { name: `Go to game ${n}` })).toHaveAttribute('aria-current', 'true');
+
+test('ArrowRight moves to Memory Match and Enter opens it', async ({ page }) => {
+  await openGames(page);
   await page.keyboard.press('ArrowRight');
+  await current(page, 2);
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/games\/memory$/);
 });
 
 test('Spot the Differences cannot be opened', async ({ page }) => {
-  await page.goto('/games');
-  await page.locator('.hm-view').focus();
+  await openGames(page);
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowRight');
+  await current(page, 3);
+  await expect(page.getByRole('button', { name: 'Next game' })).toBeDisabled();
   await page.keyboard.press('Enter');
   await page.keyboard.press('Space');
+  // Positive signal first: a later key is still handled by this page, so Enter/Space were processed and did nothing.
+  await page.keyboard.press('ArrowLeft');
+  await current(page, 2);
   await expect(page).toHaveURL(/\/games$/);
   await page.getByRole('img', { name: 'Spot the Differences, coming soon' }).click({ force: true });
+  await page.keyboard.press('ArrowRight');
+  await current(page, 3);
   await expect(page).toHaveURL(/\/games$/);
 });
