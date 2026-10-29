@@ -18,7 +18,7 @@ Success:
 | Levels | 12, 24 or 30 cards = 6, 12 or 15 pairs. The child picks only the level. |
 | Deck | On start, 6/12/15 random cards are drawn from the active pool, each doubled, then shuffled. A level is available only if the pool has enough active cards. |
 | Voice | Recorded file if the card has one, else the browser voice in English (`speakKid`). |
-| Progress | None. No stars, no storage. A finished level shows a celebration only. |
+| Progress | None. No stars, no storage. A finished level shows a celebration and the number of flips used (not kept). |
 | Tech | React + CSS (DOM), like Quiz. Phaser only as a last resort if HTML/CSS cannot do the job (ADR-030). |
 | Name | "Memory Match" (English, shown on the game card). |
 | Language | The game is English. No Vietnamese text is hard-coded. |
@@ -57,15 +57,16 @@ New migration, table `memory_cards`:
 ### 6.2 Play, `/games/memory/[level]` (M2-M9)
 Layout: 1920x1080 stage, centered grid of 4x3, 6x4 or 6x5 cards sized to fit. Header with back button.
 
-- **M2 Card faces.** Face-down: light-pink background with one small white/pale-yellow flower (inline SVG), same on every card. Face-up: the card picture on white, with the English word small below it (decorative; the game never needs reading).
+- **M2 Card faces.** Face-down: light-pink background with one small white/pale-yellow flower (inline SVG), same on every card. Face-up: the card picture on white, no written word. The English word is only heard, never shown.
 - **M3 Flip.** Click/tap or Enter/Space flips a face-down card with a slow flip (about 0.5 s). Each flip and each flip-back plays a soft "tick" sound.
 - **M4 Match.** Two face-up cards with the same card id: both stay up, a gentle bounce/sparkle animation plays, a soft "ting ting" chime plays, then the English word is read once (recorded file, else `speakKid`).
-- **M5 No match.** Both cards stay visible about 1.2 s, then flip back gently. No penalty sound, no counter, no timer. While this happens, new flips are ignored.
+- **M5 No match.** Both cards stay visible about 1.2 s, then flip back gently. No penalty sound, no timer, and no counter on screen during play (flips are counted silently, see M7). While this happens, new flips are ignored.
 - **M6 Replay.** Clicking a matched (face-up) card plays its English word again. Clicking the single face-up unmatched card does nothing.
-- **M7 Completion.** When every pair is found, after about 1 s a celebration shows in the same page: dense confetti, "You did it, <child name>!" with the applause/praise sound (or the custom "You did it" sound from Settings), and two picture buttons: "play again" (draws a new deck at the same level) and "choose level".
+- **M7 Completion.** When every pair is found, after about 1 s a celebration shows in the same page: dense confetti, "You did it, <child name>!" with the applause/praise sound (or the custom "You did it" sound from Settings), the **number of flips** used in this game (a card icon with the number, for the parent to see; the child does not need to read it), and two picture buttons: "play again" (draws a new deck at the same level) and "choose level".
 - **M8 Keyboard.** Arrow keys (all four) move focus across the grid; Enter/Space flips or replays; Esc returns to the level screen. Visible focus ring.
 - **M9 Reduced motion.** With `prefers-reduced-motion`: no 3D flip and no bounce, the face just fades. Sounds stay.
 - **M10 Robustness.** Missing picture: a plain placeholder, game still playable. No English voice on the device: no spoken word, game still works. Leaving the page cancels timers and speech. A third quick click during a mismatch is ignored.
+- **Flip count.** One flip = turning a face-down card face-up (the fewest possible is 2 x pairs: 12, 24, 30 cards give 12, 24, 30). Flip-backs, replays of matched cards and ignored clicks are not counted. The count is shown only on the completion screen, is not saved, and there is no best score or comparison.
 - Images of the drawn deck are preloaded before the first flip.
 
 ### 6.3 Sounds
@@ -86,19 +87,20 @@ New "Cards" item in the admin nav, `/admin/cards`.
 - Reuses: `Stage`, `Hills`, `BackButton`, `MusicButton`, `Confetti`, `speakKid`, `playFile`, the pending-media/T15 save code, `ConfirmDialog`, `ImportDialog` pattern.
 
 ## 9. Testing
-- Unit: `drawDeck` (right pair count, each card exactly twice, shuffled, never more than available, not enough cards), flip state machine (match, mismatch, third click ignored, replay, win), level availability, JSON import (valid file, each error, blank images, SVG, URLs, the template file itself), sfx calls.
+- Unit: `drawDeck` (right pair count, each card exactly twice, shuffled, never more than available, not enough cards), flip state machine (match, mismatch, third click ignored, replay, win, flip count: only face-down to face-up counts), level availability, JSON import (valid file, each error, blank images, SVG, URLs, the template file itself), sfx calls.
 - Component: level select (dimmed levels, empty state), play screen (flip, match plays word, replay, completion buttons, keyboard grid navigation, reduced motion), admin pool (add/edit/delete/toggle, confirm, import dialog).
 - Database: migration applies to an empty project; anon reads only active cards; every write by anon is denied (as T1).
 - By hand (PO): how the flip, sounds and voice feel in the browser.
 - Each ticket's acceptance criteria are written in `plan-phase2.md` and checked before a Trello card moves to Done.
 
 ## 10. Out of scope (this game)
-Progress/stars, per-set boards, "words learned" statistics, other languages, timers or scores, Phaser, Spot the Differences (separate spec).
+Progress/stars, saved or best scores, per-set boards, "words learned" statistics, other languages, timers, Phaser, Spot the Differences (separate spec). The flip count is shown at the end of a game only.
 
 ## 11. ADR to add
 - **ADR-030:** Phase 2 games use HTML/CSS (DOM) first. Phaser is a last resort, used only if a game cannot be built well with HTML/CSS.
 
-## 12. Assumptions to confirm
-- The English word is shown small on face-up cards (decorative). Say if it should be hidden.
-- Up to 100 cards per import and 40 characters per word are reasonable limits.
-- A 16-18 card seed is enough; new sample SVGs will be simple drawings in the same style as `public/seed/`.
+## 12. Confirmed by the PO (2026-10-29)
+- The English word is not shown on cards; it is only heard.
+- Import limits: up to 100 cards per file, 40 characters per word.
+- Seed pool of about 16-18 cards, reusing `public/seed/*.svg` plus a few new simple drawings.
+- The completion screen shows the number of flips.
