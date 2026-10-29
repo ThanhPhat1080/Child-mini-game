@@ -23,7 +23,8 @@ const COLS: Record<Level, number> = { 12: 4, 24: 6, 30: 6 };
 /** Board area on the 1920x1080 stage, under the header band. */
 const TOP = 190;
 const AREA_W = 1700;
-const AREA_H = 880;
+/** Leaves room under the bottom row for the 6 px focus ring + 8 px offset (the Stage clips at 1080). */
+const AREA_H = 856;
 const GAP = 20;
 /** The word starts a little after the chime so the two do not overlap (M4). */
 const WORD_AFTER_CHIME_MS = 550;
