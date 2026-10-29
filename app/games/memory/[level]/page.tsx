@@ -1,0 +1,181 @@
+'use client';
+
+import { useParams, useRouter } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Stage } from '@/components/Stage';
+import { Hills } from '@/components/Hills';
+import { BackButton } from '@/components/BackButton';
+import { MusicButton } from '@/components/MusicButton';
+import { MemoryTile } from '@/components/memory/MemoryTile';
+import { FlowerBack } from '@/components/memory/FlowerBack';
+import { fetchActiveCards, sayWord } from '@/lib/memory/cards';
+import { drawDeck, pairsOf, parseLevel, type Level } from '@/lib/memory/deck';
+import { flip, MISMATCH_MS, resolveMismatch, startGame, WIN_DELAY_MS, type GameEvent, type GameState } from '@/lib/memory/rules';
+import { preloadImages } from '@/lib/memory/preload';
+import { mediaUrl } from '@/lib/media';
+import { chime, flipTick } from '@/lib/sfx';
+import { gridStep } from '@/lib/keynav';
+
+/** Columns per level (4x3, 6x4, 6x5). */
+const COLS: Record<Level, number> = { 12: 4, 24: 6, 30: 6 };
+/** Board area on the 1920x1080 stage, under the header band. */
+const TOP = 190;
+const AREA_W = 1700;
+const AREA_H = 880;
+const GAP = 20;
+/** The word starts a little after the chime so the two do not overlap (M4). */
+const WORD_AFTER_CHIME_MS = 350;
+const WIGGLE_MS = 700;
+
+const tileSize = (level: Level) => {
+  const cols = COLS[level];
+  const rows = level / cols;
+  return Math.min(260, Math.floor((AREA_H - GAP * (rows - 1)) / rows), Math.floor((AREA_W - GAP * (cols - 1)) / cols));
+};
+const tileEls = () => Array.from(document.querySelectorAll<HTMLElement>('[data-tile]'));
+const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+
+/** Memory Match board (M2-M6, M8-M10). The rules live in lib/memory/rules.ts; this page plays sounds and animations. */
+export default function MemoryPlay() {
+  const { level: raw } = useParams<{ level: string }>();
+  const level = parseLevel(String(raw ?? ''));
+  const router = useRouter();
+  const game = useRef<GameState | null>(null);
+  const [, setRender] = useState(0);
+  const rerender = useCallback(() => setRender((n) => n + 1), []);
+  const [phase, setPhase] = useState<'loading' | 'empty' | 'ready'>('loading');
+  const [won, setWon] = useState<{ flips: number } | null>(null);
+  const [wiggle, setWiggle] = useState<number | null>(null);
+  const [reduced, setReduced] = useState(false);
+  const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
+
+  const later = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(() => { timers.current.delete(id); fn(); }, ms);
+    timers.current.add(id);
+  }, []);
+
+  useEffect(() => {
+    if (level === null) router.replace('/games/memory');
+  }, [level, router]);
+
+  useEffect(() => {
+    setReduced(reducedMotion());
+    const pending = timers.current;
+    return () => {
+      for (const id of pending) clearTimeout(id);
+      pending.clear();
+      if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
+    };
+  }, []);
+
+  // Load the pool, draw the deck once per mount, preload its pictures, then open the board.
+  useEffect(() => {
+    if (level === null) return;
+    let live = true;
+    let stopPreload: (() => void) | null = null;
+    fetchActiveCards().then(
+      (cards) => {
+        if (!live) return;
+        if (cards.filter((c) => c.active).length < pairsOf(level)) { setPhase('empty'); return; }
+        const tiles = drawDeck(cards, level);
+        stopPreload = preloadImages(tiles.map((t) => mediaUrl(t.card.image_path)), () => {
+          if (!live) return;
+          game.current = startGame(tiles);
+          setPhase('ready');
+        });
+      },
+      () => live && setPhase('empty'),
+    );
+    return () => { live = false; stopPreload?.(); };
+  }, [level]);
+
+  useEffect(() => {
+    if (phase !== 'ready') return;
+    tileEls()[0]?.focus();
+    const onKey = (e: KeyboardEvent) => { gridStep(tileEls(), COLS[level ?? 12], e); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [phase, level]);
+
+  const handle = useCallback((events: GameEvent[]) => {
+    const s = game.current;
+    if (!s) return;
+    for (const ev of events) {
+      if (ev.type === 'flipped') flipTick();
+      else if (ev.type === 'matched') {
+        const card = s.tiles[ev.indexes[0]].card;
+        chime();
+        later(() => sayWord(card), WORD_AFTER_CHIME_MS);
+      } else if (ev.type === 'mismatch') {
+        later(() => {
+          if (!game.current) return;
+          game.current = resolveMismatch(game.current).state;
+          flipTick();
+          rerender();
+        }, MISMATCH_MS);
+      } else if (ev.type === 'replay') {
+        const card = s.tiles.find((t) => t.card.id === ev.cardId)?.card;
+        if (card) sayWord(card);
+      } else if (ev.type === 'won') {
+        const flips = ev.flips;
+        later(() => setWon({ flips }), WIN_DELAY_MS);
+      }
+    }
+  }, [later, rerender]);
+
+  const press = useCallback((index: number) => {
+    if (!game.current) return;
+    const { state, events } = flip(game.current, index);
+    game.current = state;
+    handle(events);
+    if (events.some((e) => e.type === 'replay')) {
+      setWiggle(index);
+      later(() => setWiggle((w) => (w === index ? null : w)), WIGGLE_MS);
+    }
+    rerender();
+  }, [handle, later, rerender]);
+
+  const s = game.current;
+  const cols = level ? COLS[level] : 4;
+  const size = level ? tileSize(level) : 0;
+
+  return (
+    <Stage>
+      <div data-memory-play data-won={won ? 'true' : 'false'} data-flips={won?.flips} className={reduced ? 'hm-reduced' : undefined} style={{ position: 'absolute', inset: 0 }}>
+        <Hills />
+        <div style={{ position: 'absolute', top: 48, zIndex: 2, left: 56, right: 56, display: 'flex', alignItems: 'center' }}>
+          <BackButton href="/games/memory" />
+        </div>
+        {phase === 'empty' && (
+          <div role="status" aria-label="New cards are coming soon" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ width: 400, height: 400, borderRadius: 64, overflow: 'hidden', border: '8px solid #EBB7BC', boxSizing: 'border-box' }}>
+              <FlowerBack />
+            </span>
+          </div>
+        )}
+        {phase === 'ready' && s && (
+          <div style={{ position: 'absolute', top: TOP, left: 0, right: 0, height: AREA_H, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
+            <div role="group" aria-label="Cards" style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${size}px)`, gap: GAP }}>
+              {s.tiles.map((t, i) => {
+                const matched = s.matched.has(t.card.id);
+                return (
+                  <MemoryTile
+                    key={t.key}
+                    tile={t}
+                    size={size}
+                    label={`card ${i + 1}`}
+                    faceUp={matched || s.up.includes(i)}
+                    matched={matched}
+                    wiggle={wiggle === i}
+                    onPress={() => press(i)}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
+        <MusicButton />
+      </div>
+    </Stage>
+  );
+}
