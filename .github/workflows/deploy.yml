@@ -1,3 +1,6 @@
+# The workflow name stays "Deploy to Vercel" (the check shows as "Deploy to Vercel / check"); it no longer deploys.
+# Vercel's Git integration builds and deploys every push (Production for main, Preview for other branches), so this
+# workflow only runs typecheck and tests on main.
 name: Deploy to Vercel
 
 on:
@@ -8,7 +11,7 @@ on:
 permissions:
   contents: read
 
-# One production deploy at a time; a newer push waits instead of racing.
+# One run at a time; a newer push waits instead of racing.
 concurrency:
   group: vercel-production
   cancel-in-progress: false
@@ -25,28 +28,3 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-
-  deploy:
-    needs: check
-    runs-on: ubuntu-latest
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
-
-      # Pulls production env vars (NEXT_PUBLIC_SUPABASE_*) set in the Vercel dashboard.
-      - name: Pull Vercel project settings
-        run: npx vercel pull --yes --environment=production
-
-      - name: Build
-        run: npx vercel build --prod
-
-      - name: Deploy prebuilt output
-        run: npx vercel deploy --prebuilt --prod
