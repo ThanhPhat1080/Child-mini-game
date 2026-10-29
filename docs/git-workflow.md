@@ -59,3 +59,6 @@ Schema changes go through `supabase/migrations/*.sql` only (see `CLAUDE.md`).
 1. `develop` is green and `npm run build` passes.
 2. New migrations are applied to Supabase before merging.
 3. PR base `main`, head `develop`; merge; confirm the Production deployment is Ready.
+
+## Phase 2 integration branch
+Phase 2 work (Memory Match) goes through the integration branch `claude/phase2/memory-match`, with task branches named `claude/phase2/mm-t<N>-*`. Claude merges each task branch into the integration branch after typecheck, lint, test, build and e2e are green. The PO decides when to merge the integration branch into `develop`.
