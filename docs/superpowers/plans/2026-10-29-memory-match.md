@@ -1,3 +1,5 @@
+> Note: levels were extended to 12/16/20/24/30 cards later (see the spec); this plan describes the original 12/24/30.
+
 # Memory Match Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
