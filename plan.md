@@ -183,8 +183,8 @@ Parked (not blocking the close; pick up only when the PO asks):
 
 Removed from scope by the PO: TV and LG webOS testing, Magic Remote, a 120 px TV hit-area rule, and TV-specific performance work (ADR-028).
 
-## 5. Phase 2: other games (redefined 2026-10-28)
-Phase 2 is now building further mini-games on top of the game registry (ADR-014); Spot the Differences with Phaser is the first candidate (ADR-002, ADR-005). The earlier Phase 2 items are parked: play-time limit and rest screen (ADR-003, ADR-010), PIN (ADR-004, ADR-011). Write `spec-phase2.md` and `plan-phase2.md` before any code.
+## 5. Phase 2: only more games (redefined 2026-10-29)
+Phase 2 only adds games on top of the game registry (ADR-014). Spot the Differences with Phaser is the first candidate (ADR-002, ADR-005); the list of games is decided in the Phase 2 brainstorm. The play-time limit, rest screen and PIN are dropped (ADR-029). Write `spec-phase2.md` and `plan-phase2.md` before any code.
 
 ## 6. Risks
 - Browser autoplay policy: audio only after "tap to enter" (T7).

@@ -1,49 +1,24 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+**HaMy.** Calm quiz hub for Hà My (4-5, cannot read) in a computer browser, plus a parent admin dashboard. Phase 1 is closed. Phase 2 = only more games, no spec yet (write `spec-phase2.md` and `plan-phase2.md` first).
 
-**HaMy Project.** Calm, kid-friendly quiz hub for Hà My (4-5, cannot read) in a computer browser (may be cast to a TV; no TV work, ADR-028), plus a parent admin dashboard. **Phase 1 is closed (2026-10-28).** Phase 2 = other games, not started; see `plan.md` sections 4-5.
+## Docs
+`spec.md` (requirement IDs C1-C15, A1-A10; cite them in commits), `plan.md` (tickets + acceptance criteria), `docs/decision.md` (ADRs; later ones win), `docs/git-workflow.md`. `docs/intent.md` is the vision, not a build source. `README.md` is still empty (plan T14).
 
-## Docs (read in this order)
-- `spec.md`: the Phase 1 contract. Requirement IDs C1-C15 (child) and A1-A10 (admin); cite them in tickets and commits. Section 9 records the former open questions as decided.
-- `docs/decision.md`: ADRs (the why). The "ADR updates" section amends ADR-002..007; later ADRs win.
-- `docs/intent.md`: original vision, including Phase 2 context. Do not build from it directly.
-- `README.md`: still empty (parked, plan T14). It must become the setup guide for a second child's deployment (DoD 3).
+## Stack and commands
+Next.js + React + TypeScript (DOM/CSS; Phaser only for later games), Supabase (Postgres, Storage, Auth), Vercel. Node 24.
+`npm ci`, `npm run dev`, `npm run build`, `npm run typecheck`, `npm run lint`, `npm test` (single file: `npx vitest run tests/<file>`). Playwright e2e is not set up.
+Schema changes only via new `supabase/migrations/*.sql`, never by hand in the dashboard.
 
-## Stack
-Next.js + React + TypeScript (DOM/CSS, no Phaser until Phase 2; ADR-027), Supabase (Postgres, Storage, Auth), Vercel. Browser-exposed env vars need the `NEXT_PUBLIC_` prefix; only the Supabase URL and anon key may use it.
-
-## Commands
-Node 24 + npm 11 (tested). On this Windows machine npm is not on the Bash PATH; use PowerShell or add Node to PATH first.
-
-- Install: `npm ci`
-- Dev: `npm run dev`
-- Build: `npm run build`; prod server `npm start`
-- Typecheck: `npm run typecheck`; lint: `npm run lint`
-- Test: `npm test`; single file: `npx vitest run tests/tokens.test.ts`; watch: `npm run test:watch`
-- E2E: `npm run e2e` is a placeholder; Playwright is not installed (parked)
-- Migrations: `supabase/migrations/*.sql` (T1 init schema applied to project `uhpsqaqejizcyzwhwnsl`). New migrations only, never hand-edit the dashboard. Add the admin once: `insert into public.admins (user_id) select id from auth.users where email = '<admin email>';`
-
-## Architecture that spans files (from spec/ADRs)
-- **Game registry** (ADR-014): the game list carousel reads from a registry; Quiz is the only entry. Phase 2 Phaser games plug in here.
-- **One audio manager** (ADR-016) for music, voice and effects; music keeps playing across screens. Nothing plays before the "tap to enter" press.
-- **Shared components**: the child set card is used by both the child selection screen and the admin preview strip (ADR-023). One confetti component serves correct-answer and set-completed (denser), honoring `prefers-reduced-motion` (ADR-021, ADR-026).
-- **Data** (spec 5): `settings` (single row), `quiz_sets`, `questions`, `answers` (slot 1..3, exactly one correct), Storage bucket `media`. Star progress lives in localStorage keyed by set id; no user identity.
-- **Access**: anon reads settings and *published* sets only. Drafts reach the child view only via admin "Preview as child" (ADR-022), so preview must use the authenticated client.
-- **Input**: carousel needs a click-vs-drag threshold (ADR-018); keep a visible focus ring and large hit areas.
-
-## Rules that matter
-- The child cannot read: never make a screen depend on text. Every answer = image + number + fixed color (1 rose, 2 sky, 3 butter).
-- Calm & Slow: soft pastel tokens from `spec.md` section 6, slow motion, no timers, no penalties, honor `prefers-reduced-motion`.
-- Do not hard-code Vietnamese (or any) display text for the child; admin writes it. Fonts: Baloo 2 child, Nunito admin, self-hosted. Check diacritics.
-- Child pages are read-only and unauthenticated. Writes need the admin (RLS). Never put the Supabase service role key in the frontend or commit secrets.
-- Schema changes go through migrations, never edited by hand in the dashboard.
-- Latest Chromium on a computer. Keyboard for the child: 1/2/3 answer, Left/Right move between choices, Enter or Space pick, Esc goes back (`lib/keynav.ts`). Do not build or test for TVs or webOS.
-- One deployment per child, configured by env vars only (Supabase URL + anon key).
-- Phase 2 (other games, Phaser) has no spec yet: write `spec-phase2.md` and `plan-phase2.md` first. Play limit, rest screen and PIN are parked.
+## Rules
+- The child cannot read: no screen depends on text, and no child-facing text is hard-coded (the admin writes it). Answers are image + number + fixed color (1 rose, 2 sky, 3 butter).
+- Calm & Slow: pastel tokens from `spec.md` section 6, slow motion, no timers or penalties, honor `prefers-reduced-motion`. Fonts: Baloo 2 (child), Nunito (admin), self-hosted.
+- Child pages are read-only and unauthenticated; writes need the admin (RLS). Anon sees published sets only; "Preview as child" uses the authenticated client. Never put the Supabase service role key in the frontend or commit secrets. Only the Supabase URL and anon key may use `NEXT_PUBLIC_`.
+- Desktop Chromium only, no TV work (ADR-028). Child keyboard: 1/2/3 answer, Left/Right move, Enter/Space pick, Esc back (`lib/keynav.ts`); keep a visible focus ring.
+- Games plug into the registry (ADR-014). One audio manager; nothing plays before "tap to enter". One deployment per child, configured by env vars only.
 
 ## Workflow
-Plan mode first; commit `plan.md` before code. Each ticket has Acceptance Criteria; do not mark done until they pass. When Claude makes the same mistake twice, add the fix to this file. Keep this file under one page.
+Each ticket has acceptance criteria; do not mark it done until they pass. When Claude makes the same mistake twice, add the fix here. Keep this file under one page.
 
-## Git & deploy (full rules: `docs/git-workflow.md`)
-`main` = production (protected, only PRs from `develop`). `develop` = development. For every change: branch from local `develop` (pull first) so the user can test it locally; commit, push (and always tell the user each new branch name with `git fetch origin && git checkout <branch>`), open a PR into `develop`, show it, and make a Preview deployment of the branch. Merge into `develop` and deploy `develop` only after the user's OK. Only PR into `main` is `develop` -> `main`, when asked. Never push to or force-push `main`/`develop`. Production deploys and Vercel settings/env changes only when the user asks.
+## Git
+`main` = production, `develop` = integration. Branch from latest `develop`, PR into `develop`, merge only after the user's OK; `develop` -> `main` only when asked. Never push or force-push to `main`/`develop`. Tell the user each new branch name (`git fetch origin && git checkout <branch>`). Production deploys and Vercel settings only when asked.

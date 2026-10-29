@@ -12,11 +12,13 @@
 * **Rationale:** Unity WebGL builds result in heavy asset bundles and high memory consumption, often causing lag on TV browsers. Phaser.js is lightweight, highly optimized for 2D casual games, loads instantly, and runs smoothly on low-spec TV hardware.
 
 ## ADR-003: Server-Enforced Session Limits with a Graceful Princess Lock Screen
+* **Status:** Dropped (2026-10-29, ADR-029). Kept for history.
 * **Context:** Children need clear boundaries on screen time, but abrupt cuts cause frustration and emotional distress.
 * **Decision:** Implement a 1-hour play limit / 3-hour cool-down governed by server timestamps, paired with a graceful "Rest Screen" featuring an animated princess.
 * **Rationale:** Storing session checkpoints on the server prevents local client manipulation (like clearing cache), while the gentle princess visual maintains a positive, nurturing emotional experience for a 4-5-year-old.
 
 ## ADR-004: King Arthur's 4-Digit PIN Override Mechanism
+* **Status:** Dropped (2026-10-29, ADR-029). Kept for history.
 * **Context:** Parents need a quick way to bypass the 3-hour lock when necessary, using only a TV remote control.
 * **Decision:** Implement a simple grid-based 4-digit PIN pad branded as "King Arthur's Magic PIN".
 * **Rationale:** Keeps parental control secure against a 4-year-old while remaining simple to operate via remote navigation without requiring a physical keyboard.
@@ -40,8 +42,8 @@
 ### Amendments to existing ADRs
 
 - **ADR-002 (Phaser.js):** applies from Phase 2 (Spot the Differences) only. The Phase 1 quiz uses React/DOM (see ADR-014).
-- **ADR-003 (play time tracked on the server):** moved to Phase 2. Simplified to one session row per deployment, with no user identification (see ADR-010).
-- **ADR-004 (King Arthur PIN):** moved to Phase 2. The PIN is checked on the server and never stored in frontend code (see ADR-011).
+- **ADR-003 (play time tracked on the server):** dropped (ADR-029).
+- **ADR-004 (King Arthur PIN):** dropped (ADR-029).
 - **ADR-005 (Supabase):** confirmed. Firebase is not used (see ADR-008).
 - **ADR-007 (number keys 1/2/3):** each answer also shows an image and a color, because the child cannot read numbers yet.
 
@@ -51,7 +53,7 @@
 - **ADR-012:** superseded by ADR-028. No webOS or TV testing.
 - **ADR-014, 015, 016:** accepted (built and in use in Phase 1).
 - **ADR-024, ADR-025:** the question image frame is 600x300 (2:1), and the answer images fill the card width (`object-fit: contain`). The older 4:3 and 400x300 figures are obsolete.
-- **ADR-002, 003, 004, 010, 011:** Phaser (ADR-002) stays the plan for the next games. The play limit, rest screen and PIN (ADR-003, 004, 010, 011) are parked, not scheduled.
+- **ADR-002:** Phaser stays the plan for the next games. **ADR-003, 004, 010, 011** (play limit, rest screen, PIN) are dropped, see ADR-029.
 
 ### ADR-028: Computer browser is the target platform
 
@@ -76,14 +78,14 @@
 
 ### ADR-010: Play sessions do not identify the user
 
-- **Status:** Accepted (applies in Phase 2)
+- **Status:** Dropped (2026-10-29, ADR-029): there is no session table any more
 - **Context:** One child plays on one device.
 - **Decision:** Each deployment has a single session row in the database.
 - **Consequences:** Simpler design. The server still stores timestamps, so clearing the cache cannot reset play time.
 
 ### ADR-011: Keep the 4-digit PIN for the MVP
 
-- **Status:** Accepted (applies in Phase 2)
+- **Status:** Dropped (2026-10-29, ADR-029)
 - **Decision:** Keep the 4-digit PIN. Store a hash in the database and check it with a Postgres function (RPC). The PIN never appears in the frontend.
 - **Consequences:** Weak protection, but adequate for the MVP. A limit on failed attempts can be added later.
 
@@ -186,3 +188,10 @@
 - **Context:** The framework was open between Vite + React and Next.js (spec section 9, `docs/intent.md` open questions).
 - **Decision:** Build the app with Next.js, React and TypeScript, deployed on Vercel. The child app and the admin dashboard live in the same Next.js project.
 - **Consequences:** Browser-exposed env vars need the `NEXT_PUBLIC_` prefix; only the Supabase URL and anon key may use it, never the service role key (ADR-015). Keep the child pages light. ADR-014 still applies: the quiz is React/DOM, Phaser only in Phase 2.
+
+### ADR-029: Phase 2 is only more games; wellbeing controls dropped
+
+- **Status:** Accepted (2026-10-29, PO decision)
+- **Context:** The intent had a play-time limit with a rest period, a princess rest screen and a parental PIN override. The PO decided the child does not need them.
+- **Decision:** Remove "Session Management & Digital Wellbeing" and "Parental Override (King Arthur's PIN)" from the product. Phase 2 only adds games on the game registry.
+- **Consequences:** ADR-003, 004, 010 and 011 are dropped. No session table, no PIN function and no rest screen are built. Calm & Slow principles (ADR-006) still apply to every new game. If limits are wanted later, start again with a new ADR.
