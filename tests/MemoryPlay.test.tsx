@@ -212,9 +212,9 @@ describe('Memory play screen (M2-M6, M8-M10)', () => {
       fireEvent.click(tile(i + 6));
     }
     await advance(WIN_DELAY_MS - 100);
-    expect(screen.queryByLabelText(/flips$/)).toBeNull();
+    expect(document.querySelector('[data-total]')).toBeNull();
     await advance(200);
-    expect(screen.getByLabelText('14 flips')).toBeTruthy();
+    expect(document.querySelector('[data-total]')?.textContent).toBe('Total 14 times');
     expect(screen.getByRole('heading').textContent).toBe('You did it, Mi!');
   });
 
@@ -229,7 +229,7 @@ describe('Memory play screen (M2-M6, M8-M10)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Play again' }));
     await advance(PRELOAD_MS + 10);
     expect(h.drawDeck).toHaveBeenCalledTimes(2);
-    expect(screen.queryByLabelText(/flips$/)).toBeNull();
+    expect(document.querySelector('[data-total]')).toBeNull();
     expect(root().getAttribute('data-won')).toBe('false');
     expect(tiles()).toHaveLength(12);
     expect(tiles().every((t) => t.getAttribute('data-face-up') === 'false')).toBe(true);
@@ -238,7 +238,7 @@ describe('Memory play screen (M2-M6, M8-M10)', () => {
       fireEvent.click(tile(i + 6));
     }
     await advance(WIN_DELAY_MS + 10);
-    expect(screen.getByLabelText('12 flips')).toBeTruthy();
+    expect(document.querySelector('[data-total]')?.textContent).toBe('Total 12 times');
   });
 
   it('arrow keys move focus across the grid (Down by the column count)', async () => {
@@ -344,7 +344,7 @@ describe('Memory play screen (M2-M6, M8-M10)', () => {
       expect(done()).toBeNull();
       await advance(100);
       expect(done()).not.toBeNull();
-      expect(screen.getByLabelText('12 flips')).toBeTruthy();
+      expect(document.querySelector('[data-total]')?.textContent).toBe('Total 12 times');
     });
 
     it('an earlier word ending late does not stand in for the last one', async () => {
@@ -365,7 +365,7 @@ describe('Memory play screen (M2-M6, M8-M10)', () => {
       expect(done()).toBeNull();
       await advance(200);
       expect(done()).not.toBeNull();
-      expect(screen.getByLabelText('12 flips')).toBeTruthy();
+      expect(document.querySelector('[data-total]')?.textContent).toBe('Total 12 times');
     });
 
     it('a word that ends quickly still leaves WIN_DELAY_MS before the celebration', async () => {

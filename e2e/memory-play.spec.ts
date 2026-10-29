@@ -110,7 +110,11 @@ async function solve(tiles: Locator, pairs: [number, number][]) {
 test('no mistakes: the completion screen shows 12 flips', async ({ page }) => {
   const { tiles, pairs } = await openBoard(page);
   await solve(tiles, pairs);
-  await expect(page.getByLabel('12 flips')).toBeVisible();
+  await expect(page.getByText('Total 12 times')).toBeVisible();
+  await expect(page.locator('[data-total] [data-flips]')).toHaveText('12');
+  await expect(page.getByRole('img', { name: '3 stars earned' })).toBeVisible();
+  await expect(page.locator('[data-memory-done] img[src$="girl.webp"]')).toBeVisible();
+  await expect(page.locator('[data-memory-done] img[src$="girl-beret.webp"]')).toBeVisible();
   await expect(root(page)).toHaveAttribute('data-won', 'true');
   await expect(page.locator('[data-memory-done] :is(button, a[href])')).toHaveCount(2);
   await expect(page.getByRole('button', { name: 'Play again' })).toBeFocused();
@@ -123,7 +127,8 @@ test('one deliberate mismatch: 14 flips', async ({ page }) => {
   await tiles.nth(other).click();
   await expect(tiles.nth(0)).toHaveAttribute('data-face-up', 'false', { timeout: 3000 });
   await solve(tiles, pairs);
-  await expect(page.getByLabel('14 flips')).toBeVisible();
+  await expect(page.getByText('Total 14 times')).toBeVisible();
+  await expect(page.locator('[data-total] [data-flips]')).toHaveText('14');
 });
 
 test('Play again starts a new game at 0 flips', async ({ page }) => {
@@ -132,14 +137,14 @@ test('Play again starts a new game at 0 flips', async ({ page }) => {
   await page.getByRole('button', { name: 'Play again' }).click();
   await expect(tiles.first()).toBeFocused();
   await expect(tiles).toHaveCount(12);
-  await expect(page.getByLabel(/flips$/)).toHaveCount(0);
+  await expect(page.locator('[data-total] [data-flips]')).toHaveCount(0);
   await expect(root(page)).toHaveAttribute('data-won', 'false');
   expect(await faceUps(tiles)).toEqual(Array(12).fill('false'));
   const ids = await tiles.evaluateAll((els) => els.map((e) => e.getAttribute('data-card-id') ?? ''));
   const byId = new Map<string, number[]>();
   ids.forEach((id, i) => byId.set(id, [...(byId.get(id) ?? []), i]));
   await solve(tiles, [...byId.values()].map(([a, b]) => [a, b] as [number, number]));
-  await expect(page.getByLabel('12 flips')).toBeVisible();
+  await expect(page.getByText('Total 12 times')).toBeVisible();
 });
 
 test('Choose level returns to the level screen', async ({ page }) => {

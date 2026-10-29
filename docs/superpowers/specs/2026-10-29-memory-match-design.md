@@ -50,7 +50,7 @@ New migration, table `memory_cards`:
 
 ## 6. Child screens
 ### 6.1 Level select, `/games/memory` (M1)
-- Three large buttons drawn as mini card grids (4x3, 6x4, 6x5). A level without enough cards is dimmed and cannot be chosen.
+- Three large buttons drawn as mini card grids (4x3, 6x4, 6x5), each with its label "12 cards" / "24 cards" / "30 cards" under the picture (decorative; the `aria-label` stays). A level without enough cards is dimmed and cannot be chosen.
 - Empty pool: a friendly picture screen, not an error (like C11). Load failure: the same screen.
 - Back button, music button. Keys: Left/Right move, Enter/Space choose, Esc goes back. Visible focus ring.
 
@@ -62,7 +62,7 @@ Layout: 1920x1080 stage, centered grid of 4x3, 6x4 or 6x5 cards sized to fit. He
 - **M4 Match.** Two face-up cards with the same card id: both stay up, a gentle bounce/sparkle animation plays, a soft "ting ting" chime plays, then the English word is read once (recorded file, else `speakKid`).
 - **M5 No match.** Both cards stay visible about 1.2 s, then flip back gently. No penalty sound, no timer, and no counter on screen during play (flips are counted silently, see M7). While this happens, new flips are ignored.
 - **M6 Replay.** Clicking a matched (face-up) card plays its English word again. Clicking the single face-up unmatched card does nothing.
-- **M7 Completion.** When every pair is found, after about 1 s a celebration shows in the same page: dense confetti, "You did it, <child name>!" with the applause/praise sound (or the custom "You did it" sound from Settings), the **number of flips** used in this game (a card icon with the number, for the parent to see; the child does not need to read it), and two picture buttons: "play again" (draws a new deck at the same level) and "choose level".
+- **M7 Completion.** When every pair is found, after about 1 s a celebration shows in the same page: dense confetti, "You did it, <child name>!" with the applause/praise sound (or the custom "You did it" sound from Settings), the **number of flips** used in this game as the text "Total N times" with N highlighted (for the parent to see; the child does not need to read it), on the shared celebration scene with 3 stars and both characters (same as the Quiz set-done page), and two picture buttons: "play again" (draws a new deck at the same level) and "choose level".
 - **M8 Keyboard.** Arrow keys (all four) move focus across the grid; Enter/Space flips or replays; Esc returns to the level screen. Visible focus ring.
 - **M9 Reduced motion.** With `prefers-reduced-motion`: no 3D flip and no bounce, the face just fades. Sounds stay.
 - **M10 Robustness.** Missing picture: a plain placeholder, game still playable. No English voice on the device: no spoken word, game still works. Leaving the page cancels timers and speech. A third quick click during a mismatch is ignored.

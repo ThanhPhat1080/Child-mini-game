@@ -35,13 +35,13 @@ Details for every row: `docs/superpowers/specs/2026-10-29-memory-match-design.md
 | ID | Requirement |
 |----|-------------|
 | G1 | Game registry: the game list reads a typed registry (Quiz, Memory Match, Spot the Differences placeholder); extends C2 and ADR-014. |
-| M1 | Level select at `/games/memory`: three levels (12 / 24 / 30 cards); a level without enough active cards is dimmed; an empty pool shows a friendly picture screen. |
+| M1 | Level select at `/games/memory`: three levels (12 / 24 / 30 cards); each level button also shows its label "12 cards" / "24 cards" / "30 cards" under the picture (decorative, the child need not read it); a level without enough active cards is dimmed (label included); an empty pool shows a friendly picture screen. |
 | M2 | Card faces: back is light pink with one small white/pale-yellow flower; face-up is the picture only, no written word (the word is only heard). |
 | M3 | Flip (about 0.5 s) by click or Enter/Space, with a soft tick on every flip and flip-back. |
 | M4 | Match: both cards stay up with a gentle bounce/sparkle, a "ting ting" chime, then the English word is spoken once. |
 | M5 | No match: both visible about 1.2 s, then flip back; no penalty sound, no timer, no counter on screen; new flips are ignored meanwhile. |
 | M6 | Replay: clicking a matched card plays its word again; the single face-up unmatched card does nothing. |
-| M7 | Completion: confetti, "You did it, <name>!", the number of flips shown ONLY at the end (face-down to face-up turns only; not saved, no best score), play again / choose level. |
+| M7 | Completion: the shared celebration scene (also used by the Quiz set-done page: hills, confetti, both characters, 3 stars), "You did it, <name>!", and "Total N times" with N highlighted instead of a card icon, shown ONLY at the end (face-down to face-up turns only; not saved, no best score), play again / choose level. |
 | M8 | Keyboard: all four arrows move over the grid, Enter or Space flips or replays, Esc goes back (`lib/keynav.ts`). |
 | M9 | Reduced motion: no 3D flip and no bounce, the face just fades; sounds stay. |
 | M10 | Robustness: missing picture shows a placeholder; no English voice means no spoken word; leaving the page cancels timers and speech; a third quick click is ignored; deck images are preloaded. |
