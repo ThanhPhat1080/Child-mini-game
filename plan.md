@@ -184,7 +184,13 @@ Parked (not blocking the close; pick up only when the PO asks):
 Removed from scope by the PO: TV and LG webOS testing, Magic Remote, a 120 px TV hit-area rule, and TV-specific performance work (ADR-028).
 
 ## 5. Phase 2: only more games (redefined 2026-10-29)
-Phase 2 only adds games on top of the game registry (ADR-014). Spot the Differences with Phaser is the first candidate (ADR-002, ADR-005); the list of games is decided in the Phase 2 brainstorm. The play-time limit, rest screen and PIN are dropped (ADR-029). Write `spec-phase2.md` and `plan-phase2.md` before any code.
+Phase 2 only adds games on top of the game registry (ADR-014). The play-time limit, rest screen and PIN are dropped (ADR-029). New games use HTML/CSS first; Phaser only as a last resort (ADR-030).
+- Game 1, Memory Match: spec `docs/superpowers/specs/2026-10-29-memory-match-design.md`, plan `docs/superpowers/plans/2026-10-29-memory-match.md`. Built on branch `claude/phase2/memory-match` (task branches `claude/phase2/mm-t<N>-*`) with Playwright E2E.
+- Left to do:
+  - Apply `supabase/migrations/20261029100000_memory_cards.sql` to the real Supabase project after the PO's OK.
+  - PO play-test of the flip, sounds and voice in a real browser.
+  - Merging `claude/phase2/memory-match` into `develop` is the PO's decision.
+  - Spot the Differences needs its own spec first (a Phaser game must justify itself there, ADR-030).
 
 ## 6. Risks
 - Browser autoplay policy: audio only after "tap to enter" (T7).

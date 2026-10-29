@@ -1,7 +1,7 @@
 # Spec: HaMy Phase 1 (Quiz MVP + Admin)
 
 Source: `docs/intent.md`, `docs/decision.md` (ADR numbers below), prototype https://claude.ai/artifact/L1YRtj4NVFe6NewZ3w2s4E
-Status: **Phase 1 CLOSED 2026-10-28 by the PO.** Platform is a computer browser (ADR-028); casting the screen to a TV works but is not a requirement. Leftovers and known gaps (including the device-dependent voice) are listed in `plan.md` section 4.
+Status: **Phase 1 CLOSED 2026-10-28 by the PO.** Phase 2 game 1 (Memory Match) is built on the integration branch `claude/phase2/memory-match`, not yet released; its IDs G1, M1-M10 and A11-A13 are in sections 3b and 4b. Platform is a computer browser (ADR-028); casting the screen to a TV works but is not a requirement. Leftovers and known gaps (including the device-dependent voice) are listed in `plan.md` section 4.
 
 ## 1. Goal and scope
 Hà My (4-5, cannot read) finishes a full quiz set by pictures, color and sound only, on a computer (keyboard + mouse, may be cast to a TV). Parents manage all content in the app. Same code is reused per child (one Supabase project + one deployment, ADR-009).
@@ -30,6 +30,22 @@ Out of scope for Phase 1: everything in Phase 2. Phase 2 is only "more games" (s
 | C14 | Question reading: the question is read aloud, then each answer (unless the question's "Read the answers aloud" is off); the picked answer is always read before the Hooray / Oh-oh popup; Hooray / Oh-oh / You did it can use custom sounds from Settings. Added after the first draft (plan T3, T10, T11). |
 | C15 | Progress: a question is finished only when its right answer is picked; finished questions are kept per set in localStorage and cleared when the set is completed (the star stays). Added after the first draft (plan T10, T11). |
 
+## 3b. Phase 2: game registry and Memory Match (child)
+Details for every row: `docs/superpowers/specs/2026-10-29-memory-match-design.md`.
+| ID | Requirement |
+|----|-------------|
+| G1 | Game registry: the game list reads a typed registry (Quiz, Memory Match, Spot the Differences placeholder); extends C2 and ADR-014. |
+| M1 | Level select at `/games/memory`: levels by card count; a level is dimmed when the active pool is too small. |
+| M2 | Play screen: a grid of face-down cards drawn at random from the active pool, each card exactly twice. |
+| M3 | Flip a card by click, number keys or Left/Right + Enter/Space; a flip is slow and calm; honors `prefers-reduced-motion`. |
+| M4 | Two flipped cards that match stay open and the word is spoken; a mismatch flips back after a pause; no timer, no penalty. |
+| M5 | Replay the word of an open card by picking it again; a third click during a mismatch pause is ignored. |
+| M6 | Sounds for flip, match and win through the one audio manager (ADR-016). |
+| M7 | Flip count (face-down to face-up only) is shown at the end of a game only, never during play. |
+| M8 | Completion: confetti (shared component) and buttons to play again or go back. |
+| M9 | Keyboard: arrows move over the grid, Enter or Space flips, Esc goes back (`lib/keynav.ts`). |
+| M10 | Cards carry no required text for the child; the word is spoken (recording, else the browser voice). |
+
 ## 4. Admin flow (desktop, Nunito)
 | ID | Requirement |
 |----|-------------|
@@ -43,6 +59,14 @@ Out of scope for Phase 1: everything in Phase 2. Phase 2 is only "more games" (s
 | A8 | Reorder questions with simple up/down buttons. |
 | A9 | Quick import of questions from a JSON file (images blank, https URLs or raw SVG code), validated before anything changes (plan T16). Added after the first draft. |
 | A10 | Storage hygiene: files are uploaded only on Save; replaced, removed or deleted media is freed from the bucket after a successful save (plan T15). Added after the first draft. |
+
+## 4b. Phase 2: Cards admin (Memory Match)
+Details for every row: `docs/superpowers/specs/2026-10-29-memory-match-design.md`.
+| ID | Requirement |
+|----|-------------|
+| A11 | Card pool at `/admin/cards`: add, edit, delete (with confirmation), active toggle, picture + word + optional pronunciation; saved like A10. |
+| A12 | Quick import of cards from a JSON file with a downloadable template, validated before anything changes (same rules as A9). |
+| A13 | Pool health: shows which levels are available now and how many active cards each needs. |
 
 ## 5. Data model (Supabase / Postgres)
 Column names are as built in `supabase/migrations/*.sql`.

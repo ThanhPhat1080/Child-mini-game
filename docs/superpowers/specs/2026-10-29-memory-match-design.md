@@ -91,7 +91,7 @@ New "Cards" item in the admin nav, `/admin/cards`.
 - Component: level select (dimmed levels, empty state), play screen (flip, match plays word, replay, completion buttons, keyboard grid navigation, reduced motion), admin pool (add/edit/delete/toggle, confirm, import dialog).
 - Database: migration applies to an empty project; anon reads only active cards; every write by anon is denied (as T1).
 - By hand (PO): how the flip, sounds and voice feel in the browser.
-- Each ticket's acceptance criteria are written in `plan-phase2.md` and checked before a Trello card moves to Done.
+- Each ticket's acceptance criteria are written in `docs/superpowers/plans/2026-10-29-memory-match.md` and checked before a Trello card moves to Done.
 
 ## 10. Out of scope (this game)
 Progress/stars, saved or best scores, per-set boards, "words learned" statistics, other languages, timers, Phaser, Spot the Differences (separate spec). The flip count is shown at the end of a game only.
