@@ -285,6 +285,38 @@ describe('Admin cards page (A11, A13)', () => {
     await waitFor(() => expect(saveBtn().disabled).toBe(true));
   });
 
+  it('Quick import cards appends them as unsaved changes; identical SVG shares one pending token', async () => {
+    const tokens = new Map<string, string>();
+    h.svgToPending.mockImplementation((svg: string) => {
+      if (!tokens.has(svg)) tokens.set(svg, `pending:svg${tokens.size + 1}`);
+      return tokens.get(svg)!;
+    });
+    await renderWith([card(1)]);
+    expect(saveBtn().disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Quick import cards' }));
+    const svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'><rect width='8' height='8'/></svg>";
+    const json = JSON.stringify({ cards: [
+      { word: 'lion', image: svg }, { word: 'tiger', image: svg }, { word: 'bear', image: 'https://example.com/b.png' }, { word: 'fox', image: '', active: false },
+    ] });
+    const input = document.querySelector('input[type="file"][accept=".json,application/json"]') as HTMLInputElement;
+    const f = new File([json], 'c.json', { type: 'application/json' });
+    Object.defineProperty(f, 'text', { value: () => Promise.resolve(json) });
+    fireEvent.change(input, { target: { files: [f] } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Import 4 cards' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect([2, 3, 4, 5].map((n) => word(n).value)).toEqual(['lion', 'tiger', 'bear', 'fox']);
+    expect(tokens.size).toBe(1);
+    expect(screen.getByRole('img', { name: 'Card 2 picture' }).getAttribute('src')).toBe('blob:pending:svg1');
+    expect(screen.getByRole('img', { name: 'Card 3 picture' }).getAttribute('src')).toBe('blob:pending:svg1');
+    expect(toggle(5).checked).toBe(false);
+    expect(screen.queryByRole('img', { name: 'Card 5 picture' })).toBeNull();
+    expect(saveBtn().disabled).toBe(true); // fox has no picture yet
+    expect(screen.getByText(/1 card needs a picture/)).toBeTruthy();
+    expect(h.saveCards).not.toHaveBeenCalled();
+    fireEvent.click(revertBtn());
+    expect(screen.queryByLabelText('Word for card 2')).toBeNull();
+  });
+
   it('the admin nav has a "Cards" link, marked current on /admin/cards', () => {
     render(<AdminNav />);
     const link = screen.getByRole('link', { name: 'Cards' });

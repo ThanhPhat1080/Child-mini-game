@@ -6,6 +6,7 @@ import { LEVELS, pairsOf } from '@/lib/memory/deck';
 import { sayWord } from '@/lib/memory/cards';
 import { MAX_IMAGE_BYTES, addPending, clearPending, svgToPending } from '@/lib/media';
 import { checkSvg } from '@/lib/quizImport';
+import { CardImportDialog } from '@/components/admin/CardImportDialog';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { CARD_IMG_TYPES, CardPanel, MAX_SOUND_BYTES, cardAudioType, poolHealth } from '@/components/admin/CardPanel';
 import s from '@/components/admin/admin-ui.module.css';
@@ -20,6 +21,7 @@ export default function CardsPage() {
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -93,6 +95,14 @@ export default function CardsPage() {
     setFocusId(c.id);
   }
 
+  function importCards(imported: ECard[]) {
+    // SVG code becomes one pending file per distinct drawing; blank pictures stay incomplete until picked
+    const added = imported.map((c) => ({ ...c, image: c.image?.startsWith('<') ? svgToPending(c.image) : c.image }));
+    touch();
+    setDraft([...draft!, ...added]);
+    setImportOpen(false);
+  }
+
   function revert() {
     clearPending(); // nothing was uploaded, so there is nothing to delete
     setDraft(saved); setMsgs({}); touch();
@@ -159,7 +169,10 @@ export default function CardsPage() {
           <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Add card
         </button>
+        <button type="button" onClick={() => setImportOpen(true)} className={s.btn} style={{ minHeight: 200, borderRadius: 18, border: 'none', background: '#3F73B5', color: '#fff', fontSize: 16, fontWeight: 700, fontFamily: 'Nunito, sans-serif', cursor: 'pointer' }}>Quick import cards</button>
       </div>
+
+      {importOpen && <CardImportDialog onCancel={() => setImportOpen(false)} onImport={importCards} />}
 
       {doomed && (
         <ConfirmDialog
