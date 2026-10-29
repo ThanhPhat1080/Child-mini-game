@@ -65,6 +65,23 @@ describe('Memory level select (M1)', () => {
     }
   });
 
+  it('0 cards shows a friendly picture screen, no alert, no level buttons', async () => {
+    h.fetchActiveCards.mockResolvedValue([]);
+    render(<MemoryLevels />);
+    expect(await screen.findByRole('status')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('link', { name: /cards/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /cards/ })).toBeNull();
+  });
+
+  it('a fetch error shows the same friendly screen, not an alert', async () => {
+    h.fetchActiveCards.mockRejectedValue(new Error('boom'));
+    render(<MemoryLevels />);
+    expect(await screen.findByRole('status')).toBeTruthy();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('button', { name: /cards/ })).toBeNull();
+  });
+
   it('the first enabled level is focused on arrival', async () => {
     h.fetchActiveCards.mockResolvedValue(cards(15));
     render(<MemoryLevels />);
