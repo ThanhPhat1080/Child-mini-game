@@ -112,4 +112,25 @@ describe('Memory level select (M1)', () => {
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(h.push).toHaveBeenCalledWith('/games');
   });
+
+  it('each level shows its visible label under the picture, decorative', async () => {
+    h.fetchActiveCards.mockResolvedValue(cards(15));
+    render(<MemoryLevels />);
+    await screen.findByRole('link', { name: '12 cards' });
+    for (const n of [12, 24, 30]) {
+      const label = screen.getByText(`${n} cards`);
+      expect(label.getAttribute('aria-hidden')).toBe('true');
+      expect(label.closest('[data-level]')?.contains(link(n))).toBe(true);
+    }
+  });
+
+  it('a disabled level dims its label together with the button', async () => {
+    h.fetchActiveCards.mockResolvedValue(cards(6));
+    render(<MemoryLevels />);
+    await screen.findByRole('link', { name: '12 cards' });
+    const dim = (n: number) => screen.getByText(`${n} cards`).closest('[data-level]') as HTMLElement;
+    expect(dim(24).style.opacity).toBe('0.4');
+    expect(dim(30).style.opacity).toBe('0.4');
+    expect(dim(12).style.opacity).toBe('');
+  });
 });
