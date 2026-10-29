@@ -1,0 +1,104 @@
+# Design: Memory Match (Phase 2, game 1)
+
+Status: **draft for PO review** (brainstorm 2026-10-29). Phase 2 only adds games (ADR-029). This spec covers the game list registry and the "Memory Match" game. Spot the Differences gets its own spec later.
+
+## 1. Goal
+Hà My (4-5, cannot read) flips cards to find matching pairs, and hears the English word of every pair she finds. Secondary goal: learn English words by hearing them, over and over, without pressure.
+
+Success:
+1. She plays a full level (12, 24 or 30 cards) from the game list to the end with nobody reading to her.
+2. A parent adds a new card (picture + English word) in under a minute, and can add many at once with a JSON file.
+3. The game list is driven by a registry, so the next game is one new entry.
+
+## 2. Decisions from the brainstorm
+| Topic | Decision |
+|---|---|
+| Content | One shared pool of cards ("card pool"). No sets or boards. Parent adds any number of cards; a few sample cards are seeded. |
+| Card | Picture + English word (required), optional recorded pronunciation, active on/off. |
+| Levels | 12, 24 or 30 cards = 6, 12 or 15 pairs. The child picks only the level. |
+| Deck | On start, 6/12/15 random cards are drawn from the active pool, each doubled, then shuffled. A level is available only if the pool has enough active cards. |
+| Voice | Recorded file if the card has one, else the browser voice in English (`speakKid`). |
+| Progress | None. No stars, no storage. A finished level shows a celebration only. |
+| Tech | React + CSS (DOM), like Quiz. Phaser only as a last resort if HTML/CSS cannot do the job (ADR-030). |
+| Name | "Memory Match" (English, shown on the game card). |
+| Language | The game is English. No Vietnamese text is hard-coded. |
+
+## 3. Requirement IDs
+- **G1** game registry. **M1-M10** child side of Memory Match. **A11-A13** admin.
+
+## 4. Game registry (G1)
+- New `lib/games/registry.ts`: a typed list of games, each with `id`, `href`, card art and `ready`.
+- The game list (`app/games/page.tsx`) reads it instead of `N = 3` and hand-written cards. Entries: Quiz, Memory Match (ready), Spot the Differences (placeholder, not playable).
+- The "?" help popup stays Quiz-only; a game may declare optional help.
+- Enter/Space opens the game at the focused position; drag, arrows and dots keep working (C2, ADR-018).
+
+## 5. Data
+New migration, table `memory_cards`:
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid pk | |
+| `word` | text not null | English word, trimmed, 1-40 chars |
+| `image_path` | text not null | in bucket `media` (PNG/JPG/WebP/SVG, max 2 MB) |
+| `audio_path` | text null | optional recorded pronunciation (mp3/m4a/wav) |
+| `active` | boolean not null default true | |
+| `created_at` | timestamptz | |
+
+- RLS: anon may `select` where `active`; only the admin may insert/update/delete. Storage rules are the existing `media` rules.
+- Seed: at least 15 sample cards (reuse the existing `public/seed/*.svg` pictures and add the missing ones) so every level can be tried right away. Seeded paths start with `seed/` and are never deleted from storage (T15 rule).
+- A level is available when enough cards are active: 12 cards needs 6, 24 cards needs 12, 30 cards needs 15.
+
+## 6. Child screens
+### 6.1 Level select, `/games/memory` (M1)
+- Three large buttons drawn as mini card grids (4x3, 6x4, 6x5). A level without enough cards is dimmed and cannot be chosen.
+- Empty pool: a friendly picture screen, not an error (like C11). Load failure: the same screen.
+- Back button, music button. Keys: Left/Right move, Enter/Space choose, Esc goes back. Visible focus ring.
+
+### 6.2 Play, `/games/memory/[level]` (M2-M9)
+Layout: 1920x1080 stage, centered grid of 4x3, 6x4 or 6x5 cards sized to fit. Header with back button.
+
+- **M2 Card faces.** Face-down: light-pink background with one small white/pale-yellow flower (inline SVG), same on every card. Face-up: the card picture on white, with the English word small below it (decorative; the game never needs reading).
+- **M3 Flip.** Click/tap or Enter/Space flips a face-down card with a slow flip (about 0.5 s). Each flip and each flip-back plays a soft "tick" sound.
+- **M4 Match.** Two face-up cards with the same card id: both stay up, a gentle bounce/sparkle animation plays, a soft "ting ting" chime plays, then the English word is read once (recorded file, else `speakKid`).
+- **M5 No match.** Both cards stay visible about 1.2 s, then flip back gently. No penalty sound, no counter, no timer. While this happens, new flips are ignored.
+- **M6 Replay.** Clicking a matched (face-up) card plays its English word again. Clicking the single face-up unmatched card does nothing.
+- **M7 Completion.** When every pair is found, after about 1 s a celebration shows in the same page: dense confetti, "You did it, <child name>!" with the applause/praise sound (or the custom "You did it" sound from Settings), and two picture buttons: "play again" (draws a new deck at the same level) and "choose level".
+- **M8 Keyboard.** Arrow keys (all four) move focus across the grid; Enter/Space flips or replays; Esc returns to the level screen. Visible focus ring.
+- **M9 Reduced motion.** With `prefers-reduced-motion`: no 3D flip and no bounce, the face just fades. Sounds stay.
+- **M10 Robustness.** Missing picture: a plain placeholder, game still playable. No English voice on the device: no spoken word, game still works. Leaving the page cancels timers and speech. A third quick click during a mismatch is ignored.
+- Images of the drawn deck are preloaded before the first flip.
+
+### 6.3 Sounds
+- "tick" (flip/flip-back) and "ting ting" (match) are synthesized with Web Audio in `lib/sfx.ts`, like `yay` and `ohOh`; no audio files. Quiet, short. Background music keeps playing (ADR-016). Nothing plays before "tap to enter".
+
+## 7. Admin (A11-A13)
+New "Cards" item in the admin nav, `/admin/cards`.
+
+- **A11 Card pool.** A grid of all cards (picture, word, on/off). Add, edit, delete (always with a confirmation, ADR-022). Per card: English word, picture upload (or SVG code), optional pronunciation upload, active toggle, "play" to hear it (recording, else the browser voice). A warning (not a block) when two cards share the same word.
+- **A11 Saving** follows T15: picking a file only previews it; Save uploads the new files first, then writes the database; replaced, removed or deleted files are freed after a successful save; Revert discards unsaved edits; Save is disabled until every card is complete (picture + word).
+- **A12 JSON import.** A "Quick import cards" button opens a dialog with a short guide, a "Download memory-cards-template.json" button (`public/memory-cards-template.json`) and a file picker. Shape: `cards[]`, each `word` (required), `image` (blank, `https://` link, or raw SVG code), `audio` (blank or `https://` link), `active` (optional, default true). Validation runs before anything changes and lists every problem with its card number (invalid JSON, no cards, missing word, word over 40 chars, bad image/audio value, file over 1 MB, more than 100 cards). Nothing is imported if there is any error. Valid cards are added to the pool as unsaved changes; cards with a blank image show in the completeness list and are finished by hand. SVG rules, size limit and "same drawing = one file" reuse the Quiz import code (`lib/quizImport.ts`).
+- **A13 Pool health.** The page shows which levels are currently available ("6 / 12 / 15 active cards needed") so the parent knows how many cards to add.
+
+## 8. Architecture notes
+- New units: `lib/games/registry.ts`, `lib/memory/deck.ts` (pure: `drawDeck(cards, pairs, rng)`), `lib/memory/rules.ts` (pure state machine for flips/matches), `lib/memory/import.ts` (parser/validator), UI under `app/games/memory/` and `app/admin/cards/`, components `MemoryCard`, `LevelButton`.
+- Pure units are unit-tested without the DOM. The UI calls them; it does not re-implement the rules.
+- `lib/keynav.ts` gets a 2D grid step (arrows in four directions).
+- Reuses: `Stage`, `Hills`, `BackButton`, `MusicButton`, `Confetti`, `speakKid`, `playFile`, the pending-media/T15 save code, `ConfirmDialog`, `ImportDialog` pattern.
+
+## 9. Testing
+- Unit: `drawDeck` (right pair count, each card exactly twice, shuffled, never more than available, not enough cards), flip state machine (match, mismatch, third click ignored, replay, win), level availability, JSON import (valid file, each error, blank images, SVG, URLs, the template file itself), sfx calls.
+- Component: level select (dimmed levels, empty state), play screen (flip, match plays word, replay, completion buttons, keyboard grid navigation, reduced motion), admin pool (add/edit/delete/toggle, confirm, import dialog).
+- Database: migration applies to an empty project; anon reads only active cards; every write by anon is denied (as T1).
+- By hand (PO): how the flip, sounds and voice feel in the browser.
+- Each ticket's acceptance criteria are written in `plan-phase2.md` and checked before a Trello card moves to Done.
+
+## 10. Out of scope (this game)
+Progress/stars, per-set boards, "words learned" statistics, other languages, timers or scores, Phaser, Spot the Differences (separate spec).
+
+## 11. ADR to add
+- **ADR-030:** Phase 2 games use HTML/CSS (DOM) first. Phaser is a last resort, used only if a game cannot be built well with HTML/CSS.
+
+## 12. Assumptions to confirm
+- The English word is shown small on face-up cards (decorative). Say if it should be hidden.
+- Up to 100 cards per import and 40 characters per word are reasonable limits.
+- A 16-18 card seed is enough; new sample SVGs will be simple drawings in the same style as `public/seed/`.
