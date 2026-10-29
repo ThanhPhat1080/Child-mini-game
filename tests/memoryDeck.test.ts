@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { MemoryCard } from '@/lib/memory/types'
-import { drawDeck, levelsAvailable, pairsOf, parseLevel } from '@/lib/memory/deck'
+import { drawDeck, LEVELS, levelsAvailable, pairsOf, parseLevel } from '@/lib/memory/deck'
 
 function mulberry32(seed: number): () => number {
   let a = seed
@@ -23,17 +23,24 @@ function makeCards(n: number, active = true): MemoryCard[] {
 }
 
 describe('levelsAvailable', () => {
-  it('5 cards: none', () => {
-    expect(levelsAvailable(5)).toEqual({ 12: false, 24: false, 30: false })
+  const all = (on: number[]) => ({ 12: on.includes(12), 16: on.includes(16), 20: on.includes(20), 24: on.includes(24), 30: on.includes(30) })
+  it.each([
+    [5, []],
+    [6, [12]],
+    [7, [12]],
+    [8, [12, 16]],
+    [9, [12, 16]],
+    [10, [12, 16, 20]],
+    [11, [12, 16, 20]],
+    [12, [12, 16, 20, 24]],
+    [14, [12, 16, 20, 24]],
+    [15, [12, 16, 20, 24, 30]],
+  ])('%i active cards enable levels %j', (n, on) => {
+    expect(levelsAvailable(n)).toEqual(all(on))
   })
-  it('6 cards: only 12', () => {
-    expect(levelsAvailable(6)).toEqual({ 12: true, 24: false, 30: false })
-  })
-  it('12 cards: 12 and 24', () => {
-    expect(levelsAvailable(12)).toEqual({ 12: true, 24: true, 30: false })
-  })
-  it('15 cards: all', () => {
-    expect(levelsAvailable(15)).toEqual({ 12: true, 24: true, 30: true })
+  it('lists the five levels', () => {
+    expect([...LEVELS]).toEqual([12, 16, 20, 24, 30])
+    expect(LEVELS.map(pairsOf)).toEqual([6, 8, 10, 12, 15])
   })
 })
 
@@ -47,6 +54,15 @@ describe('drawDeck', () => {
     for (const c of counts.values()) expect(c).toBe(2)
     expect(new Set(tiles.map((t) => t.key)).size).toBe(24)
     for (const t of tiles) expect(t.key).toMatch(new RegExp(`^${t.card.id}:[01]$`))
+  })
+  it.each([16, 20] as const)('level %i: right number of tiles, each card twice', (level) => {
+    const tiles = drawDeck(makeCards(20), level, mulberry32(4))
+    expect(tiles).toHaveLength(level)
+    const counts = new Map<string, number>()
+    for (const t of tiles) counts.set(t.card.id, (counts.get(t.card.id) ?? 0) + 1)
+    expect(counts.size).toBe(pairsOf(level))
+    for (const c of counts.values()) expect(c).toBe(2)
+    expect(new Set(tiles.map((t) => t.key)).size).toBe(level)
   })
   it('is deterministic for a fixed rng', () => {
     const cards = makeCards(20)
@@ -80,9 +96,12 @@ describe('drawDeck', () => {
 describe('parseLevel', () => {
   it('parses valid levels', () => {
     expect(parseLevel('24')).toBe(24)
+    expect(parseLevel('16')).toBe(16)
+    expect(parseLevel('20')).toBe(20)
   })
   it('rejects invalid', () => {
     expect(parseLevel('25')).toBeNull()
+    for (const v of ['14', '18', '36']) expect(parseLevel(v)).toBeNull()
     expect(parseLevel('abc')).toBeNull()
     expect(parseLevel('')).toBeNull()
   })
