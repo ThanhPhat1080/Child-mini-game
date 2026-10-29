@@ -92,8 +92,9 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e script placeho
 ### T9 Set selection (C3, C11)
 - AC: published sets show cover, heading-colored name, optional sub-title, question-count pill, and a star when finished; selectable by click, or by keyboard: the first set is focused on arrival, Left/Right arrows move between sets, Enter or Space opens the focused one (laptop keyboard support stays after ADR-028).
 - AC: the "? Quiz" badge at the top right of the set selection screen is a real button (large, press animation, visible focus ring). It opens the same "How to play Quiz" popup as the "?" on the game list; there its last button says "Play" and just closes the popup, since the child is already choosing a set. Esc / Back / Close / backdrop close it without leaving the screen.
+- AC: the sets form a carousel like the game list: hold the mouse and drag (120 px threshold; a drag never opens a set), Left/Right arrows (focus moves and the focused set is centered), Previous/Next buttons and clickable dots; tapping a side set centers it, tapping the centered set opens it; with one set there are no arrows or dots.
 - AC: with no published sets, a friendly picture screen shows, not an error.
-- Tests: `tests/QuizSets.test.tsx` (TC1-TC11: card content, published/complete filtering, star, focusable links, blocked storage, empty state, help popup open/close/Play, Esc and back button, arrows + Space/Enter).
+- Tests: `tests/QuizSets.test.tsx` (TC1-TC15: card content, published/complete filtering, star, focusable links, blocked storage, empty state, help popup open/close/Play, Esc and back button, arrows + Space/Enter).
 
 ### T10 Question screen (C4-C6, C9, C10, C12; ADR-007, 019, 021, 025)
 - AC: three bands (header, question row, answers) with no overlap at 1920x1080; prompt audio plays if present, with a replay button.

@@ -172,4 +172,82 @@ describe('Quiz set selection (T9, C3, C11)', () => {
     fireEvent.keyDown(window, { key: 'ArrowRight' });
     expect(document.activeElement).not.toBe(screen.getByRole('link', { name: 'Colors, 1 questions' }));
   });
+
+  // T9 carousel: dots, arrows, drag
+  const track = (c: HTMLElement) => (c.closest('div[style*="translateX"]') as HTMLElement);
+  // jsdom has no PointerEvent, so build pointer events from MouseEvent to keep clientX
+  const ptr = (el: Element, type: string, clientX = 0) => fireEvent(el, new MouseEvent(type, { bubbles: true, clientX }));
+  const view = (c: HTMLElement) => c.closest('.hm-view') as HTMLElement;
+
+  it('TC12: dots pick a set and arrows / focus move the carousel; the focused set is centered', async () => {
+    render(<QuizSets />);
+    const animals = await screen.findByRole('link', { name: 'Animals, 2 questions' });
+    const colors = screen.getByRole('link', { name: 'Colors, 1 questions' });
+    expect(track(animals).style.transform).toBe('translateX(720px)');
+    fireEvent.click(screen.getByRole('button', { name: 'Go to set 2' }));
+    expect(track(animals).style.transform).toBe('translateX(176px)');
+    expect(screen.getByRole('button', { name: 'Go to set 2' }).getAttribute('aria-current')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: 'Previous set' }));
+    expect(track(animals).style.transform).toBe('translateX(720px)');
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(colors);
+    expect(track(animals).style.transform).toBe('translateX(176px)');
+  });
+
+  it('TC13: dragging with the mouse moves past the 120 px threshold; a drag never opens a set', async () => {
+    render(<QuizSets />);
+    const animals = await screen.findByRole('link', { name: 'Animals, 2 questions' });
+    const v = view(animals);
+    v.getBoundingClientRect = () => ({ width: 1920 } as DOMRect);
+    ptr(v, 'pointerdown', 900);
+    ptr(v, 'pointermove', 850);
+    ptr(v, 'pointerup');
+    expect(track(animals).style.transform).toBe('translateX(720px)'); // under 120 px: stays
+    ptr(v, 'pointerdown', 900);
+    ptr(v, 'pointermove', 700);
+    ptr(v, 'pointerup');
+    expect(track(animals).style.transform).toBe('translateX(176px)');
+    expect(fireEvent.click(animals)).toBe(false); // click after a drag is cancelled
+  });
+
+  it('TC14: tapping a side set centers it; tapping the centered set opens it', async () => {
+    render(<QuizSets />);
+    const animals = await screen.findByRole('link', { name: 'Animals, 2 questions' });
+    const colors = screen.getByRole('link', { name: 'Colors, 1 questions' });
+    const v = view(animals);
+    v.getBoundingClientRect = () => ({ width: 1920 } as DOMRect);
+    ptr(v, 'pointerdown', 1500);
+    ptr(v, 'pointerup');
+    expect(fireEvent.click(colors)).toBe(false);
+    expect(track(animals).style.transform).toBe('translateX(176px)');
+    ptr(v, 'pointerdown', 960);
+    ptr(v, 'pointerup');
+    expect(fireEvent.click(colors)).toBe(true);
+  });
+
+  it('TC15: a single set shows no arrows or dots', async () => {
+    h.rows = [set('s1', 'Animals', null, [good(1)])];
+    render(<QuizSets />);
+    await screen.findByRole('link', { name: 'Animals, 1 questions' });
+    expect(screen.queryByRole('button', { name: /Go to set/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Next set' })).toBeNull();
+  });
+
+  it('TC16: after a dot click the arrows step from the centered set, not from the first', async () => {
+    h.rows = [set('s1', 'A', null, [good(1)]), set('s2', 'B', null, [good(1)]), set('s3', 'C', null, [good(1)])];
+    render(<QuizSets />);
+    await screen.findByRole('link', { name: 'A, 1 questions' });
+    fireEvent.click(screen.getByRole('button', { name: 'Go to set 2' }));
+    (document.activeElement as HTMLElement).blur();
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(screen.getByRole('link', { name: 'C, 1 questions' }));
+  });
+
+  it('TC17: the Back and "? Quiz" buttons sit above the full-screen carousel layer so they stay clickable', async () => {
+    render(<QuizSets />);
+    await screen.findByRole('link', { name: 'Animals, 2 questions' });
+    const header = screen.getByRole('link', { name: 'Back to games' }).parentElement as HTMLElement;
+    expect(header.contains(screen.getByRole('button', { name: /What is Quiz/ }))).toBe(true);
+    expect(Number(header.style.zIndex)).toBeGreaterThan(0);
+  });
 });
