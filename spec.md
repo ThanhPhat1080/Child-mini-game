@@ -1,7 +1,7 @@
 # Spec: HaMy Phase 1 (Quiz MVP + Admin)
 
 Source: `docs/intent.md`, `docs/decision.md` (ADR numbers below), prototype https://claude.ai/artifact/L1YRtj4NVFe6NewZ3w2s4E
-Status: **Phase 1 CLOSED 2026-10-28 by the PO.** Platform is a computer browser (ADR-028); casting the screen to a TV works but is not a requirement. Leftovers are listed in `plan.md` section 4.
+Status: **Phase 1 CLOSED 2026-10-28 by the PO.** Platform is a computer browser (ADR-028); casting the screen to a TV works but is not a requirement. Leftovers and known gaps (including the device-dependent voice) are listed in `plan.md` section 4.
 
 ## 1. Goal and scope
 Hà My (4-5, cannot read) finishes a full quiz set by pictures, color and sound only, on a computer (keyboard + mouse, may be cast to a TV). Parents manage all content in the app. Same code is reused per child (one Supabase project + one deployment, ADR-009).
