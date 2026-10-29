@@ -1,9 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const SUPABASE_ENV = {
-  NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:54321',
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test-anon-key',
-};
+// Unusual ports so e2e never meets a dev server or a real backend. The stand-in and the app are always started fresh.
+const STANDIN_PORT = 54391;
+const APP_PORT = 3100;
+process.env.STANDIN_PORT = String(STANDIN_PORT);
 
 export default defineConfig({
   testDir: './e2e',
@@ -12,7 +12,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
   use: {
-    baseURL: 'http://127.0.0.1:3000',
+    baseURL: `http://127.0.0.1:${APP_PORT}`,
     trace: 'on-first-retry',
   },
   projects: [
@@ -30,15 +30,19 @@ export default defineConfig({
   webServer: [
     {
       command: 'node e2e/support/standin-supabase.mjs',
-      url: 'http://127.0.0.1:54321/__state',
-      reuseExistingServer: !process.env.CI,
+      url: `http://127.0.0.1:${STANDIN_PORT}/__state`,
+      env: { STANDIN_PORT: String(STANDIN_PORT) },
+      reuseExistingServer: false,
     },
     {
-      command: 'npm run build && npm start',
-      url: 'http://127.0.0.1:3000/games',
-      env: SUPABASE_ENV,
+      command: `npm run build && npm start -- -p ${APP_PORT}`,
+      url: `http://127.0.0.1:${APP_PORT}/games`,
+      env: {
+        NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${STANDIN_PORT}`,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test-anon-key',
+      },
       timeout: 300_000,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
     },
   ],
 });

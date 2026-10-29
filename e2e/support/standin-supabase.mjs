@@ -4,7 +4,7 @@
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 
-const PORT = Number(process.env.STANDIN_PORT ?? 54321);
+const PORT = Number(process.env.STANDIN_PORT ?? 54391);
 const ADMIN = { email: 'admin@test.local', password: 'secret', id: '11111111-1111-4111-8111-111111111111' };
 const TABLES = ['memory_cards', 'settings', 'quiz_sets', 'questions', 'answers'];
 const RESERVED = new Set(['select', 'order', 'limit', 'offset', 'on_conflict', 'columns']);
@@ -37,14 +37,16 @@ const accessTokens = new Set();
 
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
 
+const adminUser = () => ({
+  id: ADMIN.id, aud: 'authenticated', role: 'authenticated', email: ADMIN.email,
+  email_confirmed_at: new Date().toISOString(), app_metadata: {}, user_metadata: {},
+  created_at: new Date().toISOString(),
+});
+
 function issueSession() {
   const now = Math.floor(Date.now() / 1000);
   const expiresAt = now + 3600 * 24;
-  const user = {
-    id: ADMIN.id, aud: 'authenticated', role: 'authenticated', email: ADMIN.email,
-    email_confirmed_at: new Date().toISOString(), app_metadata: {}, user_metadata: {},
-    created_at: new Date().toISOString(),
-  };
+  const user = adminUser();
   const jwt = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ sub: ADMIN.id, role: 'authenticated', aud: 'authenticated', email: ADMIN.email, exp: expiresAt, iat: now })}.${randomUUID().replace(/-/g, '')}`;
   accessTokens.add(jwt);
   return {
@@ -82,6 +84,29 @@ function readBody(req) {
   });
 }
 
+/** Returns { type, body } for the file in a multipart/form-data payload (what supabase-js sends for a Blob/File). */
+function parseUpload(contentType, buf) {
+  const m = /multipart\/form-data;\s*boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentType ?? '');
+  if (!m) return { type: contentType || 'application/octet-stream', body: buf };
+  const delim = Buffer.from(`--${m[1] ?? m[2]}`);
+  let file = null;
+  let pos = buf.indexOf(delim);
+  while (pos >= 0) {
+    const start = pos + delim.length;
+    if (buf.slice(start, start + 2).toString() === '--') break;
+    const next = buf.indexOf(delim, start);
+    if (next < 0) break;
+    const part = buf.slice(start + 2, next - 2); // drop the CRLF after the boundary and before the next
+    const split = part.indexOf('\r\n\r\n');
+    const head = part.slice(0, split).toString('utf8');
+    const data = part.slice(split + 4);
+    const ct = /content-type:\s*([^\r\n]+)/i.exec(head);
+    if (/filename=/i.test(head) || (!file && ct)) file = { type: ct ? ct[1].trim() : 'application/octet-stream', body: data };
+    pos = next;
+  }
+  return file ?? { type: 'application/octet-stream', body: Buffer.alloc(0) };
+}
+
 const parseJson = (buf) => { try { return buf.length ? JSON.parse(buf.toString('utf8')) : undefined; } catch { return undefined; } };
 const same = (a, b) => String(a) === String(b);
 
@@ -95,16 +120,21 @@ function splitIn(v) {
   return v.replace(/^\(|\)$/g, '').split(',').map((s) => s.trim().replace(/^"|"$/g, ''));
 }
 
+class Unsupported extends Error {}
+const OPS = new Set(['eq', 'neq', 'in', 'is', 'gt', 'gte', 'lt', 'lte']);
+
 function matcher(params) {
   const tests = [];
   for (const [key, raw] of params) {
     if (RESERVED.has(key)) continue;
+    if (key === 'or' || key === 'and') throw new Unsupported(`stand-in: unsupported filter "${key}"`);
     const dot = raw.indexOf('.');
-    if (dot < 0) continue;
+    if (dot < 0) throw new Unsupported(`stand-in: cannot parse filter ${key}=${raw}`);
     let op = raw.slice(0, dot);
     let val = raw.slice(dot + 1);
     let neg = false;
     if (op === 'not') { neg = true; const d2 = val.indexOf('.'); op = val.slice(0, d2); val = val.slice(d2 + 1); }
+    if (!OPS.has(op)) throw new Unsupported(`stand-in: unsupported operator "${op}" on column ${key}`);
     const t = (row) => {
       const x = row[key];
       switch (op) {
@@ -116,7 +146,7 @@ function matcher(params) {
         case 'gte': return x != null && cmp(x, val) >= 0;
         case 'lt': return x != null && cmp(x, val) < 0;
         case 'lte': return x != null && cmp(x, val) <= 0;
-        default: return true;
+        default: return false;
       }
     };
     tests.push(neg ? (r) => !t(r) : t);
@@ -151,7 +181,17 @@ function rest(req, res, table, url, bodyBuf) {
   const single = (req.headers.accept ?? '').includes('application/vnd.pgrst.object+json');
   const wantRows = prefer.includes('return=representation');
   const rows = state[table];
-  const match = matcher(params);
+  let match;
+  try {
+    match = matcher(params);
+  } catch (e) {
+    if (e instanceof Unsupported) return send(res, 501, { code: 'STANDIN501', details: null, hint: null, message: e.message });
+    throw e;
+  }
+  const hasFilter = [...params.keys()].some((k) => !RESERVED.has(k));
+  if ((req.method === 'PATCH' || req.method === 'DELETE') && !hasFilter) {
+    return send(res, 400, { code: 'PGRST106', details: null, hint: null, message: `${req.method} requires a filter` });
+  }
 
   const respond = (status, out) => {
     if (!wantRows && req.method !== 'GET') return send(res, status === 200 ? 204 : status);
@@ -241,7 +281,7 @@ const server = createServer(async (req, res) => {
     }
     if (path === '/auth/v1/user' && req.method === 'GET') {
       if (!bearerOk(req)) return send(res, 401, { code: 401, error_code: 'bad_jwt', msg: 'invalid JWT' });
-      return send(res, 200, issueUser());
+      return send(res, 200, adminUser());
     }
     if (path === '/auth/v1/logout') return send(res, 204);
 
@@ -258,23 +298,19 @@ const server = createServer(async (req, res) => {
     const up = /^\/storage\/v1\/object\/media\/(.+)$/.exec(path);
     if (up && (req.method === 'POST' || req.method === 'PUT')) {
       const p = decodeURIComponent(up[1]);
-      files.set(p, { type: req.headers['content-type'] ?? 'application/octet-stream', body: bodyBuf });
+      files.set(p, parseUpload(req.headers['content-type'], bodyBuf));
       return send(res, 200, { Key: `media/${p}`, Id: randomUUID() });
     }
     const pub = /^\/storage\/v1\/object\/public\/media\/(.+)$/.exec(path);
     if (pub && req.method === 'GET') {
       const f = files.get(decodeURIComponent(pub[1]));
       if (!f) return send(res, 404, { message: 'not found' });
-      return send(res, 200, f.body, { 'Content-Type': f.type.startsWith('multipart/') ? 'application/octet-stream' : f.type });
+      return send(res, 200, f.body, { 'Content-Type': f.type });
     }
   } catch (e) {
     return send(res, 500, { message: String(e) });
   }
   return send(res, 404, { message: `stand-in: no route for ${req.method} ${path}` });
 });
-
-function issueUser() {
-  return issueSession().user;
-}
 
 server.listen(PORT, '127.0.0.1', () => console.log(`stand-in Supabase on http://127.0.0.1:${PORT}`));

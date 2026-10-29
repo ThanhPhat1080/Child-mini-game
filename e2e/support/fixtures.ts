@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 
-const STANDIN = 'http://127.0.0.1:54321';
+// playwright.config.ts sets STANDIN_PORT before the workers start.
+export const STANDIN = `http://127.0.0.1:${process.env.STANDIN_PORT ?? 54391}`;
 
 export type MemoryCardRow = {
   id: string;
