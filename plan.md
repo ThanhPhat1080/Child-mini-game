@@ -176,7 +176,7 @@ Ticket status: T0-T16 built and deployed; Trello board updated the same day. The
 Parked (not blocking the close; pick up only when the PO asks):
 - **T14 Setup README** (DoD 3): `README.md` is still empty. Needed before a second child's deployment.
 - **Preload and 3 s start** (was part of T13): images of the next question are not preloaded.
-- **Playwright e2e**: `npm run e2e` exists in `package.json` but Playwright is not installed or configured.
+- **Playwright e2e**: done in Phase 2 (Memory Match Task 0); `npm run e2e` runs Chromium against a stand-in Supabase (`e2e/support/`).
 - **CI**: `.github/workflows/deploy.yml` runs typecheck and tests on pushes to `main` only (not on `develop` or PRs). Its `deploy` job was removed on 2026-10-29: it always failed for lack of Vercel secrets, and Vercel's Git integration already deploys.
 - **Voice depends on the device (known gap, accepted 2026-10-29)**: the built-in kid voice uses the browser's speech synthesis (`lib/sfx.ts`), which we set to English (`lang = 'en-US'`, page `lang="en"`) but cannot guarantee. It speaks only if the device has an English voice: Windows, macOS, iPhone/iPad and most Android phones usually do; Brave on Linux (e.g. Ubuntu) has none until `speech-dispatcher` and `espeak-ng` are installed, and Android phones without Google services may have none. Workarounds today: install a voice, or upload a recorded voice per question in the admin. A reliable fix would be pre-generated audio (cloud text-to-speech stored in Supabase Storage); that needs a provider, an API key and a server step, so it is a PO decision, not built.
 - DoD 1 (child plays a full set unaided) and DoD 2 (5-question set in under 10 minutes) were never timed or recorded.
@@ -184,7 +184,13 @@ Parked (not blocking the close; pick up only when the PO asks):
 Removed from scope by the PO: TV and LG webOS testing, Magic Remote, a 120 px TV hit-area rule, and TV-specific performance work (ADR-028).
 
 ## 5. Phase 2: only more games (redefined 2026-10-29)
-Phase 2 only adds games on top of the game registry (ADR-014). Spot the Differences with Phaser is the first candidate (ADR-002, ADR-005); the list of games is decided in the Phase 2 brainstorm. The play-time limit, rest screen and PIN are dropped (ADR-029). Write `spec-phase2.md` and `plan-phase2.md` before any code.
+Phase 2 only adds games on top of the game registry (ADR-014). The play-time limit, rest screen and PIN are dropped (ADR-029). New games use HTML/CSS first; Phaser only as a last resort (ADR-030).
+- Game 1, Memory Match: spec `docs/superpowers/specs/2026-10-29-memory-match-design.md`, plan `docs/superpowers/plans/2026-10-29-memory-match.md`. Built on branch `claude/phase2/memory-match` (task branches `claude/phase2/mm-t<N>-*`) with Playwright E2E.
+- Left to do:
+  - Apply `supabase/migrations/20261029100000_memory_cards.sql` to the real Supabase project after the PO's OK.
+  - PO play-test of the flip, sounds and voice in a real browser.
+  - Merging `claude/phase2/memory-match` into `develop` is the PO's decision.
+  - Spot the Differences needs its own spec first (a Phaser game must justify itself there, ADR-030).
 
 ## 6. Risks
 - Browser autoplay policy: audio only after "tap to enter" (T7).
