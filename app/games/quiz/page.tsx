@@ -11,6 +11,7 @@ import { MusicButton } from '@/components/MusicButton';
 import { QuizHelp } from '@/components/QuizHelp';
 import { handleChoiceKey } from '@/lib/keynav';
 
+const PITCH = 544; // card width 480 + gap 64
 const cards = () => Array.from(document.querySelectorAll<HTMLElement>('a[data-set-card]'));
 
 type Row = Omit<SetCardData, 'count'> & { questions: { prompt_text: string | null; prompt_audio_path: string | null; answers: { image_path: string | null; is_correct: boolean }[] }[] };
@@ -25,7 +26,15 @@ export default function QuizSets() {
   const [sets, setSets] = useState<SetCardData[] | null>(null);
   const [done, setDone] = useState<Record<string, boolean>>({});
   const [help, setHelp] = useState(false);
+  const [idx, setIdx] = useState(0);
+  const [dx, setDx] = useState(0);
+  const [dragging, setDragging] = useState(false);
   const helpBtn = useRef<HTMLButtonElement>(null);
+  const startX = useRef(0);
+  const scale = useRef(1);
+  const moved = useRef(false);
+  const pressIdx = useRef<number | null>(null);
+  const n = sets?.length ?? 0;
 
   useEffect(() => {
     createSupabaseBrowserClient()
@@ -48,10 +57,24 @@ export default function QuizSets() {
   }, [sets]);
   useEffect(() => {
     if (help) return;
-    const onKey = (e: KeyboardEvent) => { handleChoiceKey(e, cards()); };
+    const onKey = (e: KeyboardEvent) => {
+      const items = cards();
+      // after a dot or arrow click no set has focus: step from the centered one, not from the first
+      if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && !items.includes(document.activeElement as HTMLElement) && items.length > 0) {
+        e.preventDefault();
+        items[Math.max(0, Math.min(items.length - 1, idx + (e.key === 'ArrowRight' ? 1 : -1)))].focus();
+        return;
+      }
+      handleChoiceKey(e, items);
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [help]);
+  }, [help, idx]);
+
+  const go = (d: number) => { setIdx((v) => Math.max(0, Math.min(n - 1, v + d))); setDx(0); setDragging(false); };
+  const base = 720 - idx * PITCH;
+  const slide = dragging ? 'none' : 'transform .7s cubic-bezier(.3,.7,.2,1)';
+  const arrow = (side: 'left' | 'right'): React.CSSProperties => ({ position: 'absolute', [side]: 56, top: 440, width: 120, height: 120, borderRadius: 60, border: 'none', background: '#fff', boxShadow: '0 8px 0 #EADCC8', display: 'flex', alignItems: 'center', justifyContent: 'center' });
 
   return (
     <Stage>
@@ -75,13 +98,60 @@ export default function QuizSets() {
           New quizzes are coming soon!
         </div>
       )}
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 190, display: 'flex', justifyContent: 'center', gap: 64 }}>
-        {sets?.map((s, i) => (
-          <Link key={s.id} href={`/games/quiz/${s.id}`} data-set-card className="hm-card" aria-label={`${s.title}, ${s.count} questions${done[s.id] ? ', completed' : ''}`} style={{ borderRadius: 56 }}>
-            <SetCard set={s} index={i} done={done[s.id]} />
-          </Link>
-        ))}
-      </div>
+      {sets && sets.length > 0 && (
+        <div
+          className="hm-view"
+          aria-label="Quiz sets. Use left and right arrows or drag to browse."
+          style={{ position: 'absolute', inset: 0 }}
+          onPointerDown={(e) => { const r = e.currentTarget.getBoundingClientRect(); scale.current = r.width / 1920 || 1; startX.current = e.clientX; moved.current = false; pressIdx.current = idx; setDragging(true); setDx(0); }}
+          onPointerMove={(e) => { if (!dragging) return; const d = (e.clientX - startX.current) / scale.current; setDx(d); if (Math.abs(d) > 10) moved.current = true; }}
+          onPointerUp={() => { if (!dragging) return; let t = idx; if (dx < -120) t = Math.min(n - 1, t + 1); else if (dx > 120) t = Math.max(0, t - 1); setIdx(t); setDx(0); setDragging(false); }}
+          onPointerCancel={() => { setDragging(false); setDx(0); }}
+          onPointerLeave={() => { if (dragging) { setDragging(false); setDx(0); } }}
+        >
+          <div style={{ position: 'absolute', top: 180, left: 0, display: 'flex', gap: 64, transform: `translateX(${base + dx}px)`, transition: slide }}>
+            {sets.map((s, i) => (
+              <div key={s.id} style={{ flex: 'none', width: 480, height: 700, transform: `scale(${i === idx ? 1 : 0.86})`, opacity: i === idx ? 1 : 0.7, transition: dragging ? 'none' : 'transform .7s cubic-bezier(.3,.7,.2,1), opacity .7s ease' }}>
+                <Link
+                  href={`/games/quiz/${s.id}`}
+                  data-set-card
+                  draggable={false}
+                  className="hm-card"
+                  aria-label={`${s.title}, ${s.count} questions${done[s.id] ? ', completed' : ''}`}
+                  style={{ display: 'block', borderRadius: 56 }}
+                  onFocus={() => { setIdx(i); setDx(0); }}
+                  onClick={(e) => {
+                    // a drag, or a tap on a side card, only moves the carousel; the centered card opens its set
+                    if (moved.current) e.preventDefault();
+                    else if (pressIdx.current !== null && pressIdx.current !== i) { e.preventDefault(); setIdx(i); }
+                    pressIdx.current = null;
+                  }}
+                >
+                  <SetCard set={s} index={i} done={done[s.id]} />
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {n > 1 && (
+        <>
+          <button type="button" className="hm-arrow hm-tap" aria-label="Previous set" disabled={idx === 0} onClick={() => go(-1)} style={arrow('left')}>
+            <svg aria-hidden="true" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#7A5C50" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5l-7 7 7 7" /></svg>
+          </button>
+          <button type="button" className="hm-arrow hm-tap" aria-label="Next set" disabled={idx === n - 1} onClick={() => go(1)} style={arrow('right')}>
+            <svg aria-hidden="true" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#7A5C50" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5l7 7-7 7" /></svg>
+          </button>
+          <div role="group" aria-label="Pick a set" style={{ position: 'absolute', left: 0, right: 0, top: 896, display: 'flex', justifyContent: 'center' }}>
+            {sets?.map((s, i) => (
+              <button key={s.id} type="button" className="hm-tap" aria-label={`Go to set ${i + 1}`} aria-current={i === idx} onClick={() => { setIdx(i); setDx(0); setDragging(false); }} style={{ width: 120, height: 120, padding: 0, border: 'none', background: 'none', borderRadius: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ display: 'block', height: 22, borderRadius: 11, transition: 'width .5s ease', width: i === idx ? 56 : 22, background: i === idx ? '#E59AA1' : '#E3D5C4' }} />
+              </button>
+            ))}
+          </div>
+        </>
+      )}
       <MusicButton />
       {help && <QuizHelp playHref={null} onClose={() => { setHelp(false); setTimeout(() => helpBtn.current?.focus(), 0); }} />}
     </Stage>
