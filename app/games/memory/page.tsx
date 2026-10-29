@@ -13,7 +13,7 @@ import { handleChoiceKey } from '@/lib/keynav';
 
 const links = () => Array.from(document.querySelectorAll<HTMLElement>('a[data-level-link]'));
 
-/** Memory Match level select (M1): 12 / 24 / 30 cards; a level needs half as many active cards. */
+/** Memory Match level select (M1): 12 / 16 / 20 / 24 / 30 cards; a level needs half as many active cards. */
 export default function MemoryLevels() {
   const [count, setCount] = useState<number | null>(null);
   const [help, setHelp] = useState(false);
@@ -67,7 +67,7 @@ export default function MemoryLevels() {
         </div>
       )}
       {count !== null && count > 0 && (
-        <div role="group" aria-label="Choose how many cards" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 96 }}>
+        <div role="group" aria-label="Choose how many cards" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 48 }}>
           {LEVELS.map((l) => (
             <LevelButton key={l} level={l} disabled={!avail[l]} href={`/games/memory/${l}`} />
           ))}

@@ -18,8 +18,8 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { chime, flipTick } from '@/lib/sfx';
 import { gridStep } from '@/lib/keynav';
 
-/** Columns per level (4x3, 6x4, 6x5). */
-const COLS: Record<Level, number> = { 12: 4, 24: 6, 30: 6 };
+/** Columns per level (4x3, 4x4, 5x4, 6x4, 6x5). */
+const COLS: Record<Level, number> = { 12: 4, 16: 4, 20: 5, 24: 6, 30: 6 };
 /** Board area on the 1920x1080 stage, under the header band. */
 const TOP = 190;
 const AREA_W = 1700;
@@ -36,7 +36,7 @@ const WIN_CAP_MS = 4000;
 
 const tileSize = (level: Level) => {
   const cols = COLS[level];
-  const rows = level / cols;
+  const rows = Math.ceil(level / cols);
   return Math.min(260, Math.floor((AREA_H - GAP * (rows - 1)) / rows), Math.floor((AREA_W - GAP * (cols - 1)) / cols));
 };
 const tileEls = () => Array.from(document.querySelectorAll<HTMLElement>('[data-tile]'));
