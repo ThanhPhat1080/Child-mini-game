@@ -47,3 +47,26 @@ test('keyboard only: Enter on the first level reaches /games/memory/12', async (
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/games\/memory\/12$/);
 });
+
+test('the "? Memory Match" badge opens the tutorial; Play only closes it; Esc closes without leaving', async ({ page }) => {
+  await reset({ memory_cards: makeCards(15) });
+  await page.goto('/games/memory');
+  await expect(page.getByRole('link', { name: '12 cards' })).toBeFocused();
+  const badge = page.getByRole('button', { name: 'What is Memory Match? Show how to play' });
+  const dialog = page.getByRole('dialog', { name: 'How to play Memory Match' });
+
+  await badge.click();
+  await expect(dialog).toBeVisible();
+  await page.getByRole('button', { name: 'Go to step 4' }).click();
+  await page.getByRole('button', { name: 'Play Memory Match' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(badge).toBeFocused();
+  await expect(page).toHaveURL(/\/games\/memory$/);
+
+  await badge.click();
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(badge).toBeFocused();
+  await expect(page).toHaveURL(/\/games\/memory$/);
+});
