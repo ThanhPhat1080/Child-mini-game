@@ -116,6 +116,7 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e script placeho
 ### T11 Completed and back navigation (C7, C8, C12; ADR-026)
 - AC: the completed screen (and the star for the set) is reached only when every question of the set is finished, not when the last question in order is answered.
 - AC: completed screen shows girl image, light confetti (simpler and fewer than before), praise, and a way back to set selection; the set is marked finished (star).
+- AC: the completed screen shows a second character on the right (`public/images/girl-beret.webp`, a cut-out with a transparent background and no white fringe), mirroring the first one on the left; the first one is moved a little toward the center (left edge 130 -> 220 px). The two float out of step with each other. The title is limited to the space between them (840 px wide, centered) and wraps onto a second line for a long name, so it never overlaps either character.
 - AC: if a "You did it" custom track is set in Settings, the completed screen plays it instead of the built-in applause and spoken praise.
 - AC: completed screen plays applause and says "You did it, <child name>!".
 - AC: Esc/Back key and a picture button go from set selection to game list and from a question to set selection.
