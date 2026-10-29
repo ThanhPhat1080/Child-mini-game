@@ -50,7 +50,7 @@ export function checkSvg(raw: string): { svg: string } | { error: string } {
 }
 
 /** Blank means "upload later". Otherwise an https:// link or raw SVG code. Returns the cleaned value or an error. */
-function readImage(v: unknown): { value: string | null } | { error: string } {
+export function readImage(v: unknown): { value: string | null } | { error: string } {
   if (v === undefined || v === null) return { value: null };
   if (typeof v !== 'string') return { error: 'image must be text (a link or SVG code) or left blank' };
   const s = v.trim();

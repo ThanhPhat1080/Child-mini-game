@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { getState, makeCards, reset, signInAsAdmin, STANDIN } from './support/fixtures';
 
@@ -111,4 +112,82 @@ test('Delete asks first and removes the row and its bucket file only after Save'
   await expect(save(page)).toBeDisabled();
   await expect.poll(async () => (await cardsOf()).map((c) => c.word)).toEqual(['word3']);
   await expect.poll(storage).toEqual(['seed/apple.svg']);
+});
+
+const importFile = (name: string, body: unknown) => ({ name, mimeType: 'application/json', buffer: Buffer.from(typeof body === 'string' ? body : JSON.stringify(body)) });
+const dialog = (page: Page) => page.getByRole('dialog', { name: 'Quick import cards' });
+
+async function importThroughDialog(page: Page, file: ReturnType<typeof importFile>): Promise<void> {
+  await page.getByRole('button', { name: 'Quick import cards' }).click();
+  await expect(dialog(page)).toBeVisible();
+  await dialog(page).locator('input[type="file"]').setInputFiles(file);
+}
+
+test('importing the shipped template: blank pictures keep Save disabled until picked, then Save stores the cards', async ({ page }) => {
+  await reset({ memory_cards: [] });
+  await openCards(page);
+  await importThroughDialog(page, { name: 'memory-cards-template.json', mimeType: 'application/json', buffer: readFileSync('public/memory-cards-template.json') });
+  await expect(dialog(page).getByText('3 cards ready to import.')).toBeVisible();
+  await dialog(page).getByRole('button', { name: 'Import 3 cards' }).click();
+  await expect(dialog(page)).toHaveCount(0);
+
+  await expect(page.getByLabel('Word for card 1', { exact: true })).toHaveValue('apple');
+  await expect(page.getByLabel('Word for card 3', { exact: true })).toHaveValue('cat');
+  await expect(page.getByRole('img', { name: 'Card 3 picture' })).toHaveAttribute('src', /^blob:/); // SVG code became a local preview
+  await expect(page.getByText('2 cards need a picture and a word before you can save.')).toBeVisible();
+  await expect(save(page)).toBeDisabled();
+  expect(await cardsOf()).toEqual([]); // unsaved
+
+  await page.getByLabel('Picture file for card 1', { exact: true }).setInputFiles(svgFile('a.svg'));
+  await expect(save(page)).toBeDisabled();
+  await page.getByLabel('Picture file for card 2', { exact: true }).setInputFiles(svgFile('b.svg'));
+  await expect(save(page)).toBeEnabled();
+  await save(page).click();
+  await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible();
+  await expect.poll(async () => (await cardsOf()).map((c) => c.word).sort()).toEqual(['apple', 'banana', 'cat']);
+  for (const c of await cardsOf()) expect(c.image_path).toMatch(/^cards\/.+\.svg$/);
+});
+
+test('a file with one bad card imports nothing and names the card', async ({ page }) => {
+  await openCards(page);
+  await importThroughDialog(page, importFile('bad.json', { cards: [{ word: 'fine', image: '' }, { word: '', image: '' }, { word: 'ok', active: 'yes' }] }));
+  const alert = dialog(page).getByRole('alert');
+  await expect(alert).toContainText('Card 2: word is required');
+  await expect(alert).toContainText('Card 3: active must be true or false');
+  await expect(dialog(page).getByRole('button', { name: 'Import', exact: true })).toBeDisabled();
+  await dialog(page).getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog(page)).toHaveCount(0);
+  await expect(page.getByLabel('Word for card 13', { exact: true })).toHaveCount(0);
+  await expect(save(page)).toBeDisabled();
+  expect((await cardsOf()).map((c) => c.word)).toEqual(makeCards(12).map((c) => c.word));
+});
+
+test('imported cards (SVG code) can be saved and played from /games/memory', async ({ page }) => {
+  await reset({ memory_cards: [] });
+  await openCards(page);
+  const colors = ['#E59AA1', '#9AC3E5', '#F2DB8C', '#A8D5A2', '#C9A8E5', '#F2B48C'];
+  const cards = colors.map((fill, i) => ({
+    word: `shape${i + 1}`,
+    image: `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'><circle cx='4' cy='4' r='3' fill='${fill}'/></svg>`,
+    audio: '',
+    active: true,
+  }));
+  await importThroughDialog(page, importFile('six.json', { cards }));
+  await dialog(page).getByRole('button', { name: 'Import 6 cards' }).click();
+  await expect(save(page)).toBeEnabled();
+  await save(page).click();
+  await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible();
+  await expect.poll(async () => (await cardsOf()).length).toBe(6);
+
+  await page.goto('/games/memory/12');
+  const tiles = page.locator('[data-tile]');
+  await expect(tiles.first()).toBeFocused();
+  await expect(tiles).toHaveCount(12);
+  const ids = await tiles.evaluateAll((els) => els.map((e) => e.getAttribute('data-card-id') ?? ''));
+  const first = ids[0];
+  const mate = ids.findIndex((id, i) => i > 0 && id === first);
+  await tiles.nth(0).click();
+  await tiles.nth(mate).click();
+  await expect(tiles.nth(0)).toHaveAttribute('data-matched', 'true');
+  await expect(tiles.nth(mate)).toHaveAttribute('data-matched', 'true');
 });
