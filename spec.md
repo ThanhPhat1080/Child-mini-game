@@ -34,8 +34,8 @@ Out of scope for Phase 1: everything in Phase 2. Phase 2 is only "more games" (s
 Details for every row: `docs/superpowers/specs/2026-10-29-memory-match-design.md`.
 | ID | Requirement |
 |----|-------------|
-| G1 | Game registry: the game list reads a typed registry (Quiz, Memory Match, Spot the Differences placeholder); extends C2 and ADR-014. |
-| M1 | Level select at `/games/memory`: three levels (12 / 24 / 30 cards); each level button also shows its label "12 cards" / "24 cards" / "30 cards" under the picture (decorative, the child need not read it); a level without enough active cards is dimmed (label included); an empty pool shows a friendly picture screen. |
+| G1 | Game registry: the game list reads a typed registry (Quiz, Memory Match, Spot the Differences placeholder); extends C2 and ADR-014. The Memory Match card has a "?" button (like Quiz) that opens the "How to play Memory Match" popup (see M1). |
+| M1 | Level select at `/games/memory`: three levels (12 / 24 / 30 cards); each level button also shows its label "12 cards" / "24 cards" / "30 cards" under the picture (decorative, the child need not read it); a level without enough active cards is dimmed (label included); an empty pool shows a friendly picture screen. Help popup: the "?" on the Memory Match card (game list) and a "? Memory Match" badge on this screen open the "How to play Memory Match" popup (4 steps: what it is, flip two cards, find the pair, hear the word); it shares its shell with the Quiz popup (`GameHelp`), and from this screen its last button (Play) only closes it. |
 | M2 | Card faces: back is light pink with one small white/pale-yellow flower; face-up is the picture only, no written word (the word is only heard). |
 | M3 | Flip (about 0.5 s) by click or Enter/Space, with a soft tick on every flip and flip-back. |
 | M4 | Match: both cards stay up with a gentle bounce/sparkle, a "ting ting" chime, then the English word is spoken once. |

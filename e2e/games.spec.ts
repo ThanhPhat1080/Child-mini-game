@@ -45,3 +45,41 @@ test('Spot the Differences cannot be opened', async ({ page }) => {
   await current(page, 3);
   await expect(page).toHaveURL(/\/games$/);
 });
+
+// the "?" pulses forever (hm-breathe), so Playwright never sees it as stable: click it with force
+const memoryHelp = (page: Page) => page.getByRole('button', { name: 'What is Memory Match? Show how to play' });
+
+test('the Memory Match "?" opens its tutorial; Esc closes it and returns focus; Play opens the game', async ({ page }) => {
+  await openGames(page);
+  await page.keyboard.press('ArrowRight');
+  await current(page, 2);
+  await memoryHelp(page).click({ force: true });
+  const dialog = page.getByRole('dialog', { name: 'How to play Memory Match' });
+  await expect(dialog).toBeVisible();
+  await expect(page).toHaveURL(/\/games$/);
+  // the popup owns the keys: arrows do not move the carousel, Esc does not leave the page
+  await page.keyboard.press('ArrowRight');
+  await current(page, 2);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(memoryHelp(page)).toBeFocused();
+  await expect(page).toHaveURL(/\/games$/);
+
+  await memoryHelp(page).click({ force: true });
+  await page.getByRole('button', { name: 'Go to step 4' }).click();
+  await dialog.getByRole('link', { name: 'Play Memory Match' }).click();
+  await expect(page).toHaveURL(/\/games\/memory$/);
+});
+
+test('the Quiz "?" still opens its tutorial and Esc closes it', async ({ page }) => {
+  await openGames(page);
+  const help = page.getByRole('button', { name: 'What is Quiz? Show how to play' });
+  await help.click({ force: true });
+  const dialog = page.getByRole('dialog', { name: 'How to play Quiz' });
+  await expect(dialog).toBeVisible();
+  await expect(page).toHaveURL(/\/games$/);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(help).toBeFocused();
+  await expect(page).toHaveURL(/\/games$/);
+});

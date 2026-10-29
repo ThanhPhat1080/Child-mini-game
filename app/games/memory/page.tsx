@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Stage } from '@/components/Stage';
 import { Hills } from '@/components/Hills';
 import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
+import { MemoryHelp } from '@/components/MemoryHelp';
 import { LevelButton } from '@/components/memory/LevelButton';
 import { fetchActiveCards } from '@/lib/memory/cards';
 import { LEVELS, levelsAvailable } from '@/lib/memory/deck';
@@ -15,6 +16,8 @@ const links = () => Array.from(document.querySelectorAll<HTMLElement>('a[data-le
 /** Memory Match level select (M1): 12 / 24 / 30 cards; a level needs half as many active cards. */
 export default function MemoryLevels() {
   const [count, setCount] = useState<number | null>(null);
+  const [help, setHelp] = useState(false);
+  const helpBtn = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let live = true;
@@ -29,16 +32,28 @@ export default function MemoryLevels() {
     if (any) links()[0]?.focus();
   }, [any]);
   useEffect(() => {
+    if (help) return;
     const onKey = (e: KeyboardEvent) => { handleChoiceKey(e, links()); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [help]);
 
   return (
     <Stage>
       <Hills />
-      <div style={{ position: 'absolute', top: 48, zIndex: 2, left: 56, right: 56, display: 'flex', alignItems: 'center' }}>
+      <div style={{ position: 'absolute', top: 48, zIndex: 2, left: 56, right: 56, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <BackButton href="/games" label="Back to games" />
+        <button
+          ref={helpBtn}
+          type="button"
+          className="hm-tap"
+          aria-label="What is Memory Match? Show how to play"
+          onClick={() => setHelp(true)}
+          style={{ display: 'flex', alignItems: 'center', gap: 16, height: 120, padding: '0 40px 0 28px', borderRadius: 60, background: '#fff', border: '8px solid #EBB7BC', boxShadow: '0 8px 0 #EADCC8', boxSizing: 'border-box', fontFamily: 'inherit' }}
+        >
+          <svg aria-hidden="true" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+          <span style={{ fontSize: 44, fontWeight: 600, color: '#B8737B', lineHeight: 1 }}>Memory Match</span>
+        </button>
       </div>
       {count === 0 && (
         <div role="status" aria-label="New cards are coming soon" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -59,6 +74,7 @@ export default function MemoryLevels() {
         </div>
       )}
       <MusicButton />
+      {help && <MemoryHelp playHref={null} onClose={() => { setHelp(false); setTimeout(() => helpBtn.current?.focus(), 0); }} />}
     </Stage>
   );
 }
