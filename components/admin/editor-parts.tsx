@@ -38,3 +38,16 @@ export function Shell({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+/** One checkbox option with a title and a hint. The box never shrinks, so every option looks the same however long its hint is. */
+export function CheckOption({ checked, onChange, title, hint }: { checked: boolean; onChange: () => void; title: string; hint: string }) {
+  return (
+    <label style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}>
+      <input type="checkbox" checked={checked} onChange={onChange} style={{ flex: 'none', width: 20, height: 20, margin: '2px 0 0', accentColor: '#3F6B48' }} />
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: 'block', fontWeight: 700, fontSize: 15 }}>{title}</span>
+        <span style={{ display: 'block', fontSize: 13, color: '#7A6458' }}>{hint}</span>
+      </span>
+    </label>
+  );
+}

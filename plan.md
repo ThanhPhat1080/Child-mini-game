@@ -65,6 +65,7 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e script placeho
 - AC: a "Read the answers aloud" checkbox per question (default on, column `questions.read_answers`); when off, only the question is read and the answers are not read one by one after it. The answer the child picks is always read aloud, regardless of the checkbox.
 - AC: each answer has an optional text field ("Answer text (read aloud)"); it is saved with the answer and does not block completeness.
 - AC: a "Hide the answer text" checkbox per question (default off, column `questions.hide_answer_text`, migration `20261029000000_questions_hide_answer_text.sql`) sits next to "Read the answers aloud". When on, the child's answer cards show only the picture (and the number), never the answer text. It does not change the reading: with "Read the answers aloud" on the answers are still read one by one, and the answer the child picks is always read aloud. The JSON import accepts an optional `hideAnswerText` (true/false) per question.
+- AC: the checkbox options in the editors ("Published", "Read the answers aloud", "Hide the answer text") share one component (`CheckOption`): the box is always 20x20 px and is never squeezed by a long hint, so every option looks the same at any window width.
 - AC: the sticky page header keeps Save, Revert and Preview as child visible while scrolling the set and question editors.
 - AC: "Preview as child" opens the child quiz in a new browser tab.
 - AC: the answer image button reads "Upload image" (also "Upload" when empty), never "Replace image".
