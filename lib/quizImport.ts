@@ -98,6 +98,10 @@ export function parseQuizImport(text: string): ImportResult {
       if (typeof raw.readAnswersAloud === 'boolean') q.readAnswers = raw.readAnswersAloud;
       else errors.push(`${ql}: readAnswersAloud must be true or false`);
     }
+    if (raw.hideAnswerText !== undefined) {
+      if (typeof raw.hideAnswerText === 'boolean') q.hideAnswerText = raw.hideAnswerText;
+      else errors.push(`${ql}: hideAnswerText must be true or false`);
+    }
 
     if (!Array.isArray(raw.answers) || raw.answers.length < 2 || raw.answers.length > 3) {
       errors.push(`${ql}: needs 2 or 3 answers.`);

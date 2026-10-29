@@ -49,9 +49,14 @@ export default function Done() {
     <Stage>
       <Hills variant="double" />
       <Confetti count={36} delayStep={0.6} />
-      <div className="hm-float" style={{ position: 'absolute', left: 130, top: 340, width: 289, height: 682 }}>
+      <div className="hm-float" style={{ position: 'absolute', left: 220, top: 340, width: 289, height: 682 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/images/girl.webp" alt="" width={289} height={682} style={{ display: 'block', width: 289, height: 682 }} />
+      </div>
+      {/* second character on the right (transparent background); floats out of step with the left one */}
+      <div className="hm-float" style={{ position: 'absolute', left: 1378, top: 360, width: 327, height: 650, animationDelay: '-2.2s' }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/girl-beret.webp" alt="" width={327} height={650} style={{ display: 'block', width: 327, height: 650 }} />
       </div>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 44, paddingBottom: 60, boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', gap: 28 }} role="img" aria-label="3 stars earned">
@@ -59,7 +64,7 @@ export default function Done() {
             <svg key={i} aria-hidden="true" width={w} height={w} viewBox="0 0 24 24" fill="#EED79A" stroke="#C9A05A" strokeWidth="1" strokeLinejoin="round" style={i === 1 ? { marginTop: -30 } : undefined}><path d={STAR} /></svg>
           ))}
         </div>
-        <h1 style={{ margin: 0, fontSize: 96, fontWeight: 600, color: '#B8737B' }}>You did it{name ? `, ${name}` : ''}!</h1>
+        <h1 style={{ margin: 0, maxWidth: 840, textAlign: 'center', lineHeight: 1.08, fontSize: 96, fontWeight: 600, color: '#B8737B' }}>You did it{name ? `, ${name}` : ''}!</h1>
         <div style={{ display: 'flex', gap: 56 }}>
           <Link href={`/games/quiz/${setId}`} data-done-link className="hm-tap" aria-label="Play this set again" style={{ ...btn, background: '#fff', boxShadow: '0 12px 0 #EADCC8' }}>
             <svg aria-hidden="true" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v5h5" /></svg>

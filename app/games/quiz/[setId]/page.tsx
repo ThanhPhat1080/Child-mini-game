@@ -14,10 +14,14 @@ import { handleChoiceKey } from '@/lib/keynav';
 import { clearProgress, deviceStore, firstUnfinished, loadProgress, nextUnfinished, saveProgress } from '@/lib/quizProgress';
 
 type Answer = { slot: number; image_path: string | null; text: string | null; is_correct: boolean };
-type Question = { id: string; position: number; prompt_text: string | null; prompt_image_path: string | null; prompt_audio_path: string | null; read_answers: boolean; answers: Answer[] };
+type Question = { id: string; position: number; prompt_text: string | null; prompt_image_path: string | null; prompt_audio_path: string | null; read_answers: boolean; hide_answer_text: boolean; answers: Answer[] };
 
 const BADGE = ['#C77D85', '#5F86A8', '#8A6A2A'];
 const SHADOW = ['#D9A0A6', '#7FA0BE', '#D2B466'];
+/** The picked card plays its 1.5 s effect before the hooray / oh-oh popup, so the child sees what she chose. */
+const PICK_MS = 1500;
+/** The Hooray / Oh-oh popups must sit above the answer cards, which lift to z-index 3-4 when hovered, focused or picked. */
+const POPUP_Z = 10;
 
 let voiceEl: HTMLAudioElement | null = null;
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
@@ -67,7 +71,7 @@ export default function QuestionPage() {
   useEffect(() => {
     createSupabaseBrowserClient()
       .from('questions')
-      .select('id, position, prompt_text, prompt_image_path, prompt_audio_path, read_answers, answers(slot, image_path, text, is_correct)')
+      .select('id, position, prompt_text, prompt_image_path, prompt_audio_path, read_answers, hide_answer_text, answers(slot, image_path, text, is_correct)')
       .eq('set_id', setId)
       .order('position')
       .then(({ data }) => {
@@ -91,6 +95,7 @@ export default function QuestionPage() {
       setReading(true);
       // read the child's answer aloud first, then show hooray / oh-oh with its sound
       const mine = token.current;
+      const pickedAt = Date.now();
       const finish = () => {
         if (mine !== token.current) return;
         const show = () => {
@@ -99,7 +104,8 @@ export default function QuestionPage() {
           setResult(a.is_correct ? 'correct' : 'wrong');
           if (a.is_correct) yay(sounds.hooray); else ohOh(sounds.ohoh);
         };
-        if (a.is_correct) show(); else setTimeout(show, 200); // wrong: pause 200 ms after her answer is read
+        const hold = Math.max(0, PICK_MS - (Date.now() - pickedAt)); // let the picked card finish its effect first
+        setTimeout(show, hold + (a.is_correct ? 0 : 200)); // wrong: pause 200 ms more
       };
       if (a.text?.trim()) speakKid(a.text.trim(), { pitch: 1.5, rate: 0.8, onEnd: finish });
       else finish();
@@ -230,25 +236,28 @@ export default function QuestionPage() {
         </div>
       </div>
 
-      <div style={{ position: 'absolute', top: 540, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 72 }}>
+      <div className="hm-answers" style={{ position: 'absolute', top: 540, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 72 }}>
         {cur.answers.map((a, i) => {
           const c = SLOT_COLORS[i];
           const dim = result === 'wrong' && picked === i;
+          const chosen = picked === i && result !== 'wrong'; // grows while waiting for, and under, the hooray popup
           const img = mediaUrl(a.image_path);
+          const showText = !cur.hide_answer_text && !!a.text?.trim(); // hidden text is still read aloud, just not drawn
           return (
-            <button key={a.slot} type="button" data-answer className={`hm-ans${dim ? ' hm-wobble' : ''}${readIdx === i ? ' hm-reading' : ''}`} aria-label={`Answer ${i + 1}`} onClick={() => pick(i)} style={{ position: 'relative', width: 460, height: 400, borderRadius: 56, border: `14px solid ${c.ring}`, background: c.bg, boxShadow: `0 16px 0 ${SHADOW[i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box', opacity: dim ? 0.55 : readIdx !== null && readIdx !== i ? 0.7 : 1 }}>
+            <button key={a.slot} type="button" data-answer className={`hm-ans${dim ? ' hm-wobble' : ''}${readIdx === i ? ' hm-reading' : ''}${chosen ? ' hm-picked' : ''}`} aria-label={`Answer ${i + 1}`} onClick={() => pick(i)} style={{ position: 'relative', width: 460, height: 400, borderRadius: 56, border: `14px solid ${c.ring}`, background: c.bg, boxShadow: `0 16px 0 ${SHADOW[i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box', opacity: dim ? 0.55 : readIdx !== null && readIdx !== i ? 0.7 : 1, '--ring': c.ring } as React.CSSProperties}>
+              {chosen && <span key={`pick-${q}-${i}`} className="hm-pickring" aria-hidden="true" style={{ borderColor: c.ring }} />}
               {readIdx === i && (<><span className="hm-readring" aria-hidden="true" style={{ borderColor: c.ring }} /><span className="hm-bars" aria-hidden="true"><i /><i /><i /></span></>)}
-              <span style={{ position: 'absolute', top: -34, left: -34, width: 104, height: 104, borderRadius: 52, background: BADGE[i], color: '#fff', border: '8px solid #FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, fontWeight: 600, boxSizing: 'border-box' }}>{i + 1}</span>
+              <span className="hm-num" style={{ position: 'absolute', top: -34, left: -34, width: 104, height: 104, borderRadius: 52, background: BADGE[i], color: '#fff', border: '8px solid #FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, fontWeight: 600, boxSizing: 'border-box' }}>{i + 1}</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {img && <img src={img} alt="" style={{ width: '100%', maxHeight: a.text?.trim() ? 250 : '100%', objectFit: 'contain' }} />}
-              {a.text?.trim() && <span style={{ position: 'absolute', left: 0, right: 0, bottom: 14, textAlign: 'center', fontSize: 44, fontWeight: 600, color: '#5A4038' }}>{a.text}</span>}
+              {img && <img src={img} alt="" style={{ width: '100%', maxHeight: showText ? 250 : '100%', objectFit: 'contain' }} />}
+              {showText && <span style={{ position: 'absolute', left: 0, right: 0, bottom: 14, textAlign: 'center', fontSize: 44, fontWeight: 600, color: '#5A4038' }}>{a.text}</span>}
             </button>
           );
         })}
       </div>
 
       {result === 'wrong' && (
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', background: 'rgba(251,244,233,0.55)' }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: POPUP_Z, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', background: 'rgba(251,244,233,0.55)' }}>
           <div role="status" className="hm-rise" style={{ display: 'flex', alignItems: 'center', gap: 28, padding: '36px 64px 36px 40px', borderRadius: 80, background: '#fff', boxShadow: '0 12px 0 #EADCC8' }}>
             <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" fill="#F8DCDF" /><path d="M8.5 15.5c1-1 2.2-1.4 3.5-1.4s2.5.4 3.5 1.4" /><path d="M9 9.5h.01" /><path d="M15 9.5h.01" /></svg>
             <span style={{ fontSize: 80, fontWeight: 600, color: '#8A6A5E' }}>Oh-oh… try again!</span>
@@ -257,7 +266,7 @@ export default function QuestionPage() {
       )}
 
       {result === 'correct' && (
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(251,244,233,0.78)', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: POPUP_Z, background: 'rgba(251,244,233,0.78)', overflow: 'hidden' }}>
           <span className="hm-flash" aria-hidden="true" style={{ position: 'absolute', left: 560, top: 70, width: 800, height: 800, borderRadius: 400, background: 'radial-gradient(circle, rgba(246,226,166,0.9) 0%, rgba(246,226,166,0) 68%)' }} />
           <Confetti count={56} />
           <div role="status" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 30 }}>

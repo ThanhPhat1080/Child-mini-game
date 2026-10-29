@@ -46,6 +46,16 @@ describe('parseQuizImport', () => {
     expect(r.questions[0].count).toBe(3);
   });
 
+  it('hideAnswerText defaults to false and is read when given', () => {
+    expect(run([q()]).questions[0].hideAnswerText).toBe(false);
+    expect(run([q({ hideAnswerText: true })]).questions[0].hideAnswerText).toBe(true);
+    expect(run([q({ hideAnswerText: false })]).questions[0].hideAnswerText).toBe(false);
+  });
+
+  it('rejects a hideAnswerText that is not true or false', () => {
+    expect(run([q({ hideAnswerText: 'yes' })]).errors).toEqual(['Question 1: hideAnswerText must be true or false']);
+  });
+
   it('honours readAnswersAloud: false', () => {
     expect(run([q({ readAnswersAloud: false })]).questions[0].readAnswers).toBe(false);
   });

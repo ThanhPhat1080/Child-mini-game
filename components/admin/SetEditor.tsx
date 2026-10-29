@@ -11,7 +11,7 @@ import { ImportDialog } from '@/components/admin/ImportDialog';
 import { PRESETS, type PresetKey, blankSet, deleteSet, isQuestionComplete, loadSet, luminance, newQuestion, presetKeyFor, saveSet, tintFor, type EQuestion, type ESet } from '@/lib/sets';
 import s from './admin-ui.module.css';
 import { QuestionPanel } from './QuestionPanel';
-import { panel, inputStyle, ghostBtn, dangerBtn, fileName, Img, PicIcon, Eye, Shell, IMG_TYPES, AUDIO_TYPES } from './editor-parts';
+import { CheckOption, panel, inputStyle, ghostBtn, dangerBtn, fileName, Img, PicIcon, Eye, Shell, IMG_TYPES, AUDIO_TYPES } from './editor-parts';
 
 type Target = { kind: 'cover' } | { kind: 'qimg' } | { kind: 'voice' } | { kind: 'answer'; i: number };
 
@@ -293,10 +293,7 @@ export function SetEditor({ setId }: { setId: string }) {
                 <span style={{ fontSize: 13, color: '#7A6458' }}>Square picture, at least 600×600 px. Shown inside a round frame on the front page.</span>
               </div>
 
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}>
-                <input type="checkbox" checked={d.published} onChange={() => edit({ published: !d.published })} style={{ width: 20, height: 20, accentColor: '#3F6B48', marginTop: 2 }} />
-                <span><span style={{ display: 'block', fontWeight: 700, fontSize: 15 }}>Published</span><span style={{ display: 'block', fontSize: 13, color: '#7A6458' }}>Draft sets are hidden from the child, but you can still use “Preview as child” after saving.</span></span>
-              </label>
+              <CheckOption checked={d.published} onChange={() => edit({ published: !d.published })} title="Published" hint="Draft sets are hidden from the child, but you can still use “Preview as child” after saving." />
 
               <div style={{ paddingTop: 18, borderTop: '1px solid #F1E7DA', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                 <button type="button" className={s.btn} onClick={() => setImportOpen(true)} style={{ height: 42, padding: '0 16px', borderRadius: 10, border: 'none', background: '#3F73B5', color: '#fff', fontWeight: 700, fontFamily: 'Nunito, sans-serif', fontSize: 14, cursor: 'pointer' }}>+ Quick import questions</button>
