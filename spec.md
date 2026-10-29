@@ -1,4 +1,4 @@
-# Spec: HaMy Phase 1 (Quiz MVP + Admin)
+# Spec: HaMy (Phase 1 Quiz + admin, Phase 2 games)
 
 Source: `docs/intent.md`, `docs/decision.md` (ADR numbers below), prototype https://claude.ai/artifact/L1YRtj4NVFe6NewZ3w2s4E
 Status: **Phase 1 CLOSED 2026-10-28 by the PO.** Phase 2 game 1 (Memory Match) is built on the integration branch `claude/phase2/memory-match`, not yet released; its IDs G1, M1-M10 and A11-A13 are in sections 3b and 4b. Platform is a computer browser (ADR-028); casting the screen to a TV works but is not a requirement. Leftovers and known gaps (including the device-dependent voice) are listed in `plan.md` section 4.
@@ -35,16 +35,16 @@ Details for every row: `docs/superpowers/specs/2026-10-29-memory-match-design.md
 | ID | Requirement |
 |----|-------------|
 | G1 | Game registry: the game list reads a typed registry (Quiz, Memory Match, Spot the Differences placeholder); extends C2 and ADR-014. |
-| M1 | Level select at `/games/memory`: levels by card count; a level is dimmed when the active pool is too small. |
-| M2 | Play screen: a grid of face-down cards drawn at random from the active pool, each card exactly twice. |
-| M3 | Flip a card by click, number keys or Left/Right + Enter/Space; a flip is slow and calm; honors `prefers-reduced-motion`. |
-| M4 | Two flipped cards that match stay open and the word is spoken; a mismatch flips back after a pause; no timer, no penalty. |
-| M5 | Replay the word of an open card by picking it again; a third click during a mismatch pause is ignored. |
-| M6 | Sounds for flip, match and win through the one audio manager (ADR-016). |
-| M7 | Flip count (face-down to face-up only) is shown at the end of a game only, never during play. |
-| M8 | Completion: confetti (shared component) and buttons to play again or go back. |
-| M9 | Keyboard: arrows move over the grid, Enter or Space flips, Esc goes back (`lib/keynav.ts`). |
-| M10 | Cards carry no required text for the child; the word is spoken (recording, else the browser voice). |
+| M1 | Level select at `/games/memory`: three levels (12 / 24 / 30 cards); a level without enough active cards is dimmed; an empty pool shows a friendly picture screen. |
+| M2 | Card faces: back is light pink with one small white/pale-yellow flower; face-up is the picture only, no written word (the word is only heard). |
+| M3 | Flip (about 0.5 s) by click or Enter/Space, with a soft tick on every flip and flip-back. |
+| M4 | Match: both cards stay up with a gentle bounce/sparkle, a "ting ting" chime, then the English word is spoken once. |
+| M5 | No match: both visible about 1.2 s, then flip back; no penalty sound, no timer, no counter on screen; new flips are ignored meanwhile. |
+| M6 | Replay: clicking a matched card plays its word again; the single face-up unmatched card does nothing. |
+| M7 | Completion: confetti, "You did it, <name>!", the number of flips shown ONLY at the end (face-down to face-up turns only; not saved, no best score), play again / choose level. |
+| M8 | Keyboard: all four arrows move over the grid, Enter or Space flips or replays, Esc goes back (`lib/keynav.ts`). |
+| M9 | Reduced motion: no 3D flip and no bounce, the face just fades; sounds stay. |
+| M10 | Robustness: missing picture shows a placeholder; no English voice means no spoken word; leaving the page cancels timers and speech; a third quick click is ignored; deck images are preloaded. |
 
 ## 4. Admin flow (desktop, Nunito)
 | ID | Requirement |

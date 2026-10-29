@@ -6,7 +6,7 @@
 `spec.md` (requirement IDs C1-C15, A1-A13, G1, M1-M10; cite them in commits), `plan.md` (tickets + acceptance criteria), `docs/decision.md` (ADRs; later ones win), `docs/git-workflow.md`, `docs/superpowers/` (Phase 2 specs and plans). `docs/intent.md` is the vision, not a build source. `README.md` is still empty (plan T14).
 
 ## Stack and commands
-Next.js + React + TypeScript (DOM/CSS; Phaser only for later games), Supabase (Postgres, Storage, Auth), Vercel. Node 24.
+Next.js + React + TypeScript (DOM/CSS; Phaser only if HTML/CSS cannot do it, ADR-030), Supabase (Postgres, Storage, Auth), Vercel. Node 24.
 `npm ci`, `npm run dev`, `npm run build`, `npm run typecheck`, `npm run lint`, `npm test` (single file: `npx vitest run tests/<file>`). E2E is set up: `npm run e2e` (Playwright, Chromium; builds and starts the app against a stand-in Supabase on port 54321, `e2e/support/`). On the cloud image set `PW_CHROMIUM_PATH` to the preinstalled Chromium; never run `playwright install` there.
 Schema changes only via new `supabase/migrations/*.sql`, never by hand in the dashboard.
 
