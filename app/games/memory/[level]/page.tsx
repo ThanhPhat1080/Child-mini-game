@@ -26,7 +26,7 @@ const AREA_W = 1700;
 const AREA_H = 880;
 const GAP = 20;
 /** The word starts a little after the chime so the two do not overlap (M4). */
-const WORD_AFTER_CHIME_MS = 350;
+const WORD_AFTER_CHIME_MS = 550;
 const WIGGLE_MS = 700;
 /** After the last word ends, a short breath before the celebration starts (its sounds would cut the word). */
 const WORD_PAUSE_MS = 400;

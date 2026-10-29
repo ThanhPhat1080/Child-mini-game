@@ -121,7 +121,9 @@ describe('Memory play screen (M2-M6, M8-M10)', () => {
     fireEvent.click(tile(7));
     expect(h.chime).toHaveBeenCalledTimes(1);
     expect(h.sayWord).not.toHaveBeenCalled();
-    await advance(400);
+    await advance(500); // the chime's tail rings for about half a second
+    expect(h.sayWord).not.toHaveBeenCalled();
+    await advance(100);
     expect(h.sayWord).toHaveBeenCalledTimes(1);
     expect(h.sayWord.mock.calls[0][0].id).toBe('c0');
     expect(tile(1).getAttribute('data-face-up')).toBe('true');
@@ -170,7 +172,7 @@ describe('Memory play screen (M2-M6, M8-M10)', () => {
     await ready();
     fireEvent.click(tile(1));
     fireEvent.click(tile(7));
-    await advance(400);
+    await advance(600);
     fireEvent.click(tile(1));
     expect(h.sayWord).toHaveBeenCalledTimes(2);
     expect(h.sayWord.mock.calls[1][0].id).toBe('c0');
