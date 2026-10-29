@@ -20,6 +20,8 @@ const BADGE = ['#C77D85', '#5F86A8', '#8A6A2A'];
 const SHADOW = ['#D9A0A6', '#7FA0BE', '#D2B466'];
 /** The picked card plays its 1.5 s effect before the hooray / oh-oh popup, so the child sees what she chose. */
 const PICK_MS = 1500;
+/** The Hooray / Oh-oh popups must sit above the answer cards, which lift to z-index 3-4 when hovered, focused or picked. */
+const POPUP_Z = 10;
 
 let voiceEl: HTMLAudioElement | null = null;
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
@@ -255,7 +257,7 @@ export default function QuestionPage() {
       </div>
 
       {result === 'wrong' && (
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', background: 'rgba(251,244,233,0.55)' }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: POPUP_Z, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', background: 'rgba(251,244,233,0.55)' }}>
           <div role="status" className="hm-rise" style={{ display: 'flex', alignItems: 'center', gap: 28, padding: '36px 64px 36px 40px', borderRadius: 80, background: '#fff', boxShadow: '0 12px 0 #EADCC8' }}>
             <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" fill="#F8DCDF" /><path d="M8.5 15.5c1-1 2.2-1.4 3.5-1.4s2.5.4 3.5 1.4" /><path d="M9 9.5h.01" /><path d="M15 9.5h.01" /></svg>
             <span style={{ fontSize: 80, fontWeight: 600, color: '#8A6A5E' }}>Oh-oh… try again!</span>
@@ -264,7 +266,7 @@ export default function QuestionPage() {
       )}
 
       {result === 'correct' && (
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(251,244,233,0.78)', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: POPUP_Z, background: 'rgba(251,244,233,0.78)', overflow: 'hidden' }}>
           <span className="hm-flash" aria-hidden="true" style={{ position: 'absolute', left: 560, top: 70, width: 800, height: 800, borderRadius: 400, background: 'radial-gradient(circle, rgba(246,226,166,0.9) 0%, rgba(246,226,166,0) 68%)' }} />
           <Confetti count={56} />
           <div role="status" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 30 }}>

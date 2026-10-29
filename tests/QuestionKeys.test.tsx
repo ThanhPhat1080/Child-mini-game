@@ -93,8 +93,10 @@ describe('Question screen keyboard (T10, C4)', () => {
     expect(answerBtn(2).className).toContain('hm-picked');
     expect(answerBtn(1).className).not.toContain('hm-picked');
     expect(screen.queryByText('Hooray!')).toBeNull(); // not yet: the card is still doing its effect
-    expect(await screen.findByText('Hooray!', undefined, POPUP)).toBeTruthy();
+    const hooray = await screen.findByText('Hooray!', undefined, POPUP);
     expect(answerBtn(2).className).toContain('hm-picked'); // stays a little bigger under the popup
+    // the popup layer must sit above the cards, which lift to z-index 3-4 when hovered, focused or picked
+    expect(Number((hooray.closest('[role=status]')!.parentElement as HTMLElement).style.zIndex)).toBeGreaterThan(4);
   });
 
   it('TC7: a wrong pick also plays the effect first, then wobbles and shows Oh-oh', async () => {
@@ -102,7 +104,8 @@ describe('Question screen keyboard (T10, C4)', () => {
     fireEvent.click(answerBtn(1));
     expect(answerBtn(1).className).toContain('hm-picked');
     expect(screen.queryByText(/Oh-oh/)).toBeNull();
-    expect(await screen.findByText(/Oh-oh/, undefined, POPUP)).toBeTruthy();
+    const ohOh = await screen.findByText(/Oh-oh/, undefined, POPUP);
+    expect(Number((ohOh.closest('[role=status]')!.parentElement as HTMLElement).style.zIndex)).toBeGreaterThan(4); // above the lifted cards
     expect(answerBtn(1).className).toContain('hm-wobble');
     expect(answerBtn(1).className).not.toContain('hm-picked');
   });
