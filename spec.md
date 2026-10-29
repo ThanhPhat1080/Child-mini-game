@@ -5,7 +5,7 @@ Status: **Phase 1 CLOSED 2026-10-28 by the PO.** Platform is a computer browser 
 
 ## 1. Goal and scope
 Hà My (4-5, cannot read) finishes a full quiz set by pictures, color and sound only, on a computer (keyboard + mouse, may be cast to a TV). Parents manage all content in the app. Same code is reused per child (one Supabase project + one deployment, ADR-009).
-Out of scope for Phase 1: everything in Phase 2. Phase 2 is now "other games" (see `plan.md` section 5); play limit, rest screen and PIN are parked.
+Out of scope for Phase 1: everything in Phase 2. Phase 2 is only "more games" (see `plan.md` section 5); the play limit, rest screen and PIN were dropped (ADR-029).
 
 ## 2. Users
 - **Child:** no sign-in, read-only access to published content.
@@ -52,7 +52,7 @@ Column names are as built in `supabase/migrations/*.sql`.
 - `answers`: `id uuid pk`, `question_id uuid fk on delete cascade`, `slot int check 1..3`, `image_path text not null`, `text text null`, `is_correct bool`. Unique `(question_id, slot)`; exactly one correct per question (enforced in app + constraint/trigger).
 - `quiz_sets` also has `updated_at`.
 - Storage bucket `media`: public read, write only by admin; images (PNG/JPG/WebP/SVG) and audio.
-- Progress (star and finished-question dots): stored in the browser's localStorage, keyed by set id (decided); no user identification (ADR-010).
+- Progress (star and finished-question dots): stored in the browser's localStorage, keyed by set id (decided); no user identification.
 - RLS: anon can `select` settings, published sets and their questions/answers; only authenticated admin can insert/update/delete everything, including drafts and storage writes. Service role key never in the frontend (ADR-015). Schema changes only via migrations (ADR-008).
 
 ## 6. Design tokens (from prototype)

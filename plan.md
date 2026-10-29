@@ -177,14 +177,14 @@ Parked (not blocking the close; pick up only when the PO asks):
 - **T14 Setup README** (DoD 3): `README.md` is still empty. Needed before a second child's deployment.
 - **Preload and 3 s start** (was part of T13): images of the next question are not preloaded.
 - **Playwright e2e**: `npm run e2e` exists in `package.json` but Playwright is not installed or configured.
-- **CI**: no GitHub Actions workflow; `docs/git-workflow.md` asks for green CI before a release.
+- **CI**: the only workflow (`deploy.yml`) runs on push to `main`, not on PRs, and its deploy job fails at "Pull Vercel project settings" (Vercel deploys from Git anyway). `docs/git-workflow.md` asks for green CI before a release.
 - **Voice depends on the device (known gap, accepted 2026-10-29)**: the built-in kid voice uses the browser's speech synthesis (`lib/sfx.ts`), which we set to English (`lang = 'en-US'`, page `lang="en"`) but cannot guarantee. It speaks only if the device has an English voice: Windows, macOS, iPhone/iPad and most Android phones usually do; Brave on Linux (e.g. Ubuntu) has none until `speech-dispatcher` and `espeak-ng` are installed, and Android phones without Google services may have none. Workarounds today: install a voice, or upload a recorded voice per question in the admin. A reliable fix would be pre-generated audio (cloud text-to-speech stored in Supabase Storage); that needs a provider, an API key and a server step, so it is a PO decision, not built.
 - DoD 1 (child plays a full set unaided) and DoD 2 (5-question set in under 10 minutes) were never timed or recorded.
 
 Removed from scope by the PO: TV and LG webOS testing, Magic Remote, a 120 px TV hit-area rule, and TV-specific performance work (ADR-028).
 
-## 5. Phase 2: other games (redefined 2026-10-28)
-Phase 2 is now building further mini-games on top of the game registry (ADR-014); Spot the Differences with Phaser is the first candidate (ADR-002, ADR-005). The earlier Phase 2 items are parked: play-time limit and rest screen (ADR-003, ADR-010), PIN (ADR-004, ADR-011). Write `spec-phase2.md` and `plan-phase2.md` before any code.
+## 5. Phase 2: only more games (redefined 2026-10-29)
+Phase 2 only adds games on top of the game registry (ADR-014). Spot the Differences with Phaser is the first candidate (ADR-002, ADR-005); the list of games is decided in the Phase 2 brainstorm. The play-time limit, rest screen and PIN are dropped (ADR-029). Write `spec-phase2.md` and `plan-phase2.md` before any code.
 
 ## 6. Risks
 - Browser autoplay policy: audio only after "tap to enter" (T7).

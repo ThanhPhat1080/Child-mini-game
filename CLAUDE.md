@@ -40,7 +40,7 @@ Node 24 + npm 11 (tested). On this Windows machine npm is not on the Bash PATH; 
 - Schema changes go through migrations, never edited by hand in the dashboard.
 - Latest Chromium on a computer. Keyboard for the child: 1/2/3 answer, Left/Right move between choices, Enter or Space pick, Esc goes back (`lib/keynav.ts`). Do not build or test for TVs or webOS.
 - One deployment per child, configured by env vars only (Supabase URL + anon key).
-- Phase 2 (other games, Phaser) has no spec yet: write `spec-phase2.md` and `plan-phase2.md` first. Play limit, rest screen and PIN are parked.
+- Phase 2 (other games, Phaser) has no spec yet: write `spec-phase2.md` and `plan-phase2.md` first. Play limit, rest screen and PIN are dropped (ADR-029).
 
 ## Workflow
 Plan mode first; commit `plan.md` before code. Each ticket has Acceptance Criteria; do not mark done until they pass. When Claude makes the same mistake twice, add the fix to this file. Keep this file under one page.
