@@ -131,3 +131,21 @@ export function applause(seconds = 3): SoundHandle | void {
   }
   return handle;
 }
+
+/** Memory Match: one very short, quiet tick when a card flips. Silent when there is no AudioContext. */
+export function flipTick(): void {
+  const c = ac();
+  if (!c) return;
+  const { bus } = makeBus(c, 200);
+  tone(c, bus, c.currentTime, 850, 700, 0.1, 'triangle', 0.11);
+}
+
+/** Memory Match: soft high "ting ting" when a pair matches. Silent when there is no AudioContext. */
+export function chime(): void {
+  const c = ac();
+  if (!c) return;
+  const { bus } = makeBus(c, 600);
+  const t = c.currentTime;
+  tone(c, bus, t, 1318, 1318, 0.25, 'sine', 0.12);
+  tone(c, bus, t + 0.14, 1760, 1760, 0.3, 'sine', 0.12);
+}
