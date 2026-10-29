@@ -1,7 +1,8 @@
 {
   "_readme": [
     "Quick import template for Quiz sets. Keys that start with _ are ignored.",
-    "Each question: text (what is asked), image (optional), readAnswersAloud (true or false), answers (2 or 3).",
+    "Each question: text (what is asked), image (optional), readAnswersAloud (true or false), hideAnswerText (optional, true or false), answers (2 or 3).",
+    "hideAnswerText: true shows only the picture on the answer cards (no text). The answer text is still read aloud.",
     "Each answer: text (read aloud when picked), image (optional), correct (true for exactly ONE answer per question).",
     "image: leave it as \"\" to upload the picture later in the editor, paste a link that starts with https:// from the internet, or paste SVG code (<svg ...>...</svg>).",
     "SVG code: use single quotes inside the SVG, keep it on one line, under 30,000 characters, and include a viewBox. The same SVG used several times is saved as one file.",
@@ -13,6 +14,7 @@
       "text": "Where is the apple?",
       "image": "",
       "readAnswersAloud": true,
+      "hideAnswerText": false,
       "answers": [
         { "text": "Apple", "image": "", "correct": true },
         { "text": "Banana", "image": "", "correct": false },

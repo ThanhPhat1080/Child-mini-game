@@ -41,6 +41,8 @@ async function ready() {
   await screen.findByRole('button', { name: 'Answer 1' });
 }
 const answerBtn = (n: number) => screen.getByRole('button', { name: `Answer ${n}` });
+// the picked card plays a 1.5 s effect first, so the Hooray / Oh-oh popup shows a little after 1.5 s
+const POPUP = { timeout: 4000 };
 
 // T10: laptop keyboard support on the question screen.
 describe('Question screen keyboard (T10, C4)', () => {
@@ -63,7 +65,7 @@ describe('Question screen keyboard (T10, C4)', () => {
     fireEvent.keyDown(window, { key: 'ArrowRight' });
     // a real browser turns Enter on a focused button into a click
     fireEvent.click(document.activeElement as HTMLElement);
-    expect(await screen.findByText('Hooray!')).toBeTruthy();
+    expect(await screen.findByText('Hooray!', undefined, POPUP)).toBeTruthy();
     expect(h.yay).toHaveBeenCalled();
   });
 
@@ -75,14 +77,37 @@ describe('Question screen keyboard (T10, C4)', () => {
     document.activeElement?.dispatchEvent(e);
     expect(e.defaultPrevented).toBe(false);
     fireEvent.click(document.activeElement as HTMLElement);
-    expect(await screen.findByText(/Oh-oh/)).toBeTruthy();
+    expect(await screen.findByText(/Oh-oh/, undefined, POPUP)).toBeTruthy();
     expect(h.ohOh).toHaveBeenCalled();
   });
 
   it('TC4: the number keys 1/2/3 still answer', async () => {
     await ready();
     fireEvent.keyDown(window, { key: '2' });
-    expect(await screen.findByText('Hooray!')).toBeTruthy();
+    expect(await screen.findByText('Hooray!', undefined, POPUP)).toBeTruthy();
+  });
+
+  it('TC6: the picked card plays its effect right away and the popup waits for it (right answer)', async () => {
+    await ready();
+    fireEvent.click(answerBtn(2));
+    expect(answerBtn(2).className).toContain('hm-picked');
+    expect(answerBtn(1).className).not.toContain('hm-picked');
+    expect(screen.queryByText('Hooray!')).toBeNull(); // not yet: the card is still doing its effect
+    const hooray = await screen.findByText('Hooray!', undefined, POPUP);
+    expect(answerBtn(2).className).toContain('hm-picked'); // stays a little bigger under the popup
+    // the popup layer must sit above the cards, which lift to z-index 3-4 when hovered, focused or picked
+    expect(Number((hooray.closest('[role=status]')!.parentElement as HTMLElement).style.zIndex)).toBeGreaterThan(4);
+  });
+
+  it('TC7: a wrong pick also plays the effect first, then wobbles and shows Oh-oh', async () => {
+    await ready();
+    fireEvent.click(answerBtn(1));
+    expect(answerBtn(1).className).toContain('hm-picked');
+    expect(screen.queryByText(/Oh-oh/)).toBeNull();
+    const ohOh = await screen.findByText(/Oh-oh/, undefined, POPUP);
+    expect(Number((ohOh.closest('[role=status]')!.parentElement as HTMLElement).style.zIndex)).toBeGreaterThan(4); // above the lifted cards
+    expect(answerBtn(1).className).toContain('hm-wobble');
+    expect(answerBtn(1).className).not.toContain('hm-picked');
   });
 
   it('TC5: answers are real buttons a child can reach with Tab (focusable, not disabled)', async () => {
