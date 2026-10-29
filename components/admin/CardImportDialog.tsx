@@ -9,7 +9,7 @@ import { ghostBtn } from './editor-parts';
 
 const SHOW_ERRORS = 8;
 
-/** "+ Quick import questions" modal: template download, short guide, JSON file check, then append. */
+/** "+ Quick import cards" modal: template download, short guide, JSON file check, then append. */
 export function CardImportDialog({ onCancel, onImport }: { onCancel: () => void; onImport: (cards: ECard[]) => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState('');
