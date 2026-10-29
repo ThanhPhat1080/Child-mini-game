@@ -34,6 +34,7 @@ export default function QuizSets() {
   const scale = useRef(1);
   const moved = useRef(false);
   const pressIdx = useRef<number | null>(null);
+  const pressing = useRef(false);
   const n = sets?.length ?? 0;
 
   useEffect(() => {
@@ -103,11 +104,16 @@ export default function QuizSets() {
           className="hm-view"
           aria-label="Quiz sets. Use left and right arrows or drag to browse."
           style={{ position: 'absolute', inset: 0 }}
-          onPointerDown={(e) => { const r = e.currentTarget.getBoundingClientRect(); scale.current = r.width / 1920 || 1; startX.current = e.clientX; moved.current = false; pressIdx.current = idx; setDragging(true); setDx(0); }}
-          onPointerMove={(e) => { if (!dragging) return; const d = (e.clientX - startX.current) / scale.current; setDx(d); if (Math.abs(d) > 10) moved.current = true; }}
-          onPointerUp={() => { if (!dragging) return; let t = idx; if (dx < -120) t = Math.min(n - 1, t + 1); else if (dx > 120) t = Math.max(0, t - 1); setIdx(t); setDx(0); setDragging(false); }}
-          onPointerCancel={() => { setDragging(false); setDx(0); }}
-          onPointerLeave={() => { if (dragging) { setDragging(false); setDx(0); } }}
+          onPointerDown={(e) => { const r = e.currentTarget.getBoundingClientRect(); scale.current = r.width / 1920 || 1; startX.current = e.clientX; moved.current = false; pressIdx.current = idx; pressing.current = true; }}
+          onPointerMove={(e) => {
+            if (!pressing.current) return;
+            const d = (e.clientX - startX.current) / scale.current;
+            // the track only follows the mouse (no animation) once it is a real drag, so a plain tap still slides smoothly
+            if (Math.abs(d) > 10) { moved.current = true; setDragging(true); setDx(d); }
+          }}
+          onPointerUp={() => { pressing.current = false; if (!dragging) return; let t = idx; if (dx < -120) t = Math.min(n - 1, t + 1); else if (dx > 120) t = Math.max(0, t - 1); setIdx(t); setDx(0); setDragging(false); }}
+          onPointerCancel={() => { pressing.current = false; setDragging(false); setDx(0); }}
+          onPointerLeave={() => { pressing.current = false; if (dragging) { setDragging(false); setDx(0); } }}
         >
           <div style={{ position: 'absolute', top: 180, left: 0, display: 'flex', gap: 64, transform: `translateX(${base + dx}px)`, transition: slide }}>
             {sets.map((s, i) => (
