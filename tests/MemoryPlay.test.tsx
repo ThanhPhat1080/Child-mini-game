@@ -12,10 +12,14 @@ const h = vi.hoisted(() => ({
   push: vi.fn(),
   replace: vi.fn(),
   drawDeck: vi.fn(),
+  settings: vi.fn(),
 }));
 
 vi.mock('@/lib/memory/cards', () => ({ fetchActiveCards: h.fetchActiveCards, sayWord: h.sayWord }));
-vi.mock('@/lib/sfx', () => ({ flipTick: h.flipTick, chime: h.chime }));
+vi.mock('@/lib/sfx', () => ({ flipTick: h.flipTick, chime: h.chime, applause: vi.fn(), speakKid: vi.fn(), playFile: vi.fn() }));
+vi.mock('@/lib/supabase/client', () => ({
+  createSupabaseBrowserClient: () => ({ from: () => ({ select: () => ({ eq: () => ({ single: () => h.settings() }) }) }) }),
+}));
 vi.mock('@/lib/media', () => ({ mediaUrl: (p: string | null) => (p ? `/media/${p}` : null) }));
 vi.mock('@/lib/memory/deck', async (orig) => ({ ...(await orig<typeof import('@/lib/memory/deck')>()), drawDeck: h.drawDeck }));
 vi.mock('next/navigation', () => ({
@@ -57,7 +61,8 @@ async function ready(level = '12', pool = cards(15)) {
 
 beforeEach(() => {
   vi.useFakeTimers();
-  for (const f of [h.fetchActiveCards, h.sayWord, h.flipTick, h.chime, h.push, h.replace, h.drawDeck]) f.mockReset();
+  for (const f of [h.fetchActiveCards, h.sayWord, h.flipTick, h.chime, h.push, h.replace, h.drawDeck, h.settings]) f.mockReset();
+  h.settings.mockResolvedValue({ data: { child_name: 'Mi', complete_path: null } });
   h.drawDeck.mockImplementation(fixedDeck);
   Object.defineProperty(window, 'matchMedia', { configurable: true, writable: true, value: undefined });
 });
@@ -191,6 +196,45 @@ describe('Memory play screen (M2-M6, M8-M10)', () => {
     await advance(WIN_DELAY_MS + 10);
     expect(root().getAttribute('data-won')).toBe('true');
     expect(root().getAttribute('data-flips')).toBe('12');
+  });
+
+  it('WIN_DELAY_MS after the last pair the completion screen shows the real flip count', async () => {
+    await ready();
+    fireEvent.click(tile(1));
+    fireEvent.click(tile(2)); // one mismatch: 2 extra flips
+    await advance(MISMATCH_MS + 10);
+    for (let i = 1; i <= 6; i++) {
+      fireEvent.click(tile(i));
+      fireEvent.click(tile(i + 6));
+    }
+    await advance(WIN_DELAY_MS - 100);
+    expect(screen.queryByLabelText(/flips$/)).toBeNull();
+    await advance(200);
+    expect(screen.getByLabelText('14 flips')).toBeTruthy();
+    expect(screen.getByRole('heading').textContent).toBe('You did it, Mi!');
+  });
+
+  it('Play again draws a fresh deck with no completion screen and flips reset', async () => {
+    await ready();
+    for (let i = 1; i <= 6; i++) {
+      fireEvent.click(tile(i));
+      fireEvent.click(tile(i + 6));
+    }
+    await advance(WIN_DELAY_MS + 10);
+    expect(h.drawDeck).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Play again' }));
+    await advance(PRELOAD_MS + 10);
+    expect(h.drawDeck).toHaveBeenCalledTimes(2);
+    expect(screen.queryByLabelText(/flips$/)).toBeNull();
+    expect(root().getAttribute('data-won')).toBe('false');
+    expect(tiles()).toHaveLength(12);
+    expect(tiles().every((t) => t.getAttribute('data-face-up') === 'false')).toBe(true);
+    for (let i = 1; i <= 6; i++) {
+      fireEvent.click(tile(i));
+      fireEvent.click(tile(i + 6));
+    }
+    await advance(WIN_DELAY_MS + 10);
+    expect(screen.getByLabelText('12 flips')).toBeTruthy();
   });
 
   it('arrow keys move focus across the grid (Down by the column count)', async () => {

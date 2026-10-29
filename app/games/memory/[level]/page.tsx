@@ -6,6 +6,7 @@ import { Stage } from '@/components/Stage';
 import { Hills } from '@/components/Hills';
 import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
+import { MemoryDone } from '@/components/memory/MemoryDone';
 import { MemoryTile } from '@/components/memory/MemoryTile';
 import { FlowerBack } from '@/components/memory/FlowerBack';
 import { fetchActiveCards, sayWord } from '@/lib/memory/cards';
@@ -13,6 +14,7 @@ import { drawDeck, pairsOf, parseLevel, type Level } from '@/lib/memory/deck';
 import { flip, MISMATCH_MS, resolveMismatch, startGame, WIN_DELAY_MS, type GameEvent, type GameState } from '@/lib/memory/rules';
 import { preloadImages } from '@/lib/memory/preload';
 import { mediaUrl } from '@/lib/media';
+import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { chime, flipTick } from '@/lib/sfx';
 import { gridStep } from '@/lib/keynav';
 
@@ -45,6 +47,8 @@ export default function MemoryPlay() {
   const rerender = useCallback(() => setRender((n) => n + 1), []);
   const [phase, setPhase] = useState<'loading' | 'empty' | 'ready'>('loading');
   const [won, setWon] = useState<{ flips: number } | null>(null);
+  const [round, setRound] = useState(0);
+  const [praise, setPraise] = useState<{ name: string; url: string | null } | null>(null);
   const [wiggle, setWiggle] = useState<number | null>(null);
   const [reduced, setReduced] = useState(false);
   const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
@@ -87,7 +91,25 @@ export default function MemoryPlay() {
       () => live && setPhase('empty'),
     );
     return () => { live = false; stopPreload?.(); };
-  }, [level]);
+  }, [level, round]);
+
+  // The completion screen needs the child's name and optional custom sound (as the Quiz done page).
+  useEffect(() => {
+    if (!won) return;
+    let live = true;
+    const done = (name: string, url: string | null) => live && setPraise({ name, url });
+    createSupabaseBrowserClient().from('settings').select('child_name, complete_path').eq('id', 1).single()
+      .then(({ data }) => done(data?.child_name ?? '', mediaUrl(data?.complete_path)), () => done('', null));
+    return () => { live = false; };
+  }, [won]);
+
+  const again = useCallback(() => {
+    game.current = null;
+    setWon(null);
+    setPraise(null);
+    setPhase('loading');
+    setRound((n) => n + 1);
+  }, []);
 
   useEffect(() => {
     if (phase !== 'ready') return;
@@ -142,10 +164,16 @@ export default function MemoryPlay() {
   return (
     <Stage>
       <div data-memory-play data-won={won ? 'true' : 'false'} data-flips={won?.flips} className={reduced ? 'hm-reduced' : undefined} style={{ position: 'absolute', inset: 0 }}>
-        <Hills />
-        <div style={{ position: 'absolute', top: 48, zIndex: 2, left: 56, right: 56, display: 'flex', alignItems: 'center' }}>
-          <BackButton href="/games/memory" />
-        </div>
+        {won && praise ? (
+          <MemoryDone flips={won.flips} childName={praise.name} completeUrl={praise.url} onAgain={again} levelsHref="/games/memory" />
+        ) : (
+          <>
+            <Hills />
+            <div style={{ position: 'absolute', top: 48, zIndex: 2, left: 56, right: 56, display: 'flex', alignItems: 'center' }}>
+              <BackButton href="/games/memory" />
+            </div>
+          </>
+        )}
         {phase === 'empty' && (
           <div role="status" aria-label="New cards are coming soon" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ width: 400, height: 400, borderRadius: 64, overflow: 'hidden', border: '8px solid #EBB7BC', boxSizing: 'border-box' }}>
@@ -153,7 +181,7 @@ export default function MemoryPlay() {
             </span>
           </div>
         )}
-        {phase === 'ready' && s && (
+        {phase === 'ready' && s && !won && (
           <div style={{ position: 'absolute', top: TOP, left: 0, right: 0, height: AREA_H, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1 }}>
             <div role="group" aria-label="Cards" style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${size}px)`, gap: GAP }}>
               {s.tiles.map((t, i) => {

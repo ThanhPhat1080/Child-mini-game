@@ -97,6 +97,58 @@ test('keyboard only: arrows + Space finish the whole game', async ({ page }) => 
   await expectNoWords(page);
 });
 
+const root = (page: Page) => page.locator('[data-memory-play]');
+
+async function solve(tiles: Locator, pairs: [number, number][]) {
+  for (const [a, b] of pairs) {
+    await tiles.nth(a).click();
+    await tiles.nth(b).click();
+    await expect(tiles.nth(b)).toHaveAttribute('data-matched', 'true');
+  }
+}
+
+test('no mistakes: the completion screen shows 12 flips', async ({ page }) => {
+  const { tiles, pairs } = await openBoard(page);
+  await solve(tiles, pairs);
+  await expect(page.getByLabel('12 flips')).toBeVisible();
+  await expect(root(page)).toHaveAttribute('data-won', 'true');
+  await expect(page.locator('[data-memory-done] :is(button, a[href])')).toHaveCount(2);
+  await expect(page.getByRole('button', { name: 'Play again' })).toBeFocused();
+});
+
+test('one deliberate mismatch: 14 flips', async ({ page }) => {
+  const { tiles, ids, pairs } = await openBoard(page);
+  const other = ids.findIndex((id) => id !== ids[0]);
+  await tiles.nth(0).click();
+  await tiles.nth(other).click();
+  await expect(tiles.nth(0)).toHaveAttribute('data-face-up', 'false', { timeout: 3000 });
+  await solve(tiles, pairs);
+  await expect(page.getByLabel('14 flips')).toBeVisible();
+});
+
+test('Play again starts a new game at 0 flips', async ({ page }) => {
+  const { tiles, pairs } = await openBoard(page);
+  await solve(tiles, pairs);
+  await page.getByRole('button', { name: 'Play again' }).click();
+  await expect(tiles.first()).toBeFocused();
+  await expect(tiles).toHaveCount(12);
+  await expect(page.getByLabel(/flips$/)).toHaveCount(0);
+  await expect(root(page)).toHaveAttribute('data-won', 'false');
+  expect(await faceUps(tiles)).toEqual(Array(12).fill('false'));
+  const ids = await tiles.evaluateAll((els) => els.map((e) => e.getAttribute('data-card-id') ?? ''));
+  const byId = new Map<string, number[]>();
+  ids.forEach((id, i) => byId.set(id, [...(byId.get(id) ?? []), i]));
+  await solve(tiles, [...byId.values()].map(([a, b]) => [a, b] as [number, number]));
+  await expect(page.getByLabel('12 flips')).toBeVisible();
+});
+
+test('Choose level returns to the level screen', async ({ page }) => {
+  const { tiles, pairs } = await openBoard(page);
+  await solve(tiles, pairs);
+  await page.getByRole('link', { name: 'Choose level' }).click();
+  await expect(page).toHaveURL(/\/games\/memory$/);
+});
+
 test.describe('reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
 
