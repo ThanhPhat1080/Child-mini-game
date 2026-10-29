@@ -29,7 +29,7 @@ Success:
 ## 4. Game registry (G1)
 - New `lib/games/registry.ts`: a typed list of games, each with `id`, `href`, card art and `ready`.
 - The game list (`app/games/page.tsx`) reads it instead of `N = 3` and hand-written cards. Entries: Quiz, Memory Match (ready), Spot the Differences (placeholder, not playable).
-- The "?" help popup stays Quiz-only; a game may declare optional help.
+- A game may declare optional help (`hasHelp`). Quiz and Memory Match both do: each card on the game list has a "?" button that opens its "How to play ..." popup (Memory Match: 4 steps, `components/MemoryHelp.tsx`), built on the shared shell `components/GameHelp.tsx`. The popup never starts the game; its last-step Play opens the game.
 - Enter/Space opens the game at the focused position; drag, arrows and dots keep working (C2, ADR-018).
 
 ## 5. Data
@@ -52,6 +52,7 @@ New migration, table `memory_cards`:
 ### 6.1 Level select, `/games/memory` (M1)
 - Three large buttons drawn as mini card grids (4x3, 6x4, 6x5), each with its label "12 cards" / "24 cards" / "30 cards" under the picture (decorative; the `aria-label` stays). A level without enough cards is dimmed and cannot be chosen.
 - Empty pool: a friendly picture screen, not an error (like C11). Load failure: the same screen.
+- A "? Memory Match" badge (top right, like the "? Quiz" badge on the Quiz set screen) opens the "How to play Memory Match" popup; there its last button (Play) only closes it. While the popup is open, Esc/Back/Close/backdrop close it without leaving the screen, and Left/Right do not move the level focus.
 - Back button, music button. Keys: Left/Right move, Enter/Space choose, Esc goes back. Visible focus ring.
 
 ### 6.2 Play, `/games/memory/[level]` (M2-M9)
