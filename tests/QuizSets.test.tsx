@@ -236,7 +236,8 @@ describe('Quiz set selection (T9, C3, C11)', () => {
   it('TC16: after a dot click the arrows step from the centered set, not from the first', async () => {
     h.rows = [set('s1', 'A', null, [good(1)]), set('s2', 'B', null, [good(1)]), set('s3', 'C', null, [good(1)])];
     render(<QuizSets />);
-    await screen.findByRole('link', { name: 'A, 1 questions' });
+    const first = await screen.findByRole('link', { name: 'A, 1 questions' });
+    await waitFor(() => expect(document.activeElement).toBe(first)); // the page focuses the first set when it appears; wait for that so it cannot land after the dot click
     fireEvent.click(screen.getByRole('button', { name: 'Go to set 2' }));
     (document.activeElement as HTMLElement).blur();
     fireEvent.keyDown(window, { key: 'ArrowRight' });
