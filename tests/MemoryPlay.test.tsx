@@ -7,6 +7,7 @@ const h = vi.hoisted(() => ({
   level: '12',
   fetchActiveCards: vi.fn(),
   sayWord: vi.fn(),
+  stopWord: vi.fn(),
   flipTick: vi.fn(),
   chime: vi.fn(),
   push: vi.fn(),
@@ -15,7 +16,7 @@ const h = vi.hoisted(() => ({
   settings: vi.fn(),
 }));
 
-vi.mock('@/lib/memory/cards', () => ({ fetchActiveCards: h.fetchActiveCards, sayWord: h.sayWord }));
+vi.mock('@/lib/memory/cards', () => ({ fetchActiveCards: h.fetchActiveCards, sayWord: h.sayWord, stopWord: h.stopWord }));
 vi.mock('@/lib/sfx', () => ({ flipTick: h.flipTick, chime: h.chime, applause: vi.fn(), speakKid: vi.fn(), playFile: vi.fn() }));
 vi.mock('@/lib/supabase/client', () => ({
   createSupabaseBrowserClient: () => ({ from: () => ({ select: () => ({ eq: () => ({ single: () => h.settings() }) }) }) }),
@@ -61,9 +62,10 @@ async function ready(level = '12', pool = cards(15)) {
 
 beforeEach(() => {
   vi.useFakeTimers();
-  for (const f of [h.fetchActiveCards, h.sayWord, h.flipTick, h.chime, h.push, h.replace, h.drawDeck, h.settings]) f.mockReset();
+  for (const f of [h.fetchActiveCards, h.sayWord, h.stopWord, h.flipTick, h.chime, h.push, h.replace, h.drawDeck, h.settings]) f.mockReset();
   h.settings.mockResolvedValue({ data: { child_name: 'Mi', complete_path: null } });
   h.drawDeck.mockImplementation(fixedDeck);
+  h.sayWord.mockImplementation((_card: MemoryCard, onEnd?: () => void) => onEnd?.()); // a word that finishes at once
   Object.defineProperty(window, 'matchMedia', { configurable: true, writable: true, value: undefined });
 });
 afterEach(() => {
@@ -289,6 +291,7 @@ describe('Memory play screen (M2-M6, M8-M10)', () => {
     r.unmount();
     expect(vi.getTimerCount()).toBe(0);
     expect(cancel).toHaveBeenCalled();
+    expect(h.stopWord).toHaveBeenCalled();
     // @ts-expect-error test cleanup of the stub
     delete window.speechSynthesis;
   });
@@ -313,4 +316,64 @@ describe('Memory play screen (M2-M6, M8-M10)', () => {
     await ready();
     expect(root().classList.contains('hm-reduced')).toBe(false);
   });
+
+  describe('the last word is heard before the celebration', () => {
+    const solveAll = () => {
+      for (let i = 1; i <= 6; i++) {
+        fireEvent.click(tile(i));
+        fireEvent.click(tile(i + 6));
+      }
+    };
+    const done = () => document.querySelector('[data-memory-done]');
+
+    it('the final word is said first; the completion waits until it ended plus a short pause', async () => {
+      h.sayWord.mockImplementation(() => {}); // the voice is still talking
+      await ready();
+      solveAll();
+      await advance(600);
+      const last = h.sayWord.mock.calls.at(-1)!;
+      expect(last[0].id).toBe('c5');
+      expect(done()).toBeNull();
+      await advance(1400); // well past WIN_DELAY_MS
+      expect(done()).toBeNull();
+      expect(root().getAttribute('data-won')).toBe('false');
+      (last[1] as () => void)();
+      await advance(350);
+      expect(done()).toBeNull();
+      await advance(100);
+      expect(done()).not.toBeNull();
+      expect(screen.getByLabelText('12 flips')).toBeTruthy();
+    });
+
+    it('an earlier word ending late does not stand in for the last one', async () => {
+      h.sayWord.mockImplementation(() => {});
+      await ready();
+      solveAll();
+      await advance(600);
+      (h.sayWord.mock.calls[0][1] as () => void)();
+      await advance(1500);
+      expect(done()).toBeNull();
+    });
+
+    it('a word that never ends cannot block the celebration (cap about 4 s after the last match)', async () => {
+      h.sayWord.mockImplementation(() => {});
+      await ready();
+      solveAll();
+      await advance(3900);
+      expect(done()).toBeNull();
+      await advance(200);
+      expect(done()).not.toBeNull();
+      expect(screen.getByLabelText('12 flips')).toBeTruthy();
+    });
+
+    it('a word that ends quickly still leaves WIN_DELAY_MS before the celebration', async () => {
+      await ready();
+      solveAll();
+      await advance(WIN_DELAY_MS - 50);
+      expect(done()).toBeNull();
+      await advance(100);
+      expect(done()).not.toBeNull();
+    });
+  });
 });
+
