@@ -18,6 +18,8 @@ type Question = { id: string; position: number; prompt_text: string | null; prom
 
 const BADGE = ['#C77D85', '#5F86A8', '#8A6A2A'];
 const SHADOW = ['#D9A0A6', '#7FA0BE', '#D2B466'];
+/** The picked card plays its 1.5 s effect before the hooray / oh-oh popup, so the child sees what she chose. */
+const PICK_MS = 1500;
 
 let voiceEl: HTMLAudioElement | null = null;
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
@@ -91,6 +93,7 @@ export default function QuestionPage() {
       setReading(true);
       // read the child's answer aloud first, then show hooray / oh-oh with its sound
       const mine = token.current;
+      const pickedAt = Date.now();
       const finish = () => {
         if (mine !== token.current) return;
         const show = () => {
@@ -99,7 +102,8 @@ export default function QuestionPage() {
           setResult(a.is_correct ? 'correct' : 'wrong');
           if (a.is_correct) yay(sounds.hooray); else ohOh(sounds.ohoh);
         };
-        if (a.is_correct) show(); else setTimeout(show, 200); // wrong: pause 200 ms after her answer is read
+        const hold = Math.max(0, PICK_MS - (Date.now() - pickedAt)); // let the picked card finish its effect first
+        setTimeout(show, hold + (a.is_correct ? 0 : 200)); // wrong: pause 200 ms more
       };
       if (a.text?.trim()) speakKid(a.text.trim(), { pitch: 1.5, rate: 0.8, onEnd: finish });
       else finish();
@@ -234,10 +238,12 @@ export default function QuestionPage() {
         {cur.answers.map((a, i) => {
           const c = SLOT_COLORS[i];
           const dim = result === 'wrong' && picked === i;
+          const chosen = picked === i && result !== 'wrong'; // grows while waiting for, and under, the hooray popup
           const img = mediaUrl(a.image_path);
           const showText = !cur.hide_answer_text && !!a.text?.trim(); // hidden text is still read aloud, just not drawn
           return (
-            <button key={a.slot} type="button" data-answer className={`hm-ans${dim ? ' hm-wobble' : ''}${readIdx === i ? ' hm-reading' : ''}`} aria-label={`Answer ${i + 1}`} onClick={() => pick(i)} style={{ position: 'relative', width: 460, height: 400, borderRadius: 56, border: `14px solid ${c.ring}`, background: c.bg, boxShadow: `0 16px 0 ${SHADOW[i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box', opacity: dim ? 0.55 : readIdx !== null && readIdx !== i ? 0.7 : 1 }}>
+            <button key={a.slot} type="button" data-answer className={`hm-ans${dim ? ' hm-wobble' : ''}${readIdx === i ? ' hm-reading' : ''}${chosen ? ' hm-picked' : ''}`} aria-label={`Answer ${i + 1}`} onClick={() => pick(i)} style={{ position: 'relative', width: 460, height: 400, borderRadius: 56, border: `14px solid ${c.ring}`, background: c.bg, boxShadow: `0 16px 0 ${SHADOW[i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box', opacity: dim ? 0.55 : readIdx !== null && readIdx !== i ? 0.7 : 1 }}>
+              {chosen && <span key={`pick-${q}-${i}`} className="hm-pickring" aria-hidden="true" style={{ borderColor: c.ring }} />}
               {readIdx === i && (<><span className="hm-readring" aria-hidden="true" style={{ borderColor: c.ring }} /><span className="hm-bars" aria-hidden="true"><i /><i /><i /></span></>)}
               <span style={{ position: 'absolute', top: -34, left: -34, width: 104, height: 104, borderRadius: 52, background: BADGE[i], color: '#fff', border: '8px solid #FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, fontWeight: 600, boxSizing: 'border-box' }}>{i + 1}</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}

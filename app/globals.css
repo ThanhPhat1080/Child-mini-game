@@ -84,6 +84,11 @@ button.hm-tap:active{transform:scale(.94)}
 
 /* answer being read aloud */
 @keyframes hm-read{0%,100%{transform:translateY(-12px) scale(1.06) rotate(0)}25%{transform:translateY(-26px) scale(1.12) rotate(-1.6deg)}50%{transform:translateY(-12px) scale(1.06) rotate(0)}75%{transform:translateY(-26px) scale(1.12) rotate(1.6deg)}}
+/* The answer card the child just picked: grows and wiggles for 1.5 s, a soft ring pulses out, then it stays a little bigger */
+@keyframes hm-picked{0%{transform:scale(1) rotate(0)}18%{transform:scale(1.18) rotate(-2deg)}38%{transform:scale(1.12) rotate(2deg)}58%{transform:scale(1.17) rotate(-1.4deg)}80%{transform:scale(1.12) rotate(.8deg)}100%{transform:scale(1.14) rotate(0)}}
+@keyframes hm-pickring{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.26);opacity:0}}
+.hm-picked{animation:hm-picked 1.5s ease-in-out both;z-index:4;filter:drop-shadow(0 22px 28px rgba(90,64,56,.25))}
+.hm-pickring{position:absolute;inset:-14px;border-radius:70px;border:12px solid;pointer-events:none;animation:hm-pickring .75s ease-out 2}
 @keyframes hm-readring{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.18);opacity:0}}
 @keyframes hm-bar{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
 .hm-reading{animation:hm-read 1.4s ease-in-out infinite;z-index:3;filter:drop-shadow(0 18px 24px rgba(90,64,56,.22))}
@@ -92,4 +97,4 @@ button.hm-tap:active{transform:scale(.94)}
 .hm-bars i{display:block;width:8px;height:38px;border-radius:4px;background:#E59AA1;transform-origin:center;animation:hm-bar .8s ease-in-out infinite}
 .hm-bars i:nth-child(2){animation-delay:.15s;background:#8FB3D1}
 .hm-bars i:nth-child(3){animation-delay:.3s;background:#E5C979}
-@media (prefers-reduced-motion: reduce){.hm-reading,.hm-readring,.hm-bars i{animation:none}.hm-reading{outline:8px solid #E59AA1;outline-offset:6px}}
+@media (prefers-reduced-motion: reduce){.hm-picked{animation:none;transform:scale(1.08)}.hm-pickring{animation:none;opacity:0}.hm-reading,.hm-readring,.hm-bars i{animation:none}.hm-reading{outline:8px solid #E59AA1;outline-offset:6px}}
