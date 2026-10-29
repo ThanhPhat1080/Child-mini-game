@@ -31,7 +31,7 @@ export const isInlineSvg = (s: string): boolean => /^\s*<(svg[\s>]|\?xml|!doctyp
  * Checks raw SVG code and returns it cleaned (one line, xmlns added when missing).
  * SVG is only ever shown through <img>, where scripts do not run, but unsafe parts are rejected anyway.
  */
-function checkSvg(raw: string): { svg: string } | { error: string } {
+export function checkSvg(raw: string): { svg: string } | { error: string } {
   let s = stripProlog(raw).replace(/&nbsp;/g, '&#160;'); // the one HTML entity designers' tools often leave in
   if (s.length > SVG_MAX_CHARS) return { error: `SVG code is longer than ${SVG_MAX_CHARS.toLocaleString('en-US')} characters (minify it first, for example with SVGO)` };
   if (!/<\/svg>\s*$/i.test(s)) return { error: 'SVG code must end with </svg>' };

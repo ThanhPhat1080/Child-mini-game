@@ -5,9 +5,9 @@ import { duplicateWords, isCardComplete, loadCards, newCard, saveCards, type ECa
 import { LEVELS, pairsOf } from '@/lib/memory/deck';
 import { sayWord } from '@/lib/memory/cards';
 import { MAX_IMAGE_BYTES, addPending, clearPending, svgToPending } from '@/lib/media';
-import { isInlineSvg, SVG_MAX_CHARS } from '@/lib/quizImport';
+import { checkSvg } from '@/lib/quizImport';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
-import { CARD_AUDIO_TYPES, CARD_IMG_TYPES, CardPanel, poolHealth } from '@/components/admin/CardPanel';
+import { CARD_IMG_TYPES, CardPanel, MAX_SOUND_BYTES, cardAudioType, poolHealth } from '@/components/admin/CardPanel';
 import s from '@/components/admin/admin-ui.module.css';
 
 /** Memory Match card pool (A11) with pool health (A13). Nothing is uploaded or written until Save (T15). */
@@ -59,10 +59,18 @@ export default function CardsPage() {
   const edit = (id: string, patch: Partial<ECard>) => { touch(); setDraft(draft.map((c) => (c.id === id ? { ...c, ...patch } : c))); };
   const say = (id: string, text: string | null) => setMsgs((m) => { const n = { ...m }; if (text) n[id] = text; else delete n[id]; return n; });
 
-  function pick(id: string, f: File, kind: 'image' | 'audio') {
-    if (kind === 'image' && !CARD_IMG_TYPES.includes(f.type)) return say(id, 'Use a PNG, JPG, WebP or SVG picture.');
-    if (kind === 'image' && f.size > MAX_IMAGE_BYTES) return say(id, 'Image must be 2 MB or smaller.');
-    if (kind === 'audio' && !CARD_AUDIO_TYPES.includes(f.type)) return say(id, 'Use an MP3, M4A or WAV sound.');
+  function pick(id: string, picked: File, kind: 'image' | 'audio') {
+    let f = picked;
+    if (kind === 'image') {
+      if (!CARD_IMG_TYPES.includes(f.type)) return say(id, 'Use a PNG, JPG, WebP or SVG picture.');
+      if (f.size > MAX_IMAGE_BYTES) return say(id, 'Image must be 2 MB or smaller.');
+    } else {
+      const type = cardAudioType(f.type);
+      if (!type) return say(id, 'Use an MP3, M4A or WAV sound.');
+      if (f.size > MAX_SOUND_BYTES) return say(id, 'Sound must be 10 MB or smaller.');
+      // the bucket only knows the standard names (e.g. Chrome calls .m4a "audio/x-m4a")
+      if (type !== f.type) f = new File([f], f.name, { type });
+    }
     try {
       const path = addPending(f); // preview only; uploaded when you press Save
       say(id, null);
@@ -71,11 +79,11 @@ export default function CardsPage() {
   }
 
   function applySvg(id: string, code: string) {
-    const t = code.trim();
-    if (!isInlineSvg(t)) return say(id, 'That does not look like SVG code. It should start with <svg.');
-    if (t.length > SVG_MAX_CHARS) return say(id, `SVG code is too long (max ${SVG_MAX_CHARS} characters).`);
+    // same rules as the Quiz import: no scripts, handlers, embeds or outside links; valid XML; normalized text
+    const r = checkSvg(code);
+    if ('error' in r) return say(id, `${r.error}.`);
     say(id, null);
-    edit(id, { image: svgToPending(t) });
+    edit(id, { image: svgToPending(r.svg) }); // identical drawings share one pending file
   }
 
   function add() {

@@ -10,8 +10,17 @@ import { PicIcon, dangerBtn, fileName, ghostBtn, inputStyle, panel } from './edi
 export const WORD_MAX = 40;
 /** Accepted picture and pronunciation files (A11). */
 export const CARD_IMG_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
-export const CARD_AUDIO_TYPES = ['audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/wav', 'audio/x-wav', 'audio/wave'];
-const AUDIO_ACCEPT = ['.mp3', '.m4a', '.wav', ...CARD_AUDIO_TYPES].join(',');
+/** Sound types the browser may report -> the name the media bucket allows (audio/mpeg, audio/mp4, audio/wav). */
+const AUDIO_ALIASES: Record<string, string> = {
+  'audio/mpeg': 'audio/mpeg', 'audio/mp3': 'audio/mpeg',
+  'audio/mp4': 'audio/mp4', 'audio/x-m4a': 'audio/mp4', 'audio/m4a': 'audio/mp4',
+  'audio/wav': 'audio/wav', 'audio/x-wav': 'audio/wav', 'audio/wave': 'audio/wav', 'audio/vnd.wave': 'audio/wav',
+};
+/** The bucket type to store a picked sound as, or null when it is not an MP3, M4A or WAV. */
+export const cardAudioType = (type: string): string | null => AUDIO_ALIASES[type] ?? null;
+/** The media bucket's file size limit (supabase/migrations/20261026000000_init_schema.sql). */
+export const MAX_SOUND_BYTES = 10 * 1024 * 1024;
+const AUDIO_ACCEPT = ['.mp3', '.m4a', '.wav', ...Object.keys(AUDIO_ALIASES)].join(',');
 
 const list = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 

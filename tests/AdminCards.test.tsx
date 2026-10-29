@@ -185,6 +185,56 @@ describe('Admin cards page (A11, A13)', () => {
     expect(screen.getByRole('img', { name: 'Card 1 picture' }).getAttribute('src')).toBe('blob:pending:svg');
   });
 
+  it('pasted SVG with a script or an event handler is refused inline and never stored', async () => {
+    await renderWith([card(1)]);
+    const paste = (code: string) => {
+      fireEvent.change(screen.getByLabelText('SVG code for card 1'), { target: { value: code } });
+      fireEvent.click(screen.getByRole('button', { name: 'Use SVG for card 1' }));
+    };
+    paste('<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>');
+    expect(screen.getByText('SVG code may not contain scripts, foreignObject or embedded content.')).toBeTruthy();
+    paste('<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><rect width="4" height="4"/></svg>');
+    expect(screen.getByText('SVG code may not contain event handlers such as onclick.')).toBeTruthy();
+    expect(h.svgToPending).not.toHaveBeenCalled();
+    expect(h.addPending).not.toHaveBeenCalled();
+    expect(screen.getByRole('img', { name: 'Card 1 picture' }).getAttribute('src')).toBe('/media/cards/1.png');
+  });
+
+  it('valid pasted SVG is accepted, and drawings that differ only in whitespace share one pending file', async () => {
+    const tokens = new Map<string, string>();
+    h.svgToPending.mockImplementation((svg: string) => {
+      if (!tokens.has(svg)) tokens.set(svg, `pending:svg${tokens.size + 1}`);
+      return tokens.get(svg)!;
+    });
+    await renderWith([card(1), card(2)]);
+    const paste = (n: number, code: string) => {
+      fireEvent.change(screen.getByLabelText(`SVG code for card ${n}`), { target: { value: code } });
+      fireEvent.click(screen.getByRole('button', { name: `Use SVG for card ${n}` }));
+    };
+    paste(1, '<svg xmlns="http://www.w3.org/2000/svg"><rect width="4" height="4"/></svg>');
+    paste(2, '  <svg xmlns="http://www.w3.org/2000/svg">\n   <rect  width="4"\n height="4"/>\n</svg>\n');
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(tokens.size).toBe(1);
+    expect(screen.getByRole('img', { name: 'Card 1 picture' }).getAttribute('src')).toBe('blob:pending:svg1');
+    expect(screen.getByRole('img', { name: 'Card 2 picture' }).getAttribute('src')).toBe('blob:pending:svg1');
+  });
+
+  it('sound types are stored under the names the bucket allows (x-m4a -> mp4, x-wav -> wav)', async () => {
+    await renderWith([card(1), card(2)]);
+    fireEvent.change(screen.getByLabelText('Sound file for card 1'), { target: { files: [file('cat.m4a', 'audio/x-m4a')] } });
+    fireEvent.change(screen.getByLabelText('Sound file for card 2'), { target: { files: [file('dog.wav', 'audio/x-wav')] } });
+    const [m4a, wav] = h.addPending.mock.calls.map((c) => c[0] as File);
+    expect([m4a.name, m4a.type]).toEqual(['cat.m4a', 'audio/mp4']);
+    expect([wav.name, wav.type]).toEqual(['dog.wav', 'audio/wav']);
+  });
+
+  it('a sound over 10 MB shows a message at once and is not added', async () => {
+    await renderWith([card(1)]);
+    fireEvent.change(screen.getByLabelText('Sound file for card 1'), { target: { files: [file('long.mp3', 'audio/mpeg', 10 * 1024 * 1024 + 1)] } });
+    expect(screen.getByText('Sound must be 10 MB or smaller.')).toBeTruthy();
+    expect(h.addPending).not.toHaveBeenCalled();
+  });
+
   it('two cards with the same word show a warning that does not block Save', async () => {
     await renderWith([card(1), card(2)]);
     fireEvent.change(word(2), { target: { value: ' WORD1 ' } });
