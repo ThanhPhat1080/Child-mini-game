@@ -27,30 +27,49 @@ function tone(c: AudioContext, out: AudioNode, t: number, f0: number, f1: number
   o.stop(t + dur + 0.05);
 }
 
-/** Child-like voice: high pitch, slightly slow, English female voice if present. */
+const isEnglish = (v: SpeechSynthesisVoice) => v.lang.toLowerCase().startsWith('en');
+const pickVoice = (voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null => {
+  const en = voices.filter(isEnglish);
+  const us = en.filter((v) => v.lang.toLowerCase().replace('_', '-') === 'en-us');
+  const best = (list: SpeechSynthesisVoice[]) => list.find((v) => /samantha|zira|female|google us english|karen|victoria/i.test(v.name)) ?? list[0];
+  return best(us) ?? best(en) ?? null;
+};
+
+/** Runs `go` once the browser has its voice list (Chrome fills it in late, after a `voiceschanged` event), or after 600 ms at most. */
+function whenVoicesReady(synth: SpeechSynthesis, go: () => void): void {
+  if (synth.getVoices().length > 0) { go(); return; }
+  let ran = false;
+  const run = () => { if (!ran) { ran = true; synth.removeEventListener?.('voiceschanged', run); go(); } };
+  synth.addEventListener?.('voiceschanged', run);
+  setTimeout(run, 600);
+}
+
+/**
+ * Child-like voice: high pitch, slightly slow, always English (`lang = 'en-US'`, an en-US voice preferred, never a
+ * Vietnamese one), whatever the browser language is. If the computer has no English voice at all the browser speaks nothing
+ * for en-US, so a second try without a language lets the default voice read it rather than staying silent.
+ */
 export function speakKid(text: string, opts: { pitch?: number; rate?: number; onEnd?: () => void } = {}): void {
   if (typeof window === 'undefined' || !('speechSynthesis' in window) || !text) { opts.onEnd?.(); return; }
   const synth = window.speechSynthesis;
   synth.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  // Always English, whatever the browser or page language is: without `lang` (or with no voice found yet, as when
-  // the voice list has not loaded) the browser falls back to its own language, e.g. Vietnamese.
-  u.lang = 'en-US';
-  const voices = synth.getVoices().filter((v) => v.lang.toLowerCase().startsWith('en'));
-  const us = voices.filter((v) => v.lang.toLowerCase().replace('_', '-') === 'en-us');
-  const pick = (list: SpeechSynthesisVoice[]) => list.find((v) => /samantha|zira|female|google us english|karen|victoria/i.test(v.name)) ?? list[0];
-  u.voice = pick(us) ?? pick(voices) ?? null;
-  u.pitch = opts.pitch ?? 1.9;
-  u.rate = opts.rate ?? 0.95;
-  u.volume = 1;
-  if (opts.onEnd) {
-    let done = false;
-    const fin = () => { if (!done) { done = true; opts.onEnd?.(); } };
+  let done = false;
+  const fin = () => { if (!done) { done = true; opts.onEnd?.(); } };
+  if (opts.onEnd) setTimeout(fin, 4000); // never leave the child waiting
+  const say = (english: boolean) => {
+    const u = new SpeechSynthesisUtterance(text);
+    if (english) { u.lang = 'en-US'; u.voice = pickVoice(synth.getVoices()); }
+    u.pitch = opts.pitch ?? 1.9;
+    u.rate = opts.rate ?? 0.95;
+    u.volume = 1;
+    let started = false;
+    u.onstart = () => { started = true; };
     u.onend = fin;
-    u.onerror = fin;
-    setTimeout(fin, 4000); // never leave the child waiting
-  }
-  synth.speak(u);
+    u.onerror = (e) => { if (english && !started && e.error !== 'canceled' && e.error !== 'interrupted') say(false); else fin(); };
+    synth.speak(u);
+  };
+  // Chrome drops a speak() that comes right after cancel(), so wait a moment (and for the voice list)
+  setTimeout(() => whenVoicesReady(synth, () => say(true)), 60);
 }
 
 /** Stop handle for a built-in sound; `ms` is roughly how long it plays. */
