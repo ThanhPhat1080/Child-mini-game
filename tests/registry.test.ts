@@ -17,4 +17,8 @@ describe('game registry', () => {
     expect(href.quiz).toBe('/games/quiz');
     expect(href.memory).toBe('/games/memory');
   });
+  it('quiz and memory have a help popup, spot does not', () => {
+    const help = Object.fromEntries(GAMES.map((g) => [g.id, g.hasHelp === true]));
+    expect(help).toEqual({ quiz: true, memory: true, spot: false });
+  });
 });
