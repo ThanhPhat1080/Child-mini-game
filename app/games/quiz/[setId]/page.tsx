@@ -14,7 +14,7 @@ import { handleChoiceKey } from '@/lib/keynav';
 import { clearProgress, deviceStore, firstUnfinished, loadProgress, nextUnfinished, saveProgress } from '@/lib/quizProgress';
 
 type Answer = { slot: number; image_path: string | null; text: string | null; is_correct: boolean };
-type Question = { id: string; position: number; prompt_text: string | null; prompt_image_path: string | null; prompt_audio_path: string | null; read_answers: boolean; answers: Answer[] };
+type Question = { id: string; position: number; prompt_text: string | null; prompt_image_path: string | null; prompt_audio_path: string | null; read_answers: boolean; hide_answer_text: boolean; answers: Answer[] };
 
 const BADGE = ['#C77D85', '#5F86A8', '#8A6A2A'];
 const SHADOW = ['#D9A0A6', '#7FA0BE', '#D2B466'];
@@ -67,7 +67,7 @@ export default function QuestionPage() {
   useEffect(() => {
     createSupabaseBrowserClient()
       .from('questions')
-      .select('id, position, prompt_text, prompt_image_path, prompt_audio_path, read_answers, answers(slot, image_path, text, is_correct)')
+      .select('id, position, prompt_text, prompt_image_path, prompt_audio_path, read_answers, hide_answer_text, answers(slot, image_path, text, is_correct)')
       .eq('set_id', setId)
       .order('position')
       .then(({ data }) => {
@@ -235,13 +235,14 @@ export default function QuestionPage() {
           const c = SLOT_COLORS[i];
           const dim = result === 'wrong' && picked === i;
           const img = mediaUrl(a.image_path);
+          const showText = !cur.hide_answer_text && !!a.text?.trim(); // hidden text is still read aloud, just not drawn
           return (
             <button key={a.slot} type="button" data-answer className={`hm-ans${dim ? ' hm-wobble' : ''}${readIdx === i ? ' hm-reading' : ''}`} aria-label={`Answer ${i + 1}`} onClick={() => pick(i)} style={{ position: 'relative', width: 460, height: 400, borderRadius: 56, border: `14px solid ${c.ring}`, background: c.bg, boxShadow: `0 16px 0 ${SHADOW[i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box', opacity: dim ? 0.55 : readIdx !== null && readIdx !== i ? 0.7 : 1 }}>
               {readIdx === i && (<><span className="hm-readring" aria-hidden="true" style={{ borderColor: c.ring }} /><span className="hm-bars" aria-hidden="true"><i /><i /><i /></span></>)}
               <span style={{ position: 'absolute', top: -34, left: -34, width: 104, height: 104, borderRadius: 52, background: BADGE[i], color: '#fff', border: '8px solid #FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, fontWeight: 600, boxSizing: 'border-box' }}>{i + 1}</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {img && <img src={img} alt="" style={{ width: '100%', maxHeight: a.text?.trim() ? 250 : '100%', objectFit: 'contain' }} />}
-              {a.text?.trim() && <span style={{ position: 'absolute', left: 0, right: 0, bottom: 14, textAlign: 'center', fontSize: 44, fontWeight: 600, color: '#5A4038' }}>{a.text}</span>}
+              {img && <img src={img} alt="" style={{ width: '100%', maxHeight: showText ? 250 : '100%', objectFit: 'contain' }} />}
+              {showText && <span style={{ position: 'absolute', left: 0, right: 0, bottom: 14, textAlign: 'center', fontSize: 44, fontWeight: 600, color: '#5A4038' }}>{a.text}</span>}
             </button>
           );
         })}

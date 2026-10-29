@@ -141,6 +141,10 @@ export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAs
                 <input type="checkbox" checked={q.readAnswers} onChange={() => onEdit({ readAnswers: !q.readAnswers })} style={{ width: 20, height: 20, accentColor: '#3F6B48', marginTop: 2 }} />
                 <span><span style={{ display: 'block', fontWeight: 700, fontSize: 15 }}>Read the answers aloud</span><span style={{ display: 'block', fontSize: 13, color: '#7A6458' }}>After the question, the app reads each answer text one by one. Turn off to read only the question. The answer Hà My picks is always read aloud.</span></span>
               </label>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: 12, cursor: 'pointer' }}>
+                <input type="checkbox" checked={q.hideAnswerText} onChange={() => onEdit({ hideAnswerText: !q.hideAnswerText })} style={{ width: 20, height: 20, accentColor: '#3F6B48', marginTop: 2 }} />
+                <span><span style={{ display: 'block', fontWeight: 700, fontSize: 15 }}>Hide the answer text</span><span style={{ display: 'block', fontSize: 13, color: '#7A6458' }}>The answer cards show only the picture, without the text. The text is still read aloud: in the one-by-one reading when “Read the answers aloud” is on, and always for the answer the child picks.</span></span>
+              </label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
                 {SLOTS.slice(0, q.count).map((c, i) => {
                   const img = q.imgs[i];

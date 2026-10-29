@@ -64,6 +64,7 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e script placeho
 - AC: prompt voice is upload only (mp3/m4a/wav); no in-browser recording.
 - AC: a "Read the answers aloud" checkbox per question (default on, column `questions.read_answers`); when off, only the question is read and the answers are not read one by one after it. The answer the child picks is always read aloud, regardless of the checkbox.
 - AC: each answer has an optional text field ("Answer text (read aloud)"); it is saved with the answer and does not block completeness.
+- AC: a "Hide the answer text" checkbox per question (default off, column `questions.hide_answer_text`, migration `20261029000000_questions_hide_answer_text.sql`) sits next to "Read the answers aloud". When on, the child's answer cards show only the picture (and the number), never the answer text. It does not change the reading: with "Read the answers aloud" on the answers are still read one by one, and the answer the child picks is always read aloud. The JSON import accepts an optional `hideAnswerText` (true/false) per question.
 - AC: the sticky page header keeps Save, Revert and Preview as child visible while scrolling the set and question editors.
 - AC: "Preview as child" opens the child quiz in a new browser tab.
 - AC: the answer image button reads "Upload image" (also "Upload" when empty), never "Replace image".
@@ -96,6 +97,7 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e script placeho
 ### T10 Question screen (C4-C6, C9, C10, C12; ADR-007, 019, 021, 025)
 - AC: three bands (header, question row, answers) with no overlap at 1920x1080; prompt audio plays if present, with a replay button.
 - AC: 2-3 answers show image + number + fixed color (1 rose, 2 sky, 3 butter); click/tap and keys 1/2/3 answer; Left/Right arrows move between the answers and Enter or Space picks the focused one; no timer. Tests: `tests/QuestionKeys.test.tsx`, `tests/keynav.test.ts`.
+- AC: an answer card draws the answer text under the picture only when the question does not have "Hide the answer text" on; when the text is hidden the picture uses the full card height.
 - AC: each answer image fills the card width (`width: 100%`) and is scaled to fit inside the card, never cropped or stretched (`object-fit: contain`; height capped at 250 px when the answer has text, so it never covers the text); this makes SVGs with a fixed size (e.g. 84x84) or only a `viewBox` render at the same size.
 - AC: the reading of all answers after the question happens only when the question's "Read the answers aloud" is on; the picked answer is always read.
 - AC: on a new question the app waits 0.5 s, reads the question aloud (recorded voice if uploaded, else kid voice), then reads each answer's text aloud with 1 s between answers (the card being read bounces and wiggles with a glowing ring and sound bars, the others dim slightly; static ring with reduced motion); the replay button repeats this; picking an answer stops the reading.
