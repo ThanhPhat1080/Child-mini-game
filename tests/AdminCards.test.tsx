@@ -1,0 +1,244 @@
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ECard } from '@/lib/memory/adminCards';
+
+const h = vi.hoisted(() => ({
+  loadCards: vi.fn(),
+  saveCards: vi.fn(),
+  sayWord: vi.fn(),
+  addPending: vi.fn(),
+  clearPending: vi.fn(),
+  svgToPending: vi.fn(),
+  upload: vi.fn(),
+}));
+
+vi.mock('@/lib/supabase/client', () => ({
+  createSupabaseBrowserClient: () => ({
+    from: () => { throw new Error('the page must not touch the database directly'); },
+    storage: { from: () => ({ upload: h.upload, remove: h.upload }) },
+  }),
+}));
+vi.mock('@/lib/memory/adminCards', async (orig) => ({
+  ...(await orig<typeof import('@/lib/memory/adminCards')>()),
+  loadCards: h.loadCards,
+  saveCards: h.saveCards,
+}));
+vi.mock('@/lib/memory/cards', () => ({ sayWord: h.sayWord }));
+vi.mock('@/lib/media', async (orig) => ({
+  ...(await orig<typeof import('@/lib/media')>()),
+  addPending: h.addPending,
+  clearPending: h.clearPending,
+  svgToPending: h.svgToPending,
+  mediaUrl: (p: string | null) => (p ? (p.startsWith('pending:') ? `blob:${p}` : `/media/${p}`) : null),
+}));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }), usePathname: () => '/admin/cards' }));
+vi.mock('next/link', () => ({
+  default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a>,
+}));
+
+import CardsPage from '@/app/admin/(panel)/cards/page';
+import { AdminNav } from '@/components/AdminNav';
+
+const card = (n: number, o: Partial<ECard> = {}): ECard => ({ id: `c${n}`, isNew: false, word: `word${n}`, image: `cards/${n}.png`, audio: null, active: true, ...o });
+const cards = (n: number, active = true) => Array.from({ length: n }, (_, i) => card(i + 1, { active }));
+
+const saveBtn = () => screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement;
+const revertBtn = () => screen.getByRole('button', { name: 'Revert' }) as HTMLButtonElement;
+const word = (n: number) => screen.getByLabelText(`Word for card ${n}`) as HTMLInputElement;
+const toggle = (n: number) => screen.getByRole('switch', { name: `Card ${n} on` }) as HTMLInputElement;
+const health = () => screen.getByTestId('pool-health').textContent ?? '';
+const file = (name: string, type: string, size = 10) => new File([new Uint8Array(size)], name, { type });
+
+async function renderWith(list: ECard[]) {
+  h.loadCards.mockResolvedValue(list);
+  render(<CardsPage />);
+  await screen.findByRole('button', { name: 'Add card' });
+  await waitFor(() => expect(screen.queryByText('Loading…')).toBeNull());
+}
+
+beforeEach(() => {
+  for (const f of Object.values(h)) f.mockReset();
+  h.saveCards.mockResolvedValue({ error: null, warning: null });
+  let n = 0;
+  h.addPending.mockImplementation(() => `pending:${++n}`);
+  h.svgToPending.mockImplementation(() => 'pending:svg');
+});
+afterEach(cleanup);
+
+describe('Admin cards page (A11, A13)', () => {
+  it('lists every card with its picture, word and on/off toggle', async () => {
+    await renderWith([card(1), card(2, { active: false })]);
+    expect(word(1).value).toBe('word1');
+    expect(word(2).value).toBe('word2');
+    expect((screen.getByRole('img', { name: 'Card 1 picture' }) as HTMLImageElement).getAttribute('src')).toBe('/media/cards/1.png');
+    expect(toggle(1).checked).toBe(true);
+    expect(toggle(2).checked).toBe(false);
+  });
+
+  it('"Add card" appends an empty card', async () => {
+    await renderWith([card(1)]);
+    fireEvent.click(screen.getByRole('button', { name: 'Add card' }));
+    expect(word(2).value).toBe('');
+    expect(toggle(2).checked).toBe(true);
+    expect(screen.queryByRole('img', { name: 'Card 2 picture' })).toBeNull();
+  });
+
+  it('Save stays disabled until every card is complete and something changed', async () => {
+    await renderWith([card(1)]);
+    expect(saveBtn().disabled).toBe(true); // nothing changed yet
+    fireEvent.click(screen.getByRole('button', { name: 'Add card' }));
+    expect(saveBtn().disabled).toBe(true); // new card has no word and no picture
+    fireEvent.change(word(2), { target: { value: 'lion' } });
+    expect(saveBtn().disabled).toBe(true); // still no picture
+    fireEvent.change(screen.getByLabelText('Picture file for card 2'), { target: { files: [file('lion.png', 'image/png')] } });
+    expect(saveBtn().disabled).toBe(false);
+  });
+
+  it('the word input stops at 40 characters and shows a counter', async () => {
+    await renderWith([card(1)]);
+    expect(word(1).maxLength).toBe(40);
+    expect(screen.getByText('5/40')).toBeTruthy();
+  });
+
+  it('Save calls saveCards(saved, draft), then reloads and clears picked files', async () => {
+    const first = [card(1)];
+    await renderWith(first);
+    fireEvent.change(word(1), { target: { value: 'kitten' } });
+    const after = [card(1, { word: 'kitten' })];
+    h.loadCards.mockResolvedValue(after);
+    h.clearPending.mockClear();
+    fireEvent.click(saveBtn());
+    await waitFor(() => expect(h.loadCards).toHaveBeenCalledTimes(2));
+    expect(h.saveCards).toHaveBeenCalledWith(first, [card(1, { word: 'kitten' })]);
+    await waitFor(() => expect(saveBtn().disabled).toBe(true));
+    expect(h.clearPending).toHaveBeenCalled();
+    expect(word(1).value).toBe('kitten');
+  });
+
+  it('Revert restores the loaded cards and forgets picked files', async () => {
+    await renderWith([card(1)]);
+    fireEvent.change(word(1), { target: { value: 'changed' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add card' }));
+    h.clearPending.mockClear();
+    fireEvent.click(revertBtn());
+    expect(word(1).value).toBe('word1');
+    expect(screen.queryByLabelText('Word for card 2')).toBeNull();
+    expect(h.clearPending).toHaveBeenCalled();
+    expect(revertBtn().disabled).toBe(true);
+  });
+
+  it('Delete asks first: Cancel keeps the card, confirming removes it from the draft only', async () => {
+    await renderWith([card(1), card(2)]);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete card 1' }));
+    const dialog = screen.getByRole('alertdialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(word(1).value).toBe('word1');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete card 1' }));
+    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete card' }));
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(word(1).value).toBe('word2');
+    expect(screen.queryByLabelText('Word for card 2')).toBeNull();
+    expect(h.saveCards).not.toHaveBeenCalled();
+    expect(saveBtn().disabled).toBe(false);
+  });
+
+  it('picking a picture only keeps it in memory (addPending) and previews it; nothing is uploaded', async () => {
+    await renderWith([card(1)]);
+    const f = file('lion.png', 'image/png');
+    fireEvent.change(screen.getByLabelText('Picture file for card 1'), { target: { files: [f] } });
+    expect(h.addPending).toHaveBeenCalledWith(f);
+    expect(screen.getByRole('img', { name: 'Card 1 picture' }).getAttribute('src')).toBe('blob:pending:1');
+    expect(h.upload).not.toHaveBeenCalled();
+  });
+
+  it('a picture over 2 MB or of the wrong type shows a message at once and is not added', async () => {
+    await renderWith([card(1)]);
+    const input = screen.getByLabelText('Picture file for card 1');
+    fireEvent.change(input, { target: { files: [file('big.png', 'image/png', 2 * 1024 * 1024 + 1)] } });
+    expect(screen.getByText('Image must be 2 MB or smaller.')).toBeTruthy();
+    fireEvent.change(input, { target: { files: [file('a.gif', 'image/gif')] } });
+    expect(screen.getByText('Use a PNG, JPG, WebP or SVG picture.')).toBeTruthy();
+    expect(h.addPending).not.toHaveBeenCalled();
+    expect(screen.getByRole('img', { name: 'Card 1 picture' }).getAttribute('src')).toBe('/media/cards/1.png');
+  });
+
+  it('a sound file is kept in memory; a wrong sound type shows a message', async () => {
+    await renderWith([card(1)]);
+    const input = screen.getByLabelText('Sound file for card 1');
+    fireEvent.change(input, { target: { files: [file('a.txt', 'text/plain')] } });
+    expect(screen.getByText('Use an MP3, M4A or WAV sound.')).toBeTruthy();
+    expect(h.addPending).not.toHaveBeenCalled();
+    const f = file('cat.mp3', 'audio/mpeg');
+    fireEvent.change(input, { target: { files: [f] } });
+    expect(h.addPending).toHaveBeenCalledWith(f);
+    fireEvent.click(screen.getByRole('button', { name: 'Play card 1' }));
+    expect(h.sayWord).toHaveBeenCalledWith({ word: 'word1', audio_path: 'pending:1' });
+  });
+
+  it('SVG code becomes a picture through svgToPending', async () => {
+    await renderWith([card(1)]);
+    fireEvent.change(screen.getByLabelText('SVG code for card 1'), { target: { value: '<svg xmlns="http://www.w3.org/2000/svg"></svg>' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Use SVG for card 1' }));
+    expect(h.svgToPending).toHaveBeenCalledWith('<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+    expect(screen.getByRole('img', { name: 'Card 1 picture' }).getAttribute('src')).toBe('blob:pending:svg');
+  });
+
+  it('two cards with the same word show a warning that does not block Save', async () => {
+    await renderWith([card(1), card(2)]);
+    fireEvent.change(word(2), { target: { value: ' WORD1 ' } });
+    expect(screen.getAllByText('Another card has the same word.')).toHaveLength(2);
+    expect(saveBtn().disabled).toBe(false);
+  });
+
+  it('"play" says the card through sayWord', async () => {
+    await renderWith([card(1), card(2, { audio: 'card-voices/2.mp3' })]);
+    fireEvent.click(screen.getByRole('button', { name: 'Play card 2' }));
+    expect(h.sayWord).toHaveBeenCalledWith({ word: 'word2', audio_path: 'card-voices/2.mp3' });
+  });
+
+  it('the pool health line reflects active cards', async () => {
+    await renderWith(cards(12));
+    expect(health()).toBe('12 active cards: levels 12 and 24 are available; 30 needs 15.');
+    fireEvent.click(toggle(1));
+    expect(health()).toBe('11 active cards: level 12 is available; 24 needs 12, 30 needs 15.');
+  });
+
+  it('pool health with 0 and with 15 active cards', async () => {
+    await renderWith(cards(3, false));
+    expect(health()).toBe('0 active cards: no level is available yet; 12 needs 6, 24 needs 12, 30 needs 15.');
+    cleanup();
+    await renderWith(cards(15));
+    expect(health()).toBe('15 active cards: levels 12, 24 and 30 are available.');
+  });
+
+  it('a failing save shows the error and keeps the draft', async () => {
+    await renderWith([card(1)]);
+    fireEvent.change(word(1), { target: { value: 'kitten' } });
+    h.saveCards.mockResolvedValue({ error: 'network down', warning: null });
+    fireEvent.click(saveBtn());
+    expect(await screen.findByText('network down')).toBeTruthy();
+    expect(word(1).value).toBe('kitten');
+    expect(h.loadCards).toHaveBeenCalledTimes(1);
+    expect(saveBtn().disabled).toBe(false);
+  });
+
+  it('a save warning is shown but the save still goes through', async () => {
+    await renderWith([card(1)]);
+    fireEvent.change(word(1), { target: { value: 'kitten' } });
+    h.loadCards.mockResolvedValue([card(1, { word: 'kitten' })]);
+    h.saveCards.mockResolvedValue({ error: null, warning: 'Some old files could not be removed.' });
+    await act(async () => { fireEvent.click(saveBtn()); });
+    expect(await screen.findByText('Some old files could not be removed.')).toBeTruthy();
+    await waitFor(() => expect(h.loadCards).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(saveBtn().disabled).toBe(true));
+  });
+
+  it('the admin nav has a "Cards" link, marked current on /admin/cards', () => {
+    render(<AdminNav />);
+    const link = screen.getByRole('link', { name: 'Cards' });
+    expect(link.getAttribute('href')).toBe('/admin/cards');
+    expect(link.getAttribute('aria-current')).toBe('page');
+  });
+});

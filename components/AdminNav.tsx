@@ -37,6 +37,10 @@ export function AdminNav() {
         <svg {...icon}><circle cx="12" cy="12" r="10" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
         Quiz sets
       </Link>
+      <Link href="/admin/cards" aria-current={pathname.startsWith('/admin/cards') ? 'page' : undefined} className={cls(pathname.startsWith('/admin/cards'))}>
+        <svg {...icon}><rect x="3" y="5" width="11" height="15" rx="2" /><path d="M17 4.5l3.2.9a2 2 0 0 1 1.4 2.4l-2.9 10.7" /></svg>
+        Cards
+      </Link>
       <div className={styles.divider} />
       <Link href="/" className={cls(false)}>
         <svg {...icon}><path d="M14 3h7v7" /><path d="M10 14L21 3" /><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" /></svg>
