@@ -26,7 +26,7 @@ export function GameArt({ id }: { id: Game['id'] }) {
   if (id === 'memory') {
     return (
       <>
-        <span aria-hidden="true" style={{ display: 'flex', gap: 20, alignItems: 'flex-end' }}>
+        <span aria-hidden="true" style={{ display: 'flex', gap: 20, alignItems: 'center', height: 190 }}>
           {miniCard('#A9C6DE')}
           {miniCard('#F8DCDF',
             <svg width="80" height="80" viewBox="0 0 80 80">
@@ -38,6 +38,7 @@ export function GameArt({ id }: { id: Game['id'] }) {
           )}
           {miniCard('#EED79A')}
         </span>
+        <span aria-hidden="true" style={{ width: 110, height: 110 }} />
         <span style={{ fontSize: 64, fontWeight: 600, color: '#B8737B', lineHeight: 1, textAlign: 'center' }}>Memory Match</span>
       </>
     );

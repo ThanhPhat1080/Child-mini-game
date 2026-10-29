@@ -11,6 +11,7 @@ import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
 import { AvatarSay } from '@/components/AvatarSay';
 import { QuizHelp } from '@/components/QuizHelp';
+import { MemoryHelp } from '@/components/MemoryHelp';
 import { isPressKey } from '@/lib/keynav';
 import { GAMES } from '@/lib/games/registry';
 import { GameArt } from '@/components/games/GameArt';
@@ -28,8 +29,8 @@ export default function Games() {
   const [dragging, setDragging] = useState(false);
   const [initials, setInitials] = useState('HM');
   const [avatar, setAvatar] = useState<string | null>(null);
-  const [help, setHelp] = useState(false);
-  const helpBtn = useRef<HTMLButtonElement>(null);
+  const [help, setHelp] = useState<'quiz' | 'memory' | null>(null);
+  const helpRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const startX = useRef(0);
   const scale = useRef(1);
   const moved = useRef(false);
@@ -88,14 +89,14 @@ export default function Games() {
                     <GameArt id={g.id} />
                   </div>
                 )}
-                {g.id === 'quiz' && (
+                {g.hasHelp && (g.id === 'quiz' || g.id === 'memory') && (
                   <button
-                    ref={helpBtn}
+                    ref={(el) => { helpRefs.current[g.id] = el; }}
                     type="button"
                     className="hm-tap hm-breathe"
-                    aria-label="What is Quiz? Show how to play"
+                    aria-label={`What is ${TITLE[g.id]}? Show how to play`}
                     onPointerDown={(e) => e.stopPropagation()}
-                    onClick={() => setHelp(true)}
+                    onClick={() => setHelp(g.id as 'quiz' | 'memory')}
                     style={{ position: 'absolute', left: 255, top: 318, width: 130, height: 130, padding: 0, border: 'none', borderRadius: 65, background: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
                     <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" fill="#F8DCDF" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
@@ -127,7 +128,11 @@ export default function Games() {
         <AvatarSay avatar={avatar} initials={initials} />
       </div>
       <MusicButton />
-      {help && <QuizHelp onClose={() => { setHelp(false); setTimeout(() => helpBtn.current?.focus(), 0); }} />}
+      {help && (() => {
+        const opener = help;
+        const onClose = () => { setHelp(null); setTimeout(() => helpRefs.current[opener]?.focus(), 0); };
+        return opener === 'quiz' ? <QuizHelp onClose={onClose} /> : <MemoryHelp onClose={onClose} />;
+      })()}
     </Stage>
   );
 }

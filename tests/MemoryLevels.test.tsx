@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const h = vi.hoisted(() => ({ fetchActiveCards: vi.fn(), push: vi.fn() }));
@@ -132,5 +132,77 @@ describe('Memory level select (M1)', () => {
     expect(dim(24).style.opacity).toBe('0.4');
     expect(dim(30).style.opacity).toBe('0.4');
     expect(dim(12).style.opacity).toBe('');
+  });
+
+  describe('help badge', () => {
+    const badge = () => screen.getByRole('button', { name: 'What is Memory Match? Show how to play' });
+
+    it('is a real 120 px button with the game name', async () => {
+      h.fetchActiveCards.mockResolvedValue(cards(15));
+      render(<MemoryLevels />);
+      await screen.findByRole('link', { name: '12 cards' });
+      expect(badge().tagName).toBe('BUTTON');
+      expect(badge().style.height).toBe('120px');
+      expect(badge().textContent).toBe('Memory Match');
+      expect(screen.getByRole('link', { name: 'Back to games' })).toBeTruthy();
+    });
+
+    it('also shows while the pool is empty', async () => {
+      h.fetchActiveCards.mockResolvedValue([]);
+      render(<MemoryLevels />);
+      await screen.findByRole('status');
+      expect(badge()).toBeTruthy();
+    });
+
+    it('opens the popup; its Play only closes it and does not navigate', async () => {
+      h.fetchActiveCards.mockResolvedValue(cards(15));
+      render(<MemoryLevels />);
+      await screen.findByRole('link', { name: '12 cards' });
+      fireEvent.click(badge());
+      const dialog = screen.getByRole('dialog', { name: 'How to play Memory Match' });
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Go to step 4' }));
+      expect(within(dialog).queryByRole('link', { name: 'Play Memory Match' })).toBeNull();
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Play Memory Match' }));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(h.push).not.toHaveBeenCalled();
+    });
+
+    it('Esc, Close and the backdrop close it without leaving; focus returns to the badge', async () => {
+      h.fetchActiveCards.mockResolvedValue(cards(15));
+      render(<MemoryLevels />);
+      await screen.findByRole('link', { name: '12 cards' });
+      vi.useFakeTimers({ toFake: ['setTimeout'] });
+      try {
+        fireEvent.click(badge());
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(screen.queryByRole('dialog')).toBeNull();
+        vi.runAllTimers();
+        expect(document.activeElement).toBe(badge());
+        expect(h.push).not.toHaveBeenCalled();
+
+        fireEvent.click(badge());
+        fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+        expect(screen.queryByRole('dialog')).toBeNull();
+        vi.runAllTimers();
+        expect(document.activeElement).toBe(badge());
+
+        fireEvent.click(badge());
+        fireEvent.mouseDown(screen.getByRole('dialog').parentElement as HTMLElement);
+        expect(screen.queryByRole('dialog')).toBeNull();
+        expect(h.push).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('arrows do not move the level focus while it is open', async () => {
+      h.fetchActiveCards.mockResolvedValue(cards(15));
+      render(<MemoryLevels />);
+      await waitFor(() => expect(document.activeElement).toBe(link(12)));
+      fireEvent.click(badge());
+      fireEvent.keyDown(window, { key: 'ArrowRight' });
+      expect(document.activeElement).not.toBe(link(24));
+      expect(document.activeElement).not.toBe(link(12));
+    });
   });
 });
