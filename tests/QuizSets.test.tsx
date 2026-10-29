@@ -242,4 +242,12 @@ describe('Quiz set selection (T9, C3, C11)', () => {
     fireEvent.keyDown(window, { key: 'ArrowRight' });
     expect(document.activeElement).toBe(screen.getByRole('link', { name: 'C, 1 questions' }));
   });
+
+  it('TC17: the Back and "? Quiz" buttons sit above the full-screen carousel layer so they stay clickable', async () => {
+    render(<QuizSets />);
+    await screen.findByRole('link', { name: 'Animals, 2 questions' });
+    const header = screen.getByRole('link', { name: 'Back to games' }).parentElement as HTMLElement;
+    expect(header.contains(screen.getByRole('button', { name: /What is Quiz/ }))).toBe(true);
+    expect(Number(header.style.zIndex)).toBeGreaterThan(0);
+  });
 });
