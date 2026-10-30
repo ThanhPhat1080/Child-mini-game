@@ -1,4 +1,4 @@
--- Card groups for Sort It (spec S2, A14; design 2026-10-30-sort-it section 4).
+-- Card groups for Sort It (spec R2, A17; design 2026-10-30-sort-it section 4).
 -- Group names are for the parent only: only the admin may read or write them.
 -- The game reads memory_cards.group_id, never the names. Whole file is idempotent.
 

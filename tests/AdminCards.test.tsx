@@ -430,7 +430,7 @@ describe('Admin cards page (A11, A13)', () => {
   });
 });
 
-describe('CardPanel group picker (A15)', () => {
+describe('CardPanel group picker (A18)', () => {
   const GROUPS: EGroup[] = [{ id: 'g1', isNew: false, name: 'Animals' }, { id: 'g2', isNew: true, name: 'Fruit' }];
   const WEAK = 'Sort It needs at least 4 cards with different words in a group.';
   function renderPanel(c: ECard, weakGroup = false) {
@@ -473,7 +473,7 @@ describe('CardPanel group picker (A15)', () => {
   });
 });
 
-describe('Admin cards page: groups (A14, A15)', () => {
+describe('Admin cards page: groups (A17, A18)', () => {
   const grp = (id: string, name: string, o: Partial<EGroup> = {}): EGroup => ({ id, isNew: false, name, ...o });
   const ANIMALS = grp('g1', 'Animals');
   const FRUIT = grp('g2', 'Fruit');

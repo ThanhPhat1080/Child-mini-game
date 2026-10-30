@@ -147,6 +147,15 @@ button.hm-tap:active{transform:scale(.94)}
   .hm-mt-sparkle{display:none}
 }
 
+/* ---- Spot the Differences (S2-S10) ---- */
+@keyframes hm-spot-grow{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}60%{opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
+@keyframes hm-spot-ripple{0%{transform:translate(-50%,-50%) scale(.3);opacity:.8}100%{transform:translate(-50%,-50%) scale(1.6);opacity:0}}
+.hm-spot-ring{position:absolute;transform:translate(-50%,-50%);border-radius:50%;border:8px solid #E59AA1;box-shadow:0 0 0 4px rgba(255,255,255,.85);box-sizing:border-box;pointer-events:none}
+.hm-spot-grow{animation:hm-spot-grow .6s ease-out both}
+.hm-spot-ripple{position:absolute;width:120px;height:120px;transform:translate(-50%,-50%);border-radius:50%;border:8px solid #A9C6DE;box-sizing:border-box;pointer-events:none;animation:hm-spot-ripple .8s ease-out both}
+.hm-spot-pic{position:relative;cursor:pointer;touch-action:manipulation;user-select:none}
+.hm-reduced .hm-spot-ripple{animation:none;opacity:.7;transform:translate(-50%,-50%)}
+@media (prefers-reduced-motion: reduce){.hm-spot-grow{animation:none}.hm-spot-ripple{animation:none;opacity:.7}}
 /* ---- Listen & Pick question view ---- */
 @keyframes hm-ls-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.07);opacity:.88}}
 .hm-ls-speaker{transition:transform .35s cubic-bezier(.3,1.5,.5,1)}
@@ -164,7 +173,7 @@ button.hm-tap:active{transform:scale(.94)}
 .hm-reduced .hm-picked{animation:none;transform:scale(1.08)}
 @media (prefers-reduced-motion: reduce){.hm-ls-speaking{animation:none}.hm-ls-speaker{transition:none}}
 
-/* Sort It (S1, S3, S9) */
+/* Sort It (R1, R3, R9) */
 .hm-so-obj{transition:box-shadow .3s ease}
 .hm-so-obj.hm-so-slide{transition:transform .35s cubic-bezier(.3,.7,.2,1),box-shadow .35s ease}
 .hm-so-obj:focus-visible,.hm-so-example:focus-visible{outline:6px solid #7A5C50;outline-offset:8px}

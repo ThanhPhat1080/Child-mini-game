@@ -39,7 +39,7 @@ const hint = { fontSize: 12, color: '#7A6458' } as const;
 
 export const WEAK_GROUP_TEXT = 'Sort It needs at least 4 cards with different words in a group.';
 
-/** One card of the pool: picture, word, pronunciation, group (A15), on/off and delete. Edits go up through `onEdit`. */
+/** One card of the pool: picture, word, pronunciation, group (A18), on/off and delete. Edits go up through `onEdit`. */
 export function CardPanel({ c, n, duplicate, message, autoFocus, groups, weakGroup, onEdit, onPickImage, onPickAudio, onSvg, onPlay, onAskDelete }: {
   c: ECard; n: number; duplicate: boolean; message: string | null; autoFocus: boolean;
   groups: readonly EGroup[]; weakGroup: boolean;

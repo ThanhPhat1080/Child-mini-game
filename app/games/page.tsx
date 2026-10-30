@@ -85,7 +85,7 @@ export default function Games() {
                     <GameArt id={g.id} />
                   </div>
                 )}
-                {(g.id === 'quiz' || g.id === 'memory' || g.id === 'listen' || g.id === 'sort') && (
+                {(g.id === 'quiz' || g.id === 'memory' || g.id === 'listen' || g.id === 'sort' || g.id === 'spot') && (
                   <span
                     data-game-icon={g.id}
                     aria-hidden="true"

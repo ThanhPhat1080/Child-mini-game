@@ -233,7 +233,7 @@ test.describe('Quick import cards header button', () => {
   });
 });
 
-test.describe('Groups (A14, A15)', () => {
+test.describe('Groups (A17, A18)', () => {
   type GroupRow = { id: string; name: string };
   const groupsOf = async () => (await getState()).card_groups as GroupRow[];
   const picker = (page: Page, n: number) => page.getByRole('combobox', { name: `Group for card ${n}`, exact: true });
@@ -308,7 +308,7 @@ test.describe('Groups (A14, A15)', () => {
   });
 });
 
-test.describe('Quick import with a group (A16) and Sort It pool health (A13)', () => {
+test.describe('Quick import with a group (A19) and Sort It pool health (A13)', () => {
   type TaggedRow = CardRow & { group_id: string | null };
   const svg = (fill: string) => `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'><circle cx='4' cy='4' r='3' fill='${fill}'/></svg>`;
   const sortHealth = (page: Page) => page.getByTestId('sort-health');

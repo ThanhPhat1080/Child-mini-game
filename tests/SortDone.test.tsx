@@ -26,7 +26,7 @@ const back = () => {
 beforeEach(() => { for (const f of Object.values(h)) f.mockReset(); });
 afterEach(cleanup);
 
-describe('SortDone (S7)', () => {
+describe('SortDone (R7)', () => {
   it('greets the child by name, or without one', () => {
     setup();
     expect(screen.getByRole('heading').textContent).toBe('You did it, Hà My!');

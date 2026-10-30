@@ -147,7 +147,7 @@ async function playRound(page: Page, wrongDrops = 0) {
 const doneRoot = (page: Page) => page.locator('[data-sort-done][data-keys="ready"]');
 const wrongLine = (page: Page) => page.locator('[data-wrong-line]');
 
-test.describe('finish screen (S7)', () => {
+test.describe('finish screen (R7)', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 1920, height: 1080 });
   });

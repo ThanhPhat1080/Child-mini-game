@@ -111,7 +111,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('Sort It play screen (S1-S6, S8-S10)', () => {
+describe('Sort It play screen (R1-R6, R8-R10)', () => {
   it('exports the timing constants', () => {
     expect([SLIDE_BACK_MS, WRONG_POPUP_MS, WORD_AFTER_CHIME_MS, FINISH_DELAY_MS, WORD_CAP_MS]).toEqual([350, 1400, 550, 1000, 4000]);
   });

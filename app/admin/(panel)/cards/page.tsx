@@ -20,7 +20,7 @@ import s from '@/components/admin/admin-ui.module.css';
 /** The database refuses a second group with the same name (unique index on lower(btrim(name))). */
 const groupSaveError = (e: string) => (/duplicate|23505/i.test(e) ? 'A group with that name already exists.' : e);
 
-/** Memory Match card pool (A11) with pool health (A13) and Sort It groups (A14, A15). Nothing is uploaded or written until Save (T15). */
+/** Memory Match card pool (A11) with pool health (A13) and Sort It groups (A17, A18). Nothing is uploaded or written until Save (T15). */
 export default function CardsPage() {
   const [saved, setSaved] = useState<ECard[] | null>(null);
   const [draft, setDraft] = useState<ECard[] | null>(null);

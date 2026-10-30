@@ -9,7 +9,7 @@ import { handleChoiceKey } from '@/lib/keynav';
 
 const btn = { width: 160, height: 160, borderRadius: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', padding: 0 } as const;
 
-/** Sort It finish (S7): praise, "Wrong N times", two picture buttons (Play again, Back to games). Nothing is stored. */
+/** Sort It finish (R7): praise, "Wrong N times", two picture buttons (Play again, Back to games). Nothing is stored. */
 export function SortDone({ wrong, childName, completeUrl, onAgain, gamesHref }: {
   wrong: number; childName: string; completeUrl: string | null; onAgain: () => void; gamesHref: string;
 }) {

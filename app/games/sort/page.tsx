@@ -19,13 +19,13 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { chime, ohOh, type SoundHandle } from '@/lib/sfx';
 import type { MemoryCard } from '@/lib/memory/types';
 
-/** A wrong or outside drop: the object slides back to its place in the row this long (S5; none under reduced motion, S8). */
+/** A wrong or outside drop: the object slides back to its place in the row this long (R5; none under reduced motion, R8). */
 export const SLIDE_BACK_MS = 350;
-/** The "Oh-oh… try again!" popup after a wrong drop stays this long; a new wrong drop restarts it (S5). */
+/** The "Oh-oh… try again!" popup after a wrong drop stays this long; a new wrong drop restarts it (R5). */
 export const WRONG_POPUP_MS = 1400;
-/** After the chime of a right drop, the word comes this much later (S4); presses wait for it (the settle). */
+/** After the chime of a right drop, the word comes this much later (R4); presses wait for it (the settle). */
 export const WORD_AFTER_CHIME_MS = 550;
-/** After the last right word, the pause before the finish (S7). */
+/** After the last right word, the pause before the finish (R7). */
 export const FINISH_DELAY_MS = 1000;
 /** Longest wait for the last word to report its end before the finish pause starts anyway. */
 export const WORD_CAP_MS = 4000;
@@ -37,7 +37,7 @@ type Placed = [MemoryCard[], MemoryCard[]];
 
 const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 
-/** Sort It (S1-S6, S8-S10): drag each object into the basket of its kind. Mouse only; no timers on the child, no penalty. */
+/** Sort It (R1-R6, R8-R10): drag each object into the basket of its kind. Mouse only; no timers on the child, no penalty. */
 export default function SortPlay() {
   const [phase, setPhase] = useState<'loading' | 'empty' | 'play' | 'done'>('loading');
   /** The round's chosen cards (baskets with their examples, and the 6 objects). */
@@ -107,7 +107,7 @@ export default function SortPlay() {
     };
   }, []);
 
-  // Load the pool, build the round, preload its 8 pictures, then show the board (S2, S9).
+  // Load the pool, build the round, preload its 8 pictures, then show the board (R2, R9).
   useEffect(() => {
     let live = true;
     let stopPreload: (() => void) | null = null;
@@ -141,7 +141,7 @@ export default function SortPlay() {
     return () => { live = false; };
   }, []);
 
-  /** Says a word now (a newer word cuts the older one, S6); `onEnd` runs only if it is still the newest word. */
+  /** Says a word now (a newer word cuts the older one, R6); `onEnd` runs only if it is still the newest word. */
   const say = useCallback((card: MemoryCard, onEnd?: () => void) => {
     if (!alive.current) return;
     const seq = ++wordSeq.current;
@@ -183,7 +183,7 @@ export default function SortPlay() {
     wrongFxTimer.current = later(() => { wrongFxTimer.current = null; setWrongFx(null); }, WRONG_POPUP_MS);
   }, [later, clearLater]);
 
-  /** Sends an object back to its place in the row (instantly under reduced motion, S8). */
+  /** Sends an object back to its place in the row (instantly under reduced motion, R8). */
   const slideBack = useCallback((id: string) => {
     if (reducedRef.current) { setObjState((s) => ({ ...s, [id]: 'idle' })); return; }
     setObjState((s) => ({ ...s, [id]: 'sliding' }));

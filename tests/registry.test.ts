@@ -8,9 +8,9 @@ describe('game registry', () => {
   it('lists quiz, memory, listen, sort, spot in that order', () => {
     expect(GAMES.map((g) => g.id)).toEqual(['quiz', 'memory', 'listen', 'sort', 'spot']);
   });
-  it('marks quiz, memory, listen and sort ready and spot not ready', () => {
+  it('marks every game ready', () => {
     const ready = Object.fromEntries(GAMES.map((g) => [g.id, g.ready]));
-    expect(ready).toEqual({ quiz: true, memory: true, listen: true, sort: true, spot: false });
+    expect(ready).toEqual({ quiz: true, memory: true, listen: true, sort: true, spot: true });
   });
   it('points to the game routes', () => {
     const href = Object.fromEntries(GAMES.map((g) => [g.id, g.href]));
@@ -18,6 +18,7 @@ describe('game registry', () => {
     expect(href.memory).toBe('/games/memory');
     expect(href.listen).toBe('/games/listen');
     expect(href.sort).toBe('/games/sort');
+    expect(href.spot).toBe('/games/spot');
   });
   it('has no hasHelp flag any more (help opens inside the games)', () => {
     expect(GAMES.some((g) => 'hasHelp' in g)).toBe(false);

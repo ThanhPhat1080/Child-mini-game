@@ -51,7 +51,7 @@ function RenameChip({ group, onRename, onClose }: { group: EGroup; onRename: (id
   );
 }
 
-/** A14: the groups of the card pool as tag chips, with add, inline rename and delete (after a confirmation). Edits are drafts until Save. */
+/** A17: the groups of the card pool as tag chips, with add, inline rename and delete (after a confirmation). Edits are drafts until Save. */
 export function GroupsPanel({ groups, onAdd, onRename, onDelete, usage }: {
   groups: readonly EGroup[];
   onAdd: (name: string) => string | null;

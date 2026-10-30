@@ -20,7 +20,7 @@ const addBtn = () => screen.getByRole('button', { name: 'Add group' });
 
 afterEach(cleanup);
 
-describe('GroupsPanel (A14)', () => {
+describe('GroupsPanel (A17)', () => {
   it('shows a chip with the name for every group', () => {
     setup();
     const list = screen.getByRole('list', { name: 'Groups' });

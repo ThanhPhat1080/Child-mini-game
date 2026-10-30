@@ -24,23 +24,24 @@ Success:
 | Name | "Sort It" (English). |
 
 ## 3. Requirement IDs
-- **G1** (extended): registry entry. **S1-S10**: child side of Sort It. **A14-A16**: admin (manage groups, tag a card, JSON import). **A13** (extended): pool health.
+- **G1** (extended): registry entry. **R1-R10**: child side of Sort It. **A17-A19**: admin (manage groups, tag a card, JSON import). **A13** (extended): pool health.
+_IDs renumbered on 2026-10-30 when this branch was merged with Spot the Differences, which already used S1-S10 and A14-A16: Sort It's former S1-S10 are now R1-R10 and its former A14, A15, A16 are now A17, A18, A19._
 
 | ID | Requirement |
 |---|---|
-| S1 | Entry: `/games/sort` plays directly (no level screen). Registry entry `sort`, ready, between Listen & Pick and Spot. A "? Sort It" badge opens a "How to play Sort It" popup (opened only from that badge). |
-| S2 | Round: two random usable groups (a group is usable when it has at least 4 active cards with different words); from each, 4 random cards: 1 is the example already in the basket, 3 are objects to sort. The 6 objects are shuffled in one row; which basket is left or right is random. No usable pair of groups: friendly picture screen, not an error. |
-| S3 | Drag: pressing an object (primary button) lifts it (slightly larger, soft shadow), it follows the pointer, and the word is said (recorded file if the card has one, else `speakKid`). Releasing over a basket counts as a drop on that basket (the basket area, not only its slots). A press without movement is a tap: the word is said again and the object stays. Only one object is dragged at a time. |
-| S4 | Right drop: "ting ting" (`chime`), the object settles into the next free slot of that basket, then the word is said once. |
-| S5 | Wrong drop: `ohOh` sound, a non-blocking "Oh-oh… try again!" popup with the sad face (the same look as Quiz, 1.4 s), the object slides back to its place in the row. The wrong count goes up by one. Releasing outside both baskets: the object slides back, no sound, no count. |
-| S6 | Voice: picking an object up, tapping an example or an object, and a right drop each say the word through `sayWord`; a newer word cuts the older one. |
-| S7 | Finish: after the 6th right drop and its word (about 1 s pause) the shared celebration scene shows (3 stars, both characters, confetti, "You did it, <child name>!" with the same praise sound as the other games), the line "Wrong N times" with N highlighted (N may be 0), and two picture buttons: play again (a new round) and back to games. Nothing is stored. |
-| S8 | Reduced motion: no lift animation, no slide or bounce; the object jumps back and the popup just appears. Sounds stay. |
-| S9 | Robustness: a missing picture shows a plain placeholder and the object is still draggable; no English voice means no spoken word, the game still works; leaving the page cancels timers and speech and drops any drag in progress; with pointer capture the drag continues outside the window, and the object slides back when the pointer is released outside the baskets or the browser cancels the pointer (`pointercancel`); a second press during a slide-back or a right-drop settle is ignored; the round's pictures are preloaded. |
-| S10 | Keys and focus: Esc goes to `/games`; every object, example and button is a real element with a visible focus ring, but dragging needs the mouse (see the decision above). |
-| A14 | Manage groups: on `/admin/cards` a "Groups" area above the cards shows every group as a tag chip. Add a group by typing its name (1-40 characters, unique ignoring case and surrounding spaces), rename it, delete it (always with a confirmation, ADR-022; its cards become "no group"). Group edits are unsaved changes like card edits: Save writes groups first, then cards; Revert discards both. |
-| A15 | Tag a card: each card has a "Group" picker listing the groups plus "No group" (no free typing). A warning (not a block) shows on a card whose group has fewer than 4 cards with different words ("Sort It needs at least 4"). |
-| A16 | JSON import: each card may have `group` (optional string); blank or missing means no group; a name must match an existing group (ignoring case and spaces), otherwise an error with the card number tells the parent to create the group first (nothing is created by the import, nothing is imported on any error, same rules as A12). Wrong type or over 40 characters is an error too. `public/memory-cards-template.json` shows the key. |
+| R1 | Entry: `/games/sort` plays directly (no level screen). Registry entry `sort`, ready, between Listen & Pick and Spot. A "? Sort It" badge opens a "How to play Sort It" popup (opened only from that badge). |
+| R2 | Round: two random usable groups (a group is usable when it has at least 4 active cards with different words); from each, 4 random cards: 1 is the example already in the basket, 3 are objects to sort. The 6 objects are shuffled in one row; which basket is left or right is random. No usable pair of groups: friendly picture screen, not an error. |
+| R3 | Drag: pressing an object (primary button) lifts it (slightly larger, soft shadow), it follows the pointer, and the word is said (recorded file if the card has one, else `speakKid`). Releasing over a basket counts as a drop on that basket (the basket area, not only its slots). A press without movement is a tap: the word is said again and the object stays. Only one object is dragged at a time. |
+| R4 | Right drop: "ting ting" (`chime`), the object settles into the next free slot of that basket, then the word is said once. |
+| R5 | Wrong drop: `ohOh` sound, a non-blocking "Oh-oh… try again!" popup with the sad face (the same look as Quiz, 1.4 s), the object slides back to its place in the row. The wrong count goes up by one. Releasing outside both baskets: the object slides back, no sound, no count. |
+| R6 | Voice: picking an object up, tapping an example or an object, and a right drop each say the word through `sayWord`; a newer word cuts the older one. |
+| R7 | Finish: after the 6th right drop and its word (about 1 s pause) the shared celebration scene shows (3 stars, both characters, confetti, "You did it, <child name>!" with the same praise sound as the other games), the line "Wrong N times" with N highlighted (N may be 0), and two picture buttons: play again (a new round) and back to games. Nothing is stored. |
+| R8 | Reduced motion: no lift animation, no slide or bounce; the object jumps back and the popup just appears. Sounds stay. |
+| R9 | Robustness: a missing picture shows a plain placeholder and the object is still draggable; no English voice means no spoken word, the game still works; leaving the page cancels timers and speech and drops any drag in progress; with pointer capture the drag continues outside the window, and the object slides back when the pointer is released outside the baskets or the browser cancels the pointer (`pointercancel`); a second press during a slide-back or a right-drop settle is ignored; the round's pictures are preloaded. |
+| R10 | Keys and focus: Esc goes to `/games`; every object, example and button is a real element with a visible focus ring, but dragging needs the mouse (see the decision above). |
+| A17 | Manage groups: on `/admin/cards` a "Groups" area above the cards shows every group as a tag chip. Add a group by typing its name (1-40 characters, unique ignoring case and surrounding spaces), rename it, delete it (always with a confirmation, ADR-022; its cards become "no group"). Group edits are unsaved changes like card edits: Save writes groups first, then cards; Revert discards both. |
+| A18 | Tag a card: each card has a "Group" picker listing the groups plus "No group" (no free typing). A warning (not a block) shows on a card whose group has fewer than 4 cards with different words ("Sort It needs at least 4"). |
+| A19 | JSON import: each card may have `group` (optional string); blank or missing means no group; a name must match an existing group (ignoring case and spaces), otherwise an error with the card number tells the parent to create the group first (nothing is created by the import, nothing is imported on any error, same rules as A12). Wrong type or over 40 characters is an error too. `public/memory-cards-template.json` shows the key. |
 | A13 | (extended) Pool health also says how many groups can be played in Sort It, for example "Sort It: 6 groups can be played (2 are needed, each with 4 cards)." |
 
 ## 4. Data
@@ -73,10 +74,10 @@ Layout on the 1920x1080 stage: header with back button and the "? Sort It" badge
 - The help popup (`SortHelp`, shell `GameHelp`) has 3 steps: pick up an object and hear it, drag it to the basket with the same kind of things, a happy sound when it fits.
 
 ## 6. Admin
-- A "Groups" area at the top of `/admin/cards`: tag chips with rename and delete, an input to add a group. New and renamed groups are validated as in A14 (empty, over 40 characters and duplicates ignoring case are refused with a short message).
+- A "Groups" area at the top of `/admin/cards`: tag chips with rename and delete, an input to add a group. New and renamed groups are validated as in A17 (empty, over 40 characters and duplicates ignoring case are refused with a short message).
 - `components/admin/CardPanel` gets the Group picker (a `select` with "No group" and the groups); a card whose group was deleted in the draft shows "No group".
 - `lib/memory/adminCards.ts`: `ECard` gets `groupId: string | null`; new `EGroup = { id: string; isNew: boolean; name: string }`, `loadGroups()`, and `saveCards` also writes `group_id`; `saveGroups` runs first (upsert new and renamed groups), then cards, then groups removed from the draft are deleted (the database sets their cards' `group_id` to null).
-- `lib/memory/import.ts` parses and validates `group` as in A16 against the draft's groups.
+- `lib/memory/import.ts` parses and validates `group` as in A19 against the draft's groups.
 - Pool health (A13) uses a pure helper `sortHealth(cards)` shared with the game's round builder.
 
 ## 7. Architecture notes

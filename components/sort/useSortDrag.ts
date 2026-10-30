@@ -22,7 +22,7 @@ type Live = { id: string; pointerId: number; start: Pt; scale: number; lifted: b
 const pt = (e: { clientX: number; clientY: number }): Pt => ({ x: e.clientX, y: e.clientY });
 
 /**
- * Pointer drag for Sort It (S3, S9): one object at a time, primary button of the first pointer only.
+ * Pointer drag for Sort It (R3, R9): one object at a time, primary button of the first pointer only.
  * `dragging` is set once the pointer moves beyond the tap slop; dx/dy are stage pixels.
  * Release: a tap calls onTap, a drag calls onDrop with the basket under the pointer (or null).
  * pointercancel / lost capture after a real drag calls onDrop(id, null). cancel() and unmount call neither.
