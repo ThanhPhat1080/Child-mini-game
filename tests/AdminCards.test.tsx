@@ -322,6 +322,46 @@ describe('Admin cards page (A11, A13)', () => {
     expect(screen.queryByLabelText('Word for card 2')).toBeNull();
   });
 
+  describe('Quick import cards header button', () => {
+    const importBtn = () => screen.getByRole('button', { name: 'Quick import cards' }) as HTMLButtonElement;
+
+    it('sits in the sticky header before Revert and Save, as a blue text button', async () => {
+      await renderWith([card(1)]);
+      expect(screen.getAllByRole('button', { name: 'Quick import cards' })).toHaveLength(1);
+      const header = revertBtn().closest('div[style*="sticky"]') as HTMLElement;
+      expect(header).toBeTruthy();
+      expect(header.contains(importBtn())).toBe(true);
+      expect(header.contains(saveBtn())).toBe(true);
+      const order = Array.from(header.querySelectorAll('button')).map((b) => b.textContent);
+      expect(order).toEqual(['Quick import cards', 'Revert', 'Save']);
+      const css = getComputedStyle(importBtn());
+      expect(css.color).toBe('rgb(63, 115, 181)'); // the blue of the set editor's import button
+      expect(css.backgroundColor === 'transparent' || css.backgroundColor === 'rgba(0, 0, 0, 0)' || css.backgroundColor === '').toBe(true);
+      expect(css.height).toBe('44px');
+    });
+
+    it('opens the dialog with no unsaved changes (Save and Revert disabled)', async () => {
+      await renderWith([card(1)]);
+      expect(saveBtn().disabled).toBe(true);
+      expect(revertBtn().disabled).toBe(true);
+      expect(importBtn().disabled).toBe(false);
+      fireEvent.click(importBtn());
+      expect(await screen.findByRole('dialog', { name: 'Quick import cards' })).toBeTruthy();
+    });
+
+    it('is disabled while a save is running', async () => {
+      await renderWith([card(1)]);
+      fireEvent.change(word(1), { target: { value: 'kitten' } });
+      let done: (v: { error: null }) => void = () => {};
+      h.saveCards.mockReturnValue(new Promise((r) => { done = r; }));
+      h.loadCards.mockResolvedValue([card(1, { word: 'kitten' })]);
+      await act(async () => { fireEvent.click(saveBtn()); });
+      expect(importBtn().disabled).toBe(true);
+      await act(async () => { done({ error: null }); });
+      await waitFor(() => expect(importBtn().disabled).toBe(false));
+    });
+  });
+
   it('the admin nav has a "Cards" link, marked current on /admin/cards', () => {
     render(<AdminNav />);
     const link = screen.getByRole('link', { name: 'Cards' });
