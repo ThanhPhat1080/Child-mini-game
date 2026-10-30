@@ -1,5 +1,8 @@
 import type { Game } from '@/lib/games/registry';
 
+/** The Memory Match green: card title text and the game-list icon ring/card strokes. */
+export const MEMORY_GREEN = '#5E8F69';
+
 const num = (bg: string, h: number, n: number, color = '#fff') => (
   <span style={{ width: 120, height: h, borderRadius: 24, background: bg, padding: 12, boxSizing: 'border-box', fontSize: 36, fontWeight: 600, color, lineHeight: 1.1 }}>{n}</span>
 );
@@ -39,7 +42,7 @@ export function GameArt({ id }: { id: Game['id'] }) {
           {miniCard('#EED79A')}
         </span>
         <span aria-hidden="true" style={{ width: 110, height: 110 }} />
-        <span style={{ fontSize: 64, fontWeight: 600, color: '#5E8F69', lineHeight: 1, textAlign: 'center' }}>Memory Match</span>
+        <span style={{ fontSize: 64, fontWeight: 600, color: MEMORY_GREEN, lineHeight: 1, textAlign: 'center' }}>Memory Match</span>
       </>
     );
   }
@@ -71,7 +74,7 @@ export const MEMORY_ICON = {
 
 const flowerCard = ({ dx, dy, rot }: (typeof MEMORY_ICON.cards)[number]) => (
   <g key={dx} transform={`translate(${12 + dx} ${12 + dy}) rotate(${rot})`}>
-    <rect x={-MEMORY_ICON.w / 2} y={-MEMORY_ICON.h / 2} width={MEMORY_ICON.w} height={MEMORY_ICON.h} rx="2" fill="#F8DCDF" stroke="#B8737B" strokeWidth="0.7" />
+    <rect x={-MEMORY_ICON.w / 2} y={-MEMORY_ICON.h / 2} width={MEMORY_ICON.w} height={MEMORY_ICON.h} rx="2" fill="#C9DFCE" stroke={MEMORY_GREEN} strokeWidth="0.7" />
     {petals.map((a) => <ellipse key={a} cx="0" cy="-1.6" rx="1.15" ry="1.8" fill="#fff" transform={`rotate(${a})`} />)}
     <circle r="1" fill="#EED79A" />
   </g>
@@ -82,7 +85,7 @@ export function GameIcon({ id }: { id: Game['id'] }) {
   if (id === 'memory') {
     return (
       <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="10" fill="#F8DCDF" stroke="#B8737B" strokeWidth="2" />
+        <circle cx="12" cy="12" r="10" fill="#EAF3EC" stroke={MEMORY_GREEN} strokeWidth="2" />
         {MEMORY_ICON.cards.map(flowerCard)}
       </svg>
     );
