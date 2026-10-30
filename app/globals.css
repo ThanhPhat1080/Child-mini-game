@@ -156,5 +156,7 @@ button.hm-tap:active{transform:scale(.94)}
 .hm-ans.hm-ls-wrong,.hm-ans.hm-ls-wrong:hover,.hm-ans.hm-ls-wrong:focus-visible{transform:none;filter:none;cursor:default}
 .hm-ans.hm-ls-wrong:hover::after{opacity:0;animation:none}
 .hm-ans.hm-ls-wrong:hover .hm-num,.hm-ans.hm-ls-wrong:hover img{transform:none}
+@keyframes hm-ls-in{from{opacity:0}to{opacity:1}}
+.hm-ls-q{animation:hm-ls-in .6s ease both}
 .hm-reduced .hm-ls-speaking{animation:none}
 @media (prefers-reduced-motion: reduce){.hm-ls-speaking{animation:none}.hm-ls-speaker{transition:none}}
