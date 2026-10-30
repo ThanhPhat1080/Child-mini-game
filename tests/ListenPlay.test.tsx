@@ -14,11 +14,19 @@ const h = vi.hoisted(() => ({
   replace: vi.fn(),
   settings: vi.fn(),
   select: vi.fn(),
+  playFile: vi.fn(),
+  applause: vi.fn(),
+  speakKid: vi.fn(),
+  real: {} as typeof import('@/lib/listen/wrongLog'),
 }));
 
 vi.mock('@/lib/memory/cards', () => ({ fetchActiveCards: h.fetchActiveCards, sayWord: h.sayWord, stopWord: h.stopWord }));
-vi.mock('@/lib/sfx', () => ({ yay: h.yay, ohOh: h.ohOh, applause: vi.fn(), speakKid: vi.fn(), playFile: vi.fn(), chime: vi.fn(), flipTick: vi.fn() }));
-vi.mock('@/lib/listen/wrongLog', () => ({ recordWrong: h.recordWrong, clearWrong: h.clearWrong, readWrong: () => [], totalWrong: () => 0, WRONG_KEY: 'hamy.listen.wrong' }));
+vi.mock('@/lib/sfx', () => ({ yay: h.yay, ohOh: h.ohOh, applause: h.applause, speakKid: h.speakKid, playFile: h.playFile, chime: vi.fn(), flipTick: vi.fn() }));
+// The real wrong-picks log, wrapped in spies (so the finish reads what the page recorded).
+vi.mock('@/lib/listen/wrongLog', async () => {
+  h.real = await vi.importActual<typeof import('@/lib/listen/wrongLog')>('@/lib/listen/wrongLog');
+  return { ...h.real, recordWrong: h.recordWrong, clearWrong: h.clearWrong };
+});
 vi.mock('@/lib/supabase/client', () => ({
   createSupabaseBrowserClient: () => ({
     from: () => ({ select: (cols: string) => { h.select(cols); return { eq: () => ({ single: () => h.settings() }) }; } }),
@@ -76,8 +84,11 @@ async function readyAndSaid(pool?: MemoryCard[]) {
 
 beforeEach(() => {
   vi.useFakeTimers();
-  for (const f of [h.fetchActiveCards, h.sayWord, h.stopWord, h.yay, h.ohOh, h.recordWrong, h.clearWrong, h.push, h.replace, h.settings, h.select, cancel]) f.mockReset();
-  h.settings.mockResolvedValue({ data: { hooray_path: null, ohoh_path: null } });
+  for (const f of [h.fetchActiveCards, h.sayWord, h.stopWord, h.yay, h.ohOh, h.recordWrong, h.clearWrong, h.push, h.replace, h.settings, h.select, h.playFile, h.applause, h.speakKid, cancel]) f.mockReset();
+  h.recordWrong.mockImplementation((c: { id: string; word: string }) => h.real.recordWrong(c));
+  h.clearWrong.mockImplementation(() => h.real.clearWrong());
+  h.real.clearWrong();
+  h.settings.mockResolvedValue({ data: { hooray_path: null, ohoh_path: null, child_name: 'Hà My', complete_path: null } });
   h.sayWord.mockImplementation((_card: MemoryCard, onEnd?: () => void) => onEnd?.()); // a word that finishes at once
   h.yay.mockReturnValue({ ms: 2400, stop: vi.fn() });
   h.ohOh.mockReturnValue({ ms: 1900, stop: vi.fn() });
@@ -86,6 +97,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   vi.useRealTimers();
 });
 
@@ -457,5 +469,110 @@ describe('Listen & Pick play screen (L1-L5, L8, L10)', () => {
   it('no card word appears in the page text', async () => {
     await ready(cards(5));
     expect(document.body.textContent?.toLowerCase()).not.toMatch(/word\d/);
+  });
+  describe('finish screen (L6, L7)', () => {
+    const wrongLine = () => document.querySelector('[data-wrong-line]')?.textContent;
+    const wrongItems = () => Array.from(document.querySelectorAll<HTMLElement>('[data-wrong-item]'));
+
+    /** Plays a round of `count` questions; `wrongOn` maps a question number to how many wrong picks to make first. */
+    async function playThrough(count: number, wrongOn: Record<number, number> = {}) {
+      const ids: string[] = [];
+      for (let n = 0; n < count; n++) {
+        expect(qIndex()).toBe(String(n));
+        ids.push(answerId()!);
+        for (const w of wrongIdxs().slice(0, wrongOn[n] ?? 0)) fireEvent.click(answers()[w]);
+        fireEvent.click(answers()[rightIdx()]);
+        await advance(HOORAY_CAP_MS + (n < count - 1 ? NEXT_PAUSE_MS : FINISH_DELAY_MS) + 10);
+      }
+      return ids;
+    }
+
+    it('shows the finish after the last right pick, from the log and the round cards', async () => {
+      await ready(cards(5));
+      const ids = await playThrough(5, { 0: 2, 3: 1 });
+      expect(root().getAttribute('data-done')).toBe('true');
+      expect(document.querySelector('[data-listen-done]')).toBeTruthy();
+      expect(screen.getByRole('heading').textContent).toBe('You did it, Hà My!');
+      expect(wrongLine()).toBe('Wrong 3 times');
+      expect(wrongItems().map((e) => e.getAttribute('aria-label'))).toEqual([`Hear word${ids[0].slice(1)}`, `Hear word${ids[3].slice(1)}`]);
+      expect(wrongItems()[0].textContent).toContain('x2');
+      expect(wrongItems()[1].textContent).not.toContain('x2');
+      expect(wrongItems()[0].querySelector('img')?.getAttribute('src')).toBe(`/media/${ids[0]}.svg`);
+      expect(screen.getAllByRole('link', { name: 'Back to games' })).toHaveLength(1);
+      expect(h.settings).toHaveBeenCalled();
+      h.sayWord.mockClear();
+      fireEvent.click(wrongItems()[1]);
+      expect(h.sayWord.mock.calls[0][0].id).toBe(ids[3]);
+    });
+
+    it('a perfect round shows "Wrong 0 times" and no list; the custom praise file plays', async () => {
+      h.settings.mockResolvedValue({ data: { hooray_path: null, ohoh_path: null, child_name: '', complete_path: 'yay.mp3' } });
+      await ready(cards(5));
+      await playThrough(5);
+      expect(wrongLine()).toBe('Wrong 0 times');
+      expect(document.querySelector('[data-wrong-list]')).toBeNull();
+      expect(screen.getByRole('heading').textContent).toBe('You did it!');
+      expect(h.playFile).toHaveBeenCalledWith('/media/yay.mp3');
+      expect(h.applause).not.toHaveBeenCalled();
+    });
+
+    it('a settings failure still shows the finish, without a name', async () => {
+      h.settings.mockRejectedValue(new Error('down'));
+      await ready(cards(5));
+      await playThrough(5);
+      expect(screen.getByRole('heading').textContent).toBe('You did it!');
+      expect(h.applause).toHaveBeenCalledTimes(1);
+    });
+
+    it('storage that throws still gives the correct count and list (memory fallback), without double counting', async () => {
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
+      vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => { throw new Error('blocked'); });
+      await ready(cards(5));
+      await playThrough(5, { 1: 2, 2: 1 });
+      expect(wrongLine()).toBe('Wrong 3 times');
+      expect(wrongItems()).toHaveLength(2);
+      expect(wrongItems()[0].textContent).toContain('x2');
+    });
+
+    it('Play again clears the log, draws a new round at question 1, and the next finish starts from 0', async () => {
+      await ready(cards(5));
+      await playThrough(5, { 0: 1 });
+      expect(wrongLine()).toBe('Wrong 1 times');
+      h.clearWrong.mockClear();
+      fireEvent.click(screen.getByRole('button', { name: 'Play again' }));
+      expect(h.clearWrong).toHaveBeenCalled();
+      expect(window.localStorage.getItem('hamy.listen.wrong')).toBeNull();
+      await advance(PRELOAD_MS + 10);
+      expect(root().getAttribute('data-done')).toBe('false');
+      expect(qIndex()).toBe('0');
+      expect(answers()).toHaveLength(3);
+      expect(document.activeElement).toBe(answers()[0]);
+      await playThrough(5);
+      expect(root().getAttribute('data-done')).toBe('true');
+      expect(wrongLine()).toBe('Wrong 0 times');
+      expect(document.querySelector('[data-wrong-list]')).toBeNull();
+    });
+
+    it('Esc on the finish goes to /games; leaving clears the log', async () => {
+      const r = await ready(cards(5));
+      await playThrough(5, { 0: 1 });
+      expect(window.localStorage.getItem('hamy.listen.wrong')).not.toBeNull();
+      h.push.mockClear();
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(h.push).toHaveBeenCalledTimes(1);
+      expect(h.push).toHaveBeenCalledWith('/games');
+      r.unmount();
+      expect(window.localStorage.getItem('hamy.listen.wrong')).toBeNull();
+    });
+
+    it('arrows move between the two finish buttons', async () => {
+      await ready(cards(5));
+      await playThrough(5);
+      const play = screen.getByRole('button', { name: 'Play again' });
+      expect(document.activeElement).toBe(play);
+      fireEvent.keyDown(window, { key: 'ArrowRight' });
+      expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Back to games' }));
+    });
   });
 });

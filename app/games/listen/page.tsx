@@ -1,16 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Stage } from '@/components/Stage';
 import { Hills } from '@/components/Hills';
 import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
 import { ListenHelp } from '@/components/ListenHelp';
 import { ListenQuestion } from '@/components/listen/ListenQuestion';
+import { ListenDone } from '@/components/listen/ListenDone';
 import { fetchActiveCards, sayWord, stopWord } from '@/lib/memory/cards';
 import { preloadImages } from '@/lib/memory/preload';
 import { buildRounds, type Question } from '@/lib/listen/rounds';
-import { clearWrong, recordWrong } from '@/lib/listen/wrongLog';
+import { clearWrong, readWrong, recordWrong, type WrongEntry } from '@/lib/listen/wrongLog';
 import { mediaUrl } from '@/lib/media';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { ohOh, yay, type SoundHandle } from '@/lib/sfx';
@@ -45,6 +46,11 @@ export default function ListenPlay() {
   const [locked, setLocked] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [help, setHelp] = useState(false);
+  /** Bumped by Play again; a new value draws a new round. */
+  const [round, setRound] = useState(0);
+  /** The wrong picks of the finished round, read once when the last question is done. */
+  const [finish, setFinish] = useState<readonly WrongEntry[]>([]);
+  const [praise, setPraise] = useState<{ name: string; url: string | null } | null>(null);
   const [reduced, setReduced] = useState(false);
   const helpBtn = useRef<HTMLButtonElement>(null);
   const sounds = useRef<{ hooray: string | null; ohoh: string | null }>({ hooray: null, ohoh: null });
@@ -110,7 +116,7 @@ export default function ListenPlay() {
       () => live && setPhase('empty'),
     );
     return () => { live = false; stopPreload?.(); };
-  }, []);
+  }, [round]);
 
   // Custom hooray / oh-oh sounds (as in Quiz); any error just keeps the built-in ones.
   useEffect(() => {
@@ -173,7 +179,7 @@ export default function ListenPlay() {
     if (step.current !== token) return;
     step.current = null;
     if (index + 1 < questions.length) setIndex(index + 1);
-    else setPhase('done');
+    else { setFinish(readWrong()); setPhase('done'); }
   }, [index, questions.length]);
 
   /** Advances now, or once the help popup closes. */
@@ -253,13 +259,46 @@ export default function ListenPlay() {
 
   const done = phase === 'done';
 
+  // The finish needs the child's name and the optional custom praise sound (as the Memory completion).
+  useEffect(() => {
+    if (!done) return;
+    let live = true;
+    const ready = (name: string, url: string | null) => live && setPraise({ name, url });
+    try {
+      createSupabaseBrowserClient().from('settings').select('child_name, complete_path').eq('id', 1).single()
+        .then(({ data }) => ready(data?.child_name ?? '', mediaUrl(data?.complete_path)), () => ready('', null));
+    } catch { ready('', null); }
+    return () => { live = false; };
+  }, [done]);
+
+  /** The round's cards by id, for the pictures of the wrong-picks list. */
+  const roundCards = useMemo(() => new Map<string, MemoryCard>(questions.flatMap((q) => q.options.map((c) => [c.id, c] as const))), [questions]);
+
+  /** Play again: a clean log and a new round, back to question 1. */
+  const again = useCallback(() => {
+    clearWrong();
+    stopWord();
+    step.current = null;
+    setFinish([]);
+    setPraise(null);
+    setQuestions([]);
+    setIndex(0);
+    setPhase('loading');
+    setRound((n) => n + 1);
+  }, []);
+
+  const finished = done && praise !== null;
+
   return (
     <Stage>
       <div data-listen-play data-done={done ? 'true' : 'false'} className={reduced ? 'hm-reduced' : undefined} style={{ position: 'absolute', inset: 0 }}>
+        {finished ? (
+          <ListenDone wrong={finish} cards={roundCards} childName={praise.name} completeUrl={praise.url} onAgain={again} gamesHref="/games" />
+        ) : (
+        <>
         <Hills />
         <div style={{ position: 'absolute', top: 48, zIndex: 2, left: 56, right: 56, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <BackButton href="/games" label="Back to games" />
-          {/* ---- Task 6: the finish screen replaces this done state (data-done="true": only the Back button). ---- */}
           {!done && (
             <button
               ref={helpBtn}
@@ -288,6 +327,8 @@ export default function ListenPlay() {
           <div key={index} className="hm-ls-q" data-question-index={index} data-answer-id={current.answer.id} style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
             <ListenQuestion question={current} wrong={wrong} locked={locked} speaking={speaking} onPick={pick} onReplay={replay} />
           </div>
+        )}
+        </>
         )}
         <MusicButton />
         {help && <ListenHelp playHref={null} onClose={closeHelp} />}
