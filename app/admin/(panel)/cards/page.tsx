@@ -7,6 +7,7 @@ import { sayWord } from '@/lib/memory/cards';
 import { MAX_IMAGE_BYTES, addPending, clearPending, svgToPending } from '@/lib/media';
 import { checkSvg } from '@/lib/quizImport';
 import { CardImportDialog } from '@/components/admin/CardImportDialog';
+import { CardsHeaderActions } from '@/components/admin/CardsHeaderActions';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { CARD_IMG_TYPES, CardPanel, MAX_SOUND_BYTES, cardAudioType, poolHealth } from '@/components/admin/CardPanel';
 import s from '@/components/admin/admin-ui.module.css';
@@ -133,10 +134,7 @@ export default function CardsPage() {
           <p style={{ margin: '6px 0 0', color: '#7A6458', fontSize: 15 }}>Pictures and words for the Memory Match game. Turn a card off to keep it out of the game.</p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <button type="button" onClick={revert} disabled={!dirty || busy} className={`${s.btn} ${s.ghost}`} style={{ height: 44, padding: '0 20px', borderRadius: 12, border: '1.5px solid #E3D5C4', background: '#fff', color: '#4A3830', fontSize: 15, fontWeight: 700, fontFamily: 'Nunito, sans-serif', cursor: 'pointer', opacity: dirty ? 1 : 0.5 }}>Revert</button>
-            <button type="button" onClick={doSave} disabled={!canSave} className={s.btn} style={{ height: 44, padding: '0 22px', borderRadius: 12, border: 'none', background: '#5A4038', color: '#fff', fontSize: 15, fontWeight: 700, fontFamily: 'Nunito, sans-serif', cursor: 'pointer', opacity: canSave ? 1 : 0.6 }}>Save</button>
-          </div>
+          <CardsHeaderActions dirty={dirty} busy={busy} canSave={canSave} onImport={() => setImportOpen(true)} onRevert={revert} onSave={doSave} />
           <span role="status" style={{ fontSize: 13, color: '#7A6458', maxWidth: 420, textAlign: 'right' }}>{status}</span>
         </div>
       </div>
@@ -169,7 +167,6 @@ export default function CardsPage() {
           <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Add card
         </button>
-        <button type="button" onClick={() => setImportOpen(true)} className={s.btn} style={{ minHeight: 200, borderRadius: 18, border: 'none', background: '#3F73B5', color: '#fff', fontSize: 16, fontWeight: 700, fontFamily: 'Nunito, sans-serif', cursor: 'pointer' }}>Quick import cards</button>
       </div>
 
       {importOpen && <CardImportDialog onCancel={() => setImportOpen(false)} onImport={importCards} />}
