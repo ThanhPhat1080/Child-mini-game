@@ -39,7 +39,7 @@ vi.mock('next/link', () => ({
 import CardsPage from '@/app/admin/(panel)/cards/page';
 import { AdminNav } from '@/components/AdminNav';
 
-const card = (n: number, o: Partial<ECard> = {}): ECard => ({ id: `c${n}`, isNew: false, word: `word${n}`, image: `cards/${n}.png`, audio: null, active: true, ...o });
+const card = (n: number, o: Partial<ECard> = {}): ECard => ({ id: `c${n}`, isNew: false, word: `word${n}`, image: `cards/${n}.png`, audio: null, active: true, groupId: null, ...o });
 const cards = (n: number, active = true) => Array.from({ length: n }, (_, i) => card(i + 1, { active }));
 
 const saveBtn = () => screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement;
