@@ -63,13 +63,17 @@ export function GameArt({ id }: { id: Game['id'] }) {
 }
 
 const petals = [0, 72, 144, 216, 288];
-const flowerCard = (x: number, y: number, rot: number) => (
-  <g transform={`translate(${x} ${y}) rotate(${rot})`}>
-    <rect x="-8" y="-10.5" width="16" height="21" rx="3.2" fill="#F8DCDF" stroke="#B8737B" strokeWidth="0.9" />
-    <g>
-      {petals.map((a) => <ellipse key={a} cx="0" cy="-3" rx="1.7" ry="2.7" fill="#fff" transform={`rotate(${a})`} />)}
-      <circle r="1.5" fill="#EED79A" />
-    </g>
+/** Memory icon geometry in the 24-unit viewBox (circle r=10 at 12,12); every card corner must stay inside MEMORY_ICON_MAX_R. */
+export const MEMORY_ICON = {
+  cards: [{ dx: -2, dy: 0.4, rot: -8 }, { dx: 2, dy: -0.4, rot: 8 }],
+  w: 8, h: 10.5, maxR: 8.5,
+} as const;
+
+const flowerCard = ({ dx, dy, rot }: (typeof MEMORY_ICON.cards)[number]) => (
+  <g key={dx} transform={`translate(${12 + dx} ${12 + dy}) rotate(${rot})`}>
+    <rect x={-MEMORY_ICON.w / 2} y={-MEMORY_ICON.h / 2} width={MEMORY_ICON.w} height={MEMORY_ICON.h} rx="2" fill="#F8DCDF" stroke="#B8737B" strokeWidth="0.7" />
+    {petals.map((a) => <ellipse key={a} cx="0" cy="-1.6" rx="1.15" ry="1.8" fill="#fff" transform={`rotate(${a})`} />)}
+    <circle r="1" fill="#EED79A" />
   </g>
 );
 
@@ -79,8 +83,7 @@ export function GameIcon({ id }: { id: Game['id'] }) {
     return (
       <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none">
         <circle cx="12" cy="12" r="10" fill="#F8DCDF" stroke="#B8737B" strokeWidth="2" />
-        {flowerCard(9.4, 12.6, -12)}
-        {flowerCard(14.6, 11.4, 10)}
+        {MEMORY_ICON.cards.map(flowerCard)}
       </svg>
     );
   }

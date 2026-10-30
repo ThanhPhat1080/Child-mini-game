@@ -16,6 +16,7 @@ vi.mock('@/lib/media', () => ({ mediaUrl: (p: string | null) => (p ? `/media/${p
 vi.mock('@/components/MusicButton', () => ({ MusicButton: () => null }));
 
 import Games from '@/app/games/page';
+import { MEMORY_ICON } from '@/components/games/GameArt';
 
 const icon = (id: string) => document.querySelector(`[data-game-icon="${id}"]`) as HTMLElement;
 const frame = (name: string) => screen.getByRole('link', { name }) as HTMLElement;
@@ -32,7 +33,7 @@ describe('games list decorative icons', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('Quiz and Memory cards each have a decorative 130 px icon at the same spot; Spot has none', () => {
+  it('Quiz and Memory cards each have a decorative 130 px icon at the same spot; only those two have one', () => {
     render(<Games />);
     for (const id of ['quiz', 'memory']) {
       const el = icon(id);
@@ -54,6 +55,21 @@ describe('games list decorative icons', () => {
     render(<Games />);
     expect(icon('memory').querySelectorAll('ellipse').length).toBeGreaterThanOrEqual(10);
     expect(icon('quiz').querySelectorAll('ellipse')).toHaveLength(0);
+  });
+
+  it('the Memory icon cards (rotated corners) fit inside the circle, and the circle is drawn', () => {
+    render(<Games />);
+    const circle = icon('memory').querySelector('circle') as SVGCircleElement;
+    expect(circle.getAttribute('fill')).toBe('#F8DCDF');
+    expect(Number(circle.getAttribute('r'))).toBe(10);
+    for (const { dx, dy, rot } of MEMORY_ICON.cards) {
+      const t = (rot * Math.PI) / 180;
+      for (const [x, y] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+        const px = (x * MEMORY_ICON.w) / 2, py = (y * MEMORY_ICON.h) / 2;
+        const cx = dx + px * Math.cos(t) - py * Math.sin(t), cy = dy + px * Math.sin(t) + py * Math.cos(t);
+        expect(Math.hypot(cx, cy)).toBeLessThanOrEqual(MEMORY_ICON.maxR);
+      }
+    }
   });
 
   it('the icons are not in the Tab order (only card links, arrows, dots)', () => {

@@ -82,7 +82,7 @@ test('Space on the focused carousel opens a ready game and no dialog appears', a
   await expect(page).toHaveURL(/\/games\/quiz$/);
 });
 
-test('Tab goes from the card link to the arrows without stopping on any icon', async ({ page }) => {
+test('Tab moves from the Quiz card link straight to the Memory card link (no stop on any icon)', async ({ page }) => {
   await openGames(page);
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Play Quiz' })).toBeFocused();
