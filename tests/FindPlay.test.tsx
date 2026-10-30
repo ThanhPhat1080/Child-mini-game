@@ -259,10 +259,10 @@ describe('Find It play screen (F2-F9)', () => {
 });
 
 describe('FindPlay layout (F2, F3: the word list sits beside the picture)', () => {
-  it('the word list is a 420 px column on the left, with one row per object', async () => {
+  it('the word list is a 480 px column on the left, with one row per object', async () => {
     await ready();
     const list = document.querySelector<HTMLElement>('[data-find-col]')!;
-    expect(list.style.width).toBe('420px');
+    expect(list.style.width).toBe('480px');
     expect(list.style.left).toBe('56px');
     expect(list.querySelectorAll('[data-find-row]')).toHaveLength(3);
   });

@@ -195,11 +195,11 @@ export default function FindPlay() {
         {phase === 'ready' && level && !(won && praise) && (
           <>
             {/* The words, in object order, on the left (F3). The asked word is the current row; the list never shows it once done. */}
-            <div data-find-col style={{ position: 'absolute', left: 56, top: 150, bottom: 56, width: 420, zIndex: 2, overflowY: 'auto' }}>
+            <div data-find-col style={{ position: 'absolute', left: 40, top: 200, bottom: 56, width: 480, zIndex: 2, overflowY: 'auto' }}>
               <FindWordList objects={level.objects} current={found.length >= level.objects.length ? -1 : index} found={found} onSay={sayAt} />
             </div>
             {/* The picture fills the rest of the stage (F2): FindBoard sizes it from the picture's aspect, capped at 1500 x 900. */}
-            <div style={{ position: 'absolute', left: 524, right: 56, top: 110, bottom: 56, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ position: 'absolute', left: 560, right: 56, top: 110, bottom: 56, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <FindBoard url={pictureUrl} objects={level.objects} found={found} ripple={ripple} reduced={reduced} onTap={onTap} />
             </div>
           </>

@@ -17,6 +17,8 @@ type Props = {
 
 /** The words of the level, in object order, beside the picture (F2, F3). The words come from the admin; the only other text is the object number in each name. */
 export function FindWordList({ objects, current, found, onSay }: Props) {
+  // Fewer words get bigger type; a long list shrinks it so every row stays on the stage.
+  const wordSize = objects.length > 8 ? 32 : objects.length > 5 ? 38 : 44;
   const [popped, setPopped] = useState(-1);
   const popTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rows = useRef<(HTMLDivElement | null)[]>([]);
@@ -37,7 +39,8 @@ export function FindWordList({ objects, current, found, onSay }: Props) {
   };
 
   return (
-    <div data-find-list style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    // Padding keeps the pop animation (scale 1.06) and the borders inside the scrolling column, so nothing is cut.
+    <div data-find-list style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: 16, boxSizing: 'border-box' }}>
       {objects.map((o, i) => {
         const isCurrent = i === current;
         const isFound = found.includes(i);
@@ -82,7 +85,7 @@ export function FindWordList({ objects, current, found, onSay }: Props) {
               style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, padding: 0, border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left' }}
             >
               <span
-                style={{ fontFamily: "'Baloo 2', 'Nunito', sans-serif", fontSize: 44, fontWeight: isCurrent ? 800 : 600, lineHeight: 1.1, color: '#7A5C50', overflowWrap: 'anywhere', minWidth: 0 }}
+                style={{ fontFamily: "'Baloo 2', 'Nunito', sans-serif", fontSize: wordSize, fontWeight: isCurrent ? 800 : 600, lineHeight: 1.1, color: '#7A5C50', overflowWrap: 'anywhere', minWidth: 0 }}
               >
                 {o.word}
               </span>
