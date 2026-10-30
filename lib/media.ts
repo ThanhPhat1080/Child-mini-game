@@ -1,5 +1,6 @@
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { PENDING_PREFIX, isBucketPath, mapSetMedia, type SetPaths } from '@/lib/mediaPaths';
+import { referencedPaths } from '@/lib/media/refs';
 
 export const MEDIA_BUCKET = 'media';
 export const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
@@ -74,12 +75,21 @@ export async function uploadMedia(folder: string, file: File): Promise<string> {
 
 /**
  * Deletes files from the media bucket to free storage. Bundled art and external links are skipped.
- * Returns an error message, or null on success. Admin only (RLS, T1).
+ * A file that any record still uses is kept (A23). If that check fails, nothing is deleted.
+ * Returns an error message, or null on success (keeping a file is not an error). Admin only (RLS, T1).
  */
 export async function removeMedia(paths: (string | null | undefined)[]): Promise<string | null> {
   const mine = [...new Set(paths.filter(isBucketPath))];
   if (!mine.length) return null;
-  const { error } = await createSupabaseBrowserClient().storage.from(MEDIA_BUCKET).remove(mine);
+  let inUse: Set<string>;
+  try {
+    inUse = await referencedPaths(mine);
+  } catch {
+    return null; // cannot tell which files are still used: keep them all
+  }
+  const unused = mine.filter((p) => !inUse.has(p));
+  if (!unused.length) return null;
+  const { error } = await createSupabaseBrowserClient().storage.from(MEDIA_BUCKET).remove(unused);
   return error ? error.message : null;
 }
 

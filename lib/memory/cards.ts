@@ -42,6 +42,7 @@ export function sayWord(card: Pick<MemoryCard, 'word' | 'audio_path'>, onEnd?: (
       speak();
       return;
     }
+    try { window.speechSynthesis?.cancel(); } catch { /* no speech engine: nothing to cut off */ }
     const audio = new Audio(url);
     current = audio;
     let fellBack = false;

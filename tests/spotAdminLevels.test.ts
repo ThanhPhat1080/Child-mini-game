@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+vi.mock('@/lib/media/refs', () => ({ referencedPaths: async () => new Set<string>() })); // nothing else uses these files
 
 const h = vi.hoisted(() => ({
   log: [] as string[],

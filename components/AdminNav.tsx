@@ -45,6 +45,10 @@ export function AdminNav() {
         <svg {...icon}><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /><path d="M11 8v6M8 11h6" /></svg>
         Spot
       </Link>
+      <Link href="/admin/find" aria-current={pathname.startsWith('/admin/find') ? 'page' : undefined} className={cls(pathname.startsWith('/admin/find'))}>
+        <svg {...icon}><rect x="3" y="4" width="18" height="16" rx="3" /><circle cx="9" cy="10" r="2.2" /><path d="M21 16l-5-5-8 8" /></svg>
+        Find
+      </Link>
       <div className={styles.divider} />
       <Link href="/" className={cls(false)}>
         <svg {...icon}><path d="M14 3h7v7" /><path d="M10 14L21 3" /><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" /></svg>

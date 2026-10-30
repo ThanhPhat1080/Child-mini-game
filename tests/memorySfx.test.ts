@@ -52,6 +52,27 @@ describe('memory sounds', () => {
     expect(started).toBe(2);
   });
 
+  it('chime rings both tones at a louder peak gain (0.3, was 0.12)', async () => {
+    const peaks: number[] = [];
+    class RecordingAudioContext extends FakeAudioContext {
+      createGain() {
+        return {
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn((v: number) => { if (v > 0.001) peaks.push(v); }),
+            value: 0,
+          },
+          connect: (n: unknown) => n,
+          disconnect: vi.fn(),
+        };
+      }
+    }
+    vi.stubGlobal('AudioContext', RecordingAudioContext);
+    const { chime } = await import('@/lib/sfx');
+    chime();
+    expect(peaks).toEqual([0.3, 0.3]);
+  });
+
   it('both are silent no-ops without an AudioContext', async () => {
     vi.stubGlobal('AudioContext', undefined);
     vi.stubGlobal('webkitAudioContext', undefined);
