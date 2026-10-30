@@ -46,40 +46,59 @@ test('Spot the Differences cannot be opened', async ({ page }) => {
   await expect(page).toHaveURL(/\/games$/);
 });
 
-// the "?" pulses forever (hm-breathe), so Playwright never sees it as stable: click it with force
-const memoryHelp = (page: Page) => page.getByRole('button', { name: 'What is Memory Match? Show how to play' });
-
-test('the Memory Match "?" opens its tutorial; Esc closes it and returns focus; Play opens the game', async ({ page }) => {
+test('the game list has no "?" help buttons and never shows a dialog', async ({ page }) => {
   await openGames(page);
+  await expect(page.getByRole('button', { name: /What is .*Show how to play/ })).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.keyboard.press('ArrowRight');
   await current(page, 2);
-  await memoryHelp(page).click({ force: true });
-  const dialog = page.getByRole('dialog', { name: 'How to play Memory Match' });
-  await expect(dialog).toBeVisible();
-  await expect(page).toHaveURL(/\/games$/);
-  // the popup owns the keys: arrows do not move the carousel, Esc does not leave the page
-  await page.keyboard.press('ArrowRight');
-  await current(page, 2);
-  await page.keyboard.press('Escape');
-  await expect(dialog).toHaveCount(0);
-  await expect(memoryHelp(page)).toBeFocused();
-  await expect(page).toHaveURL(/\/games$/);
-
-  await memoryHelp(page).click({ force: true });
-  await page.getByRole('button', { name: 'Go to step 4' }).click();
-  await dialog.getByRole('link', { name: 'Play Memory Match' }).click();
-  await expect(page).toHaveURL(/\/games\/memory$/);
+  await expect(page.getByRole('button', { name: /What is .*Show how to play/ })).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
-test('the Quiz "?" still opens its tutorial and Esc closes it', async ({ page }) => {
+for (const [id, name, url] of [['quiz', 'Quiz', /\/games\/quiz$/], ['memory', 'Memory Match', /\/games\/memory$/]] as const) {
+  test(`the ${name} card shows a decorative icon; clicking its center opens the game`, async ({ page }) => {
+    await openGames(page);
+    if (id === 'memory') { await page.keyboard.press('ArrowRight'); await current(page, 2); }
+    const icon = page.locator(`[data-game-icon="${id}"]`);
+    await expect(icon).toBeVisible();
+    await expect(icon).toHaveAttribute('aria-hidden', 'true');
+    await expect(icon.locator('button, a, [tabindex]')).toHaveCount(0);
+    // wait for the slide animation (0.7 s) to settle before clicking
+    let prev = '';
+    await expect.poll(async () => { const b = JSON.stringify(await icon.boundingBox()); const same = b === prev; prev = b; return same; }, { intervals: [150] }).toBe(true);
+    const box = (await icon.boundingBox())!;
+    expect(box.width).toBeGreaterThan(50);
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(page).toHaveURL(url);
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+}
+
+test('Space on the focused carousel opens a ready game and no dialog appears', async ({ page }) => {
   await openGames(page);
-  const help = page.getByRole('button', { name: 'What is Quiz? Show how to play' });
-  await help.click({ force: true });
-  const dialog = page.getByRole('dialog', { name: 'How to play Quiz' });
-  await expect(dialog).toBeVisible();
-  await expect(page).toHaveURL(/\/games$/);
-  await page.keyboard.press('Escape');
-  await expect(dialog).toHaveCount(0);
-  await expect(help).toBeFocused();
-  await expect(page).toHaveURL(/\/games$/);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.keyboard.press('Space');
+  await expect(page).toHaveURL(/\/games\/quiz$/);
+});
+
+test('Tab moves from the Quiz card link straight to the Memory card link (no stop on any icon)', async ({ page }) => {
+  await openGames(page);
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: 'Play Quiz' })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: 'Play Memory Match' })).toBeFocused();
+});
+
+test('Memory Match has a sage border, Quiz a rose one, Spot a sky one (three distinct colors)', async ({ page }) => {
+  await page.goto('/games');
+  const border = (loc: ReturnType<Page['locator']>) => loc.evaluate((el) => getComputedStyle(el).borderTopColor);
+  const quiz = await border(page.getByRole('link', { name: 'Play Quiz' }));
+  const memory = await border(page.getByRole('link', { name: 'Play Memory Match' }));
+  const spot = await border(page.getByRole('img', { name: 'Spot the Differences, coming soon' }));
+  expect(memory).toBe('rgb(169, 205, 177)');
+  expect(quiz).toBe('rgb(235, 183, 188)');
+  expect(new Set([quiz, memory, spot]).size).toBe(3);
+  const title = await page.getByRole('link', { name: 'Play Memory Match' }).getByText('Memory Match').evaluate((el) => getComputedStyle(el).color);
+  expect(title).toBe('rgb(94, 143, 105)');
 });

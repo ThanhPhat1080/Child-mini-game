@@ -39,7 +39,7 @@ export function GameArt({ id }: { id: Game['id'] }) {
           {miniCard('#EED79A')}
         </span>
         <span aria-hidden="true" style={{ width: 110, height: 110 }} />
-        <span style={{ fontSize: 64, fontWeight: 600, color: '#B8737B', lineHeight: 1, textAlign: 'center' }}>Memory Match</span>
+        <span style={{ fontSize: 64, fontWeight: 600, color: '#5E8F69', lineHeight: 1, textAlign: 'center' }}>Memory Match</span>
       </>
     );
   }
@@ -59,5 +59,35 @@ export function GameArt({ id }: { id: Game['id'] }) {
         Coming in Phase 2
       </span>
     </>
+  );
+}
+
+const petals = [0, 72, 144, 216, 288];
+/** Memory icon geometry in the 24-unit viewBox (circle r=10 at 12,12); every card corner must stay inside MEMORY_ICON_MAX_R. */
+export const MEMORY_ICON = {
+  cards: [{ dx: -2, dy: 0.4, rot: -8 }, { dx: 2, dy: -0.4, rot: 8 }],
+  w: 8, h: 10.5, maxR: 8.5,
+} as const;
+
+const flowerCard = ({ dx, dy, rot }: (typeof MEMORY_ICON.cards)[number]) => (
+  <g key={dx} transform={`translate(${12 + dx} ${12 + dy}) rotate(${rot})`}>
+    <rect x={-MEMORY_ICON.w / 2} y={-MEMORY_ICON.h / 2} width={MEMORY_ICON.w} height={MEMORY_ICON.h} rx="2" fill="#F8DCDF" stroke="#B8737B" strokeWidth="0.7" />
+    {petals.map((a) => <ellipse key={a} cx="0" cy="-1.6" rx="1.15" ry="1.8" fill="#fff" transform={`rotate(${a})`} />)}
+    <circle r="1" fill="#EED79A" />
+  </g>
+);
+
+/** Decorative round icon on a game's card (no meaning of its own, not a button). */
+export function GameIcon({ id }: { id: Game['id'] }) {
+  if (id === 'memory') {
+    return (
+      <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" fill="#F8DCDF" stroke="#B8737B" strokeWidth="2" />
+        {MEMORY_ICON.cards.map(flowerCard)}
+      </svg>
+    );
+  }
+  return (
+    <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" fill="#F8DCDF" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
   );
 }
