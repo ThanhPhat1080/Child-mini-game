@@ -149,3 +149,11 @@ export function chime(): void {
   tone(c, bus, t, 1318, 1318, 0.25, 'sine', 0.12);
   tone(c, bus, t + 0.14, 1760, 1760, 0.3, 'sine', 0.12);
 }
+
+/** Spot the Differences: one soft, short sine note when a difference is found. Silent when there is no AudioContext. */
+export function ting(): void {
+  const c = ac();
+  if (!c) return;
+  const { bus } = makeBus(c, 500);
+  tone(c, bus, c.currentTime, 1568, 1568, 0.35, 'sine', 0.1);
+}
