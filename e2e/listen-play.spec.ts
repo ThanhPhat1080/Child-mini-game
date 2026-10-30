@@ -115,6 +115,90 @@ test('5 cards give a 5-question round', async ({ page }) => {
   await playRound(page, 5, (i) => answers(page).nth(i).click());
 });
 
+/** Plays `count` questions, making `wrongOn[n]` wrong picks on question n before the right one. */
+async function playWithWrong(page: Page, count: number, wrongOn: Record<number, number> = {}) {
+  for (let n = 0; n < count; n++) {
+    await expect(question(page)).toHaveAttribute('data-question-index', String(n), { timeout: 6000 });
+    const right = await rightIndex(page);
+    for (const w of [0, 1, 2].filter((i) => i !== right).slice(0, wrongOn[n] ?? 0)) {
+      await answers(page).nth(w).click();
+      await expect(answers(page).nth(w)).toHaveAttribute('data-wrong', 'true');
+    }
+    await answers(page).nth(right).click();
+  }
+  await expect(root(page)).toHaveAttribute('data-done', 'true', { timeout: 8000 });
+}
+
+const wrongLine = (page: Page) => page.locator('[data-wrong-line]');
+const wrongItems = (page: Page) => page.locator('[data-wrong-item]');
+
+test.describe('finish screen (L6, L7)', () => {
+  test.beforeEach(async () => { await reset({ memory_cards: makeCards(5) }); });
+
+  test('two wrong picks on one question and one on another end with "Wrong 3 times" and a list with x2', async ({ page }) => {
+    test.setTimeout(90_000);
+    await open(page);
+    await playWithWrong(page, 5, { 0: 2, 1: 1 });
+    await expect(page.locator('[data-listen-done]')).toBeVisible();
+    await expect(wrongLine(page)).toHaveText('Wrong 3 times');
+    await expect(page.locator('[data-wrong-total]')).toHaveText('3');
+    await expect(wrongItems(page)).toHaveCount(2);
+    await expect(wrongItems(page).first()).toContainText('x2');
+    await expect(wrongItems(page).last()).not.toContainText('x');
+    await expect(page.getByRole('button', { name: 'Play again' })).toBeFocused();
+  });
+
+  test('a perfect round shows "Wrong 0 times" and no list', async ({ page }) => {
+    test.setTimeout(90_000);
+    await open(page);
+    await playWithWrong(page, 5);
+    await expect(wrongLine(page)).toHaveText('Wrong 0 times');
+    await expect(page.locator('[data-wrong-list]')).toHaveCount(0);
+  });
+
+  test('Play again starts a new round and the next finish starts from 0', async ({ page }) => {
+    test.setTimeout(120_000);
+    await open(page);
+    await playWithWrong(page, 5, { 2: 1 });
+    await expect(wrongLine(page)).toHaveText('Wrong 1 times');
+    await page.getByRole('button', { name: 'Play again' }).click();
+    await expect(root(page)).toHaveAttribute('data-done', 'false');
+    await expect(question(page)).toHaveAttribute('data-question-index', '0');
+    await expect(answers(page)).toHaveCount(3);
+    await playWithWrong(page, 5);
+    await expect(wrongLine(page)).toHaveText('Wrong 0 times');
+    await expect(page.locator('[data-wrong-list]')).toHaveCount(0);
+  });
+
+  test('leaving to /games clears the log and coming back starts from 0', async ({ page }) => {
+    test.setTimeout(120_000);
+    await open(page);
+    await playWithWrong(page, 5, { 0: 2 });
+    await expect(wrongLine(page)).toHaveText('Wrong 2 times');
+    expect(await page.evaluate(() => localStorage.getItem('hamy.listen.wrong'))).not.toBeNull();
+    await page.getByRole('link', { name: 'Back to games' }).click();
+    await expect(page).toHaveURL(/\/games$/);
+    expect(await page.evaluate(() => localStorage.getItem('hamy.listen.wrong'))).toBeNull();
+    await open(page);
+    await playWithWrong(page, 5);
+    await expect(wrongLine(page)).toHaveText('Wrong 0 times');
+  });
+
+  test('on the finish Esc goes to /games and the arrows move between the two buttons', async ({ page }) => {
+    test.setTimeout(90_000);
+    await open(page);
+    await playWithWrong(page, 5);
+    await expect(page.locator('[data-listen-done][data-keys="ready"]')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Play again' })).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByRole('link', { name: 'Back to games' })).toBeFocused();
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.getByRole('button', { name: 'Play again' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(page).toHaveURL(/\/games$/);
+  });
+});
+
 test.describe('reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
 
