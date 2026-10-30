@@ -15,18 +15,22 @@ describe('parseCardImport', () => {
     expect(WORD_MAX).toBe(40);
   });
 
-  it('accepts the shipped template with no errors when its group names exist', () => {
-    const r = parseCardImport(readFileSync('public/memory-cards-template.json', 'utf8'), SEED);
+  it('accepts the shipped template with no errors and no groups supplied', () => {
+    const r = parseCardImport(readFileSync('public/memory-cards-template.json', 'utf8'));
     expect(r.errors).toEqual([]);
     expect(r.cards.length).toBeGreaterThanOrEqual(3);
-    expect(r.cards.some((x) => x.groupId)).toBe(true);
+    expect(r.cards.every((x) => x.groupId === null)).toBe(true);
   });
 
-  it('the shipped template without any groups only complains about group names', () => {
-    const r = parseCardImport(readFileSync('public/memory-cards-template.json', 'utf8'));
-    expect(r.cards).toEqual([]);
-    expect(r.errors.length).toBeGreaterThan(0);
-    for (const e of r.errors) expect(e).toMatch(/^Card \d+: group ".+" does not exist\./);
+  it('the shipped template also imports cleanly with the seed groups', () => {
+    const r = parseCardImport(readFileSync('public/memory-cards-template.json', 'utf8'), SEED);
+    expect(r.errors).toEqual([]);
+  });
+
+  it('a custom file naming known groups tags every card with the right id', () => {
+    const withSeed = parseCardImport(JSON.stringify({ cards: [c({ word: 'apple', group: 'food' }), c({ word: 'cat', group: ' Animals ' }), c({ word: 'ball', group: 'SHAPES' })] }), SEED);
+    expect(withSeed.errors).toEqual([]);
+    expect(withSeed.cards.map((x) => x.groupId)).toEqual(['id-food', 'id-animals', 'id-shapes']);
   });
 
   it('maps a valid card: new, active by default, blank image and audio are null', () => {

@@ -50,8 +50,7 @@ describe('CardImportDialog', () => {
 
   it('imports a valid file only after it is checked', async () => {
     const onImport = vi.fn();
-    const seed: EGroup[] = ['food', 'animals'].map((name) => ({ id: `id-${name}`, isNew: false, name }));
-    const { container } = render(<CardImportDialog groups={seed} onCancel={() => undefined} onImport={onImport} />);
+    const { container } = render(<CardImportDialog onCancel={() => undefined} onImport={onImport} />);
     expect((screen.getByRole('button', { name: 'Import' }) as HTMLButtonElement).disabled).toBe(true);
     choose(container, readFileSync('public/memory-cards-template.json', 'utf8'));
     await waitFor(() => expect(screen.getByText('3 cards ready to import.')).toBeTruthy());

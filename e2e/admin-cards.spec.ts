@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { getState, groupUuid, makeCards, reset, signInAsAdmin, STANDIN } from './support/fixtures';
+import { getState, makeCards, reset, signInAsAdmin, STANDIN } from './support/fixtures';
 
 const SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><circle cx="4" cy="4" r="3" fill="#E59AA1"/></svg>';
 const svgFile = (name = 'x.svg') => ({ name, mimeType: 'image/svg+xml', buffer: Buffer.from(SVG) });
@@ -124,8 +124,7 @@ async function importThroughDialog(page: Page, file: ReturnType<typeof importFil
 }
 
 test('importing the shipped template: blank pictures keep Save disabled until picked, then Save stores the cards', async ({ page }) => {
-  // the template tags cards "food" and "animals", which must already exist under Groups
-  await reset({ memory_cards: [], card_groups: [{ id: groupUuid(0), name: 'Food', created_at: '2026-01-01T00:00:00.000Z' }, { id: groupUuid(1), name: 'Animals', created_at: '2026-01-02T00:00:00.000Z' }] });
+  await reset({ memory_cards: [] });
   await openCards(page);
   await importThroughDialog(page, { name: 'memory-cards-template.json', mimeType: 'application/json', buffer: readFileSync('public/memory-cards-template.json') });
   await expect(dialog(page).getByText('3 cards ready to import.')).toBeVisible();
