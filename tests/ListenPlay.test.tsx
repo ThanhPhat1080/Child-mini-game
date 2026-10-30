@@ -50,6 +50,7 @@ import ListenPlay, {
   SAY_AFTER_SHOW_MS,
   SAY_AFTER_WRONG_MS,
   STEP_CAP_MS,
+  WRONG_POPUP_MS,
 } from '@/app/games/listen/page';
 import { PRELOAD_MS } from '@/lib/memory/preload';
 
@@ -593,5 +594,120 @@ describe('Listen & Pick play screen (L1-L5, L8, L10)', () => {
       fireEvent.keyDown(window, { key: 'ArrowRight' });
       expect(document.activeElement).toBe(screen.getByRole('link', { name: 'Back to games' }));
     });
+  });
+});
+
+describe('Listen & Pick visual feedback (L4, L5)', () => {
+  const wrongFx = () => document.querySelector<HTMLElement>('[data-feedback="wrong"]');
+  const rightFx = () => document.querySelector<HTMLElement>('[data-feedback="right"]');
+
+  it('exports WRONG_POPUP_MS = 1400', () => {
+    expect(WRONG_POPUP_MS).toBe(1400);
+  });
+
+  it('a wrong pick wobbles the button and shows the Oh-oh popup, non-blocking, gone after WRONG_POPUP_MS', async () => {
+    await readyAndSaid();
+    expect(wrongFx()).toBeNull();
+    const [w1] = wrongIdxs();
+    fireEvent.click(answers()[w1]);
+    expect(answers()[w1].classList.contains('hm-wobble')).toBe(true);
+    expect(answers()[rightIdx()].classList.contains('hm-wobble')).toBe(false);
+    const fx = wrongFx()!;
+    expect(fx).toBeTruthy();
+    expect(fx.textContent).toContain('Oh-oh');
+    expect(fx.style.pointerEvents).toBe('none');
+    expect(fx.querySelector('[role="status"]')).toBeTruthy();
+    await advance(WRONG_POPUP_MS - 10);
+    expect(wrongFx()).toBeTruthy();
+    await advance(20);
+    expect(wrongFx()).toBeNull();
+    expect(rightFx()).toBeNull();
+  });
+
+  it('a second wrong pick restarts the popup', async () => {
+    await readyAndSaid();
+    const [w1, w2] = wrongIdxs();
+    fireEvent.click(answers()[w1]);
+    await advance(1000);
+    fireEvent.click(answers()[w2]);
+    await advance(WRONG_POPUP_MS - 100); // 1300 ms after the second pick, 2300 after the first
+    expect(wrongFx()).toBeTruthy();
+    await advance(200);
+    expect(wrongFx()).toBeNull();
+  });
+
+  it('a right pick grows the button with a ring and shows the Hooray overlay until the next question', async () => {
+    await readyAndSaid();
+    const right = rightIdx();
+    fireEvent.click(answers()[right]);
+    expect(answers()[right].classList.contains('hm-picked')).toBe(true);
+    expect(answers()[right].querySelector('.hm-pickring')).toBeTruthy();
+    expect(wrongFx()).toBeNull();
+    const fx = rightFx()!;
+    expect(fx).toBeTruthy();
+    expect(fx.textContent).toContain('Hooray!');
+    expect(fx.textContent).not.toMatch(/Continue in/);
+    await advance(HOORAY_CAP_MS + 100);
+    expect(rightFx()).toBeTruthy(); // still there while the word is said
+    await advance(NEXT_PAUSE_MS + 10);
+    expect(qIndex()).toBe('1');
+    expect(rightFx()).toBeNull();
+    expect(wrongFx()).toBeNull();
+    expect(answers().some((b) => b.classList.contains('hm-picked') || b.classList.contains('hm-wobble'))).toBe(false);
+  });
+
+  it('a wrong popup still showing when the right pick comes is replaced by the Hooray overlay, and nothing carries over', async () => {
+    await readyAndSaid();
+    fireEvent.click(answers()[wrongIdxs()[0]]);
+    fireEvent.click(answers()[rightIdx()]);
+    expect(wrongFx()).toBeNull();
+    expect(rightFx()).toBeTruthy();
+    await advance(WRONG_POPUP_MS + 50);
+    expect(rightFx()).toBeTruthy();
+    expect(wrongFx()).toBeNull();
+  });
+
+  it('no overlay on the finish screen, and none after Play again', async () => {
+    await ready(cards(5));
+    for (let n = 0; n < 5; n++) {
+      fireEvent.click(answers()[rightIdx()]);
+      expect(rightFx()).toBeTruthy();
+      await advance(HOORAY_CAP_MS + FINISH_DELAY_MS + NEXT_PAUSE_MS + 200);
+    }
+    await advance(200);
+    expect(root().getAttribute('data-done')).toBe('true');
+    expect(rightFx()).toBeNull();
+    expect(wrongFx()).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Play again' }));
+    await advance(PRELOAD_MS + 10);
+    expect(qIndex()).toBe('0');
+    expect(rightFx()).toBeNull();
+    expect(wrongFx()).toBeNull();
+  });
+
+  it('the overlays stay below the help popup', async () => {
+    await readyAndSaid();
+    fireEvent.click(answers()[wrongIdxs()[0]]);
+    expect(Number(wrongFx()!.style.zIndex)).toBeLessThan(50);
+    fireEvent.click(answers()[rightIdx()]);
+    expect(Number(rightFx()!.style.zIndex)).toBeLessThan(50);
+  });
+
+  it('reduced motion: the root still renders the feedback', async () => {
+    Object.defineProperty(window, 'matchMedia', { configurable: true, writable: true, value: (q: string) => ({ matches: q.includes('reduce'), media: q, addEventListener() {}, removeEventListener() {} }) });
+    await readyAndSaid();
+    expect(root().classList.contains('hm-reduced')).toBe(true);
+    fireEvent.click(answers()[wrongIdxs()[0]]);
+    expect(wrongFx()).toBeTruthy();
+    fireEvent.click(answers()[rightIdx()]);
+    expect(rightFx()).toBeTruthy();
+  });
+
+  it('unmounting drops the overlay timers without errors', async () => {
+    const r = await readyAndSaid();
+    fireEvent.click(answers()[wrongIdxs()[0]]);
+    r.unmount();
+    await advance(WRONG_POPUP_MS + 100);
+    expect(wrongFx()).toBeNull();
   });
 });

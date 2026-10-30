@@ -48,8 +48,8 @@ Details for G1 and M1-M10: `docs/superpowers/specs/2026-10-29-memory-match-desig
 | L1 | Entry: `/games/listen` plays directly (no level select). Registry entry `listen`, ready. |
 | L2 | Round: 10 questions, each with a different answer card; two distractors are random other cards; the answer position (1/2/3) is random. |
 | L3 | Voice: the word is said automatically when a question appears and again on speaker button / key R. Recorded file if the card has one, else `speakKid`. |
-| L4 | Wrong pick: "Oh-Oh", the picture dims and is disabled, the word is said again after a short pause. |
-| L5 | Right pick: "Hooray", the word is said once, then the next question. After question 10 the finish screen shows. |
+| L4 | Wrong pick: "Oh-Oh", the picture dims, wobbles and is disabled (wobble + Oh-oh popup), the word is said again after a short pause. |
+| L5 | Right pick: "Hooray" (grow + ring + Hooray popup with confetti), the word is said once, then the next question. After question 10 the finish screen shows. |
 | L6 | Finish screen: shared celebration scene (3 stars, both characters, confetti), "Wrong N times" with N highlighted, and two picture buttons: play again (new 10 questions), back to games. If any picks were wrong, a row of small round pictures with the English word and count ("apple x2"); tapping one says the word. No row when there were none. |
 | L7 | Wrong-picks log in localStorage under one key (`hamy.listen.wrong`), entries `{id, word, count}`. It is written at every wrong pick. Cleared when a round starts (also after a reload, which starts a new round), on play again and on leaving to the game list. Blocked or failing storage: the game works and the list still shows from memory for that page visit. |
 | L8 | Keyboard: 1/2/3 pick, Left/Right move, Enter/Space pick, R replays the word, Esc goes back. Visible focus ring. |

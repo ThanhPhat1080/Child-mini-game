@@ -13,6 +13,8 @@ type Props = {
   question: Question;
   /** Indexes (0-2) already tried and wrong in this question. */
   wrong: ReadonlySet<number>;
+  /** Index (0-2) of the right answer once picked (it grows with a ring), else null. */
+  picked?: number | null;
   /** True while a pick is being celebrated; ignores every click. */
   locked: boolean;
   /** True while the word is being said; the speaker pulses softly. */
@@ -32,7 +34,7 @@ function Picture({ card }: { card: MemoryCard }) {
 }
 
 /** The Listen & Pick question: a big speaker above three picture-only answers (no written word anywhere). */
-export function ListenQuestion({ question, wrong, locked, speaking, onPick, onReplay }: Props) {
+export function ListenQuestion({ question, wrong, picked, locked, speaking, onPick, onReplay }: Props) {
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       <div style={{ position: 'absolute', top: 150, left: 0, right: 0, display: 'flex', justifyContent: 'center' }}>
@@ -56,6 +58,7 @@ export function ListenQuestion({ question, wrong, locked, speaking, onPick, onRe
         {question.options.map((card, i) => {
           const c = SLOT_COLORS[i];
           const isWrong = wrong.has(i);
+          const isPicked = picked === i;
           return (
             <button
               key={i}
@@ -65,10 +68,11 @@ export function ListenQuestion({ question, wrong, locked, speaking, onPick, onRe
               data-wrong={isWrong ? 'true' : 'false'}
               aria-disabled={isWrong ? 'true' : undefined}
               aria-label={`Answer ${i + 1}`}
-              className={`hm-ans${isWrong ? ' hm-ls-wrong' : ''}`}
+              className={`hm-ans${isWrong ? ' hm-ls-wrong hm-wobble' : ''}${isPicked ? ' hm-picked' : ''}`}
               onClick={() => { if (!locked && !isWrong) onPick(i as 0 | 1 | 2); }}
               style={{ position: 'relative', width: 460, height: 400, borderRadius: 56, border: `14px solid ${c.ring}`, background: c.bg, boxShadow: `0 16px 0 ${SHADOW[i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box', opacity: isWrong ? 0.45 : 1, '--ring': c.ring } as React.CSSProperties}
             >
+              {isPicked && <span className="hm-pickring" aria-hidden="true" style={{ borderColor: c.ring }} />}
               <span className="hm-num" style={{ position: 'absolute', top: -34, left: -34, width: 104, height: 104, borderRadius: 52, background: BADGE[i], color: '#fff', border: '8px solid #FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, fontWeight: 600, boxSizing: 'border-box' }}>{i + 1}</span>
               <Picture card={card} />
             </button>
