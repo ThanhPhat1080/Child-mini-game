@@ -65,7 +65,7 @@ Details for every row: `docs/superpowers/specs/2026-10-29-memory-match-design.md
 | ID | Requirement |
 |----|-------------|
 | A11 | Card pool at `/admin/cards`: add, edit, delete (with confirmation), active toggle, picture + word + optional pronunciation; saved like A10. |
-| A12 | Quick import of cards from a JSON file with a downloadable template, validated before anything changes (same rules as A9). |
+| A12 | Quick import of cards from a JSON file with a downloadable template, validated before anything changes (same rules as A9). The "Quick import cards" text button sits in the page header next to Revert and Save. |
 | A13 | Pool health: shows which levels are available now and how many active cards each needs. |
 
 ## 5. Data model (Supabase / Postgres)

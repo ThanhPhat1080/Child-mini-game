@@ -14,3 +14,4 @@
 .cp::-moz-color-swatch { border: none; border-radius: 17px; }
 .toast { position: fixed; bottom: 24px; right: 24px; background: #5a4038; color: #fff; border-radius: 12px; padding: 12px 18px; font-weight: 700; font-size: 14px; z-index: 60; }
 .toastErr { background: #a8484f; }
+.textBtn:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 4px; }

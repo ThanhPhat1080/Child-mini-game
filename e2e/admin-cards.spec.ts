@@ -191,3 +191,44 @@ test('imported cards (SVG code) can be saved and played from /games/memory', asy
   await expect(tiles.nth(0)).toHaveAttribute('data-matched', 'true');
   await expect(tiles.nth(mate)).toHaveAttribute('data-matched', 'true');
 });
+
+test.describe('Quick import cards header button', () => {
+  const importBtn = (page: Page) => page.getByRole('button', { name: 'Quick import cards' });
+
+  test('one row with Revert and Save in the sticky header, left to right, blue text style, opens with nothing to save', async ({ page }) => {
+    await openCards(page);
+    await expect(importBtn(page)).toHaveCount(1);
+    await expect(save(page)).toBeDisabled();
+    const boxes = await Promise.all([importBtn(page), page.getByRole('button', { name: 'Revert' }), save(page)].map((l) => l.boundingBox()));
+    const [a, b, c] = boxes.map((x) => x!);
+    expect(a.x + a.width).toBeLessThanOrEqual(b.x);
+    expect(b.x + b.width).toBeLessThanOrEqual(c.x);
+    for (const x of [a, b, c]) expect(Math.abs(x.y + x.height / 2 - (a.y + a.height / 2))).toBeLessThan(4);
+    await expect(importBtn(page)).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(importBtn(page)).toHaveCSS('color', 'rgb(63, 115, 181)');
+    const h1 = (await page.getByRole('heading', { name: 'Memory cards' }).boundingBox())!;
+    expect(a.y).toBeLessThan(h1.y + h1.height); // top right, on the title's line
+    const header = (await page.locator('div[style*="sticky"]').boundingBox())!;
+    expect(header.x + header.width - (c.x + c.width)).toBeLessThan(24);
+    await page.mouse.wheel(0, 600);
+    await expect(importBtn(page)).toBeInViewport();
+    await importBtn(page).click();
+    await expect(dialog(page)).toBeVisible();
+  });
+
+  test('at 1024 px the header does not overflow and Save stays visible', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await openCards(page);
+    await expect(save(page)).toBeInViewport({ ratio: 1 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+
+  test('at 390 px the header does not overflow and Save stays visible', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openCards(page);
+    await expect(save(page)).toBeVisible();
+    await expect(save(page)).toBeInViewport({ ratio: 1 });
+    await expect(importBtn(page)).toBeInViewport({ ratio: 1 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+});
