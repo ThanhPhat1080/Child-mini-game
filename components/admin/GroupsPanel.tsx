@@ -41,7 +41,7 @@ function RenameChip({ group, onRename, onClose }: { group: EGroup; onRename: (id
           className={s.in} type="text" autoFocus aria-label={`New name for group ${group.name}`} value={value}
           aria-invalid={!!err} aria-describedby={err ? errId : undefined}
           onChange={(e) => { setValue(e.target.value); setErr(null); }} onKeyDown={key}
-          style={{ ...inputStyle, height: 36, width: 200, maxWidth: '100%', boxSizing: 'border-box', fontSize: 14 }}
+          style={{ ...inputStyle, height: 36, width: 150, maxWidth: '100%', boxSizing: 'border-box', fontSize: 14 }}
         />
         <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Confirm new name for group ${group.name}`} style={small} onClick={commit}>OK</button>
         <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Cancel renaming group ${group.name}`} style={small} onClick={onClose}>Cancel</button>
@@ -108,7 +108,7 @@ export function GroupsPanel({ groups, onAdd, onRename, onDelete, usage }: {
             className={s.in} type="text" aria-label="New group name" placeholder="e.g. Animals" value={name}
             aria-invalid={!!err} aria-describedby={err ? errId : undefined}
             onChange={(e) => { setName(e.target.value); setErr(null); }} onKeyDown={key}
-            style={{ ...inputStyle, height: 40, flex: '1 1 200px', maxWidth: 320, minWidth: 0, boxSizing: 'border-box' }}
+            style={{ ...inputStyle, height: 40, flex: '1 1 140px', maxWidth: 320, minWidth: 0, boxSizing: 'border-box' }}
           />
           <button type="button" className={`${s.btn} ${s.ghost}`} style={{ ...ghostBtn, height: 40 }} onClick={add}>Add group</button>
         </div>
