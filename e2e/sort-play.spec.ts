@@ -54,11 +54,9 @@ test('a full round by real mouse reaches the done state', async ({ page }) => {
   await open(page);
   await expect(root(page)).toHaveAttribute('data-done', 'false');
   for (const id of await ids(page)) {
-    const basket = basketOf(page, id);
-    await dragTo(page, obj(page, id), await center(basket));
-    await expect(obj(page, id)).toHaveAttribute('data-state', 'hidden');
-    await expect(basket.locator(`[data-placed="${id}"]`)).toHaveCount(1);
-    await page.waitForTimeout(700); // the settle after a right drop (WORD_AFTER_CHIME_MS)
+    // retries while a press is still ignored during the previous drop's settle (WORD_AFTER_CHIME_MS)
+    await dropRight(page, id);
+    await expect(basketOf(page, id).locator(`[data-placed="${id}"]`)).toHaveCount(1);
   }
   await expect(root(page)).toHaveAttribute('data-done', 'true', { timeout: 8000 });
   await expect(root(page)).toHaveAttribute('data-wrong-count', '0');
@@ -91,8 +89,8 @@ test('a drop on empty space plays nothing and leaves the object in place', async
   await expect(obj(page, id)).toHaveAttribute('data-state', 'idle');
   await expect(root(page)).toHaveAttribute('data-wrong-count', '0');
   await expect(page.locator('[data-placed]')).toHaveCount(0);
-  await page.waitForTimeout(500);
-  expect(await obj(page, id).boundingBox()).toEqual(before);
+  // the CSS slide back (SLIDE_BACK_MS) ends where the object started
+  await expect.poll(() => obj(page, id).boundingBox()).toEqual(before);
 });
 
 test('a tap leaves the object in place', async ({ page }) => {

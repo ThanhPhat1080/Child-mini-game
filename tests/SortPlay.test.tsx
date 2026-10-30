@@ -526,6 +526,20 @@ describe('Sort It play screen (S1-S6, S8-S10)', () => {
     expect(stateOf(id)).toBe('idle');
   });
 
+  it('a right drop stops a still-playing oh-oh before the chime', async () => {
+    const stop = vi.fn();
+    h.ohOh.mockReturnValue({ ms: 1900, stop });
+    await ready();
+    const [a, b] = ids();
+    drop(a, wrongBasket(a));
+    expect(stop).not.toHaveBeenCalled();
+    await advance(SLIDE_BACK_MS);
+    drop(b, rightBasket(b));
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(h.chime).toHaveBeenCalledTimes(1);
+    expect(stop.mock.invocationCallOrder[0]).toBeLessThan(h.chime.mock.invocationCallOrder[0]);
+  });
+
   it('reads the custom oh-oh path from settings', async () => {
     h.settings.mockResolvedValue({ data: { ohoh_path: 'sfx/oh.mp3' } });
     await ready();
