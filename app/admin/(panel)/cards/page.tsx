@@ -153,7 +153,7 @@ export default function CardsPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 16 }}>
         {draft.map((c, i) => (
           <CardPanel
-            key={c.id} c={c} n={i + 1} autoFocus={c.id === focusId}
+            key={c.id} c={c} n={i + 1} autoFocus={c.id === focusId} groups={[]} weakGroup={false}
             duplicate={dups.has(c.word.trim().toLowerCase())} message={msgs[c.id] ?? null}
             onEdit={(patch) => edit(c.id, patch)}
             onPickImage={(f) => pick(c.id, f, 'image')}

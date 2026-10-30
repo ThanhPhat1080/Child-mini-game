@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { isCardComplete, type ECard } from '@/lib/memory/adminCards';
+import { isCardComplete, type ECard, type EGroup } from '@/lib/memory/adminCards';
 import { mediaUrl } from '@/lib/media';
 import { LEVELS, levelsAvailable, pairsOf } from '@/lib/memory/deck';
 import s from './admin-ui.module.css';
@@ -37,9 +37,12 @@ export function poolHealth(active: number): string {
 const small = { ...ghostBtn, height: 34, padding: '0 12px', fontSize: 13 } as const;
 const hint = { fontSize: 12, color: '#7A6458' } as const;
 
-/** One card of the pool: picture, word, pronunciation, on/off and delete. Edits go up through `onEdit`. */
-export function CardPanel({ c, n, duplicate, message, autoFocus, onEdit, onPickImage, onPickAudio, onSvg, onPlay, onAskDelete }: {
+export const WEAK_GROUP_TEXT = 'Sort It needs at least 4 cards with different words in a group.';
+
+/** One card of the pool: picture, word, pronunciation, group (A15), on/off and delete. Edits go up through `onEdit`. */
+export function CardPanel({ c, n, duplicate, message, autoFocus, groups, weakGroup, onEdit, onPickImage, onPickAudio, onSvg, onPlay, onAskDelete }: {
   c: ECard; n: number; duplicate: boolean; message: string | null; autoFocus: boolean;
+  groups: readonly EGroup[]; weakGroup: boolean;
   onEdit: (patch: Partial<ECard>) => void; onPickImage: (f: File) => void; onPickAudio: (f: File) => void;
   onSvg: (code: string) => void; onPlay: () => void; onAskDelete: () => void;
 }) {
@@ -49,6 +52,7 @@ export function CardPanel({ c, n, duplicate, message, autoFocus, onEdit, onPickI
   const missing = [!len && 'a word', !c.image && 'a picture'].filter(Boolean).join(' and ');
   const imgId = `cimg-${c.id}`;
   const audId = `caud-${c.id}`;
+  const groupValue = c.groupId && groups.some((g) => g.id === c.groupId) ? c.groupId : '';
 
   return (
     <article aria-label={`Card ${n}`} style={{ ...panel, padding: 16, gap: 10, opacity: c.active ? 1 : 0.75, border: isCardComplete(c) ? '1.5px solid transparent' : '1.5px dashed #E5C979' }}>
@@ -92,6 +96,15 @@ export function CardPanel({ c, n, duplicate, message, autoFocus, onEdit, onPickI
         <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Play card ${n}`} style={small} disabled={!len && !c.audio} onClick={onPlay}>▶ Play</button>
       </div>
       <span style={hint}>{c.audio ? `Recording: ${fileName(c.audio)}` : 'No recording: the browser voice says the word.'}</span>
+
+      <label htmlFor={`cg-${c.id}`} style={{ fontSize: 13, fontWeight: 700 }}>Group</label>
+      <select id={`cg-${c.id}`} className={s.in} aria-label={`Group for card ${n}`} value={groupValue}
+        onChange={(e) => onEdit({ groupId: e.target.value || null })}
+        style={{ ...inputStyle, height: 40, width: '100%', boxSizing: 'border-box', padding: '0 10px', fontSize: 15, cursor: 'pointer' }}>
+        <option value="">No group</option>
+        {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+      </select>
+      {weakGroup && <span role="status" style={{ fontSize: 13, fontWeight: 700, color: '#7A5410' }}>{WEAK_GROUP_TEXT}</span>}
 
       {message && <span role="alert" style={{ fontSize: 13, fontWeight: 700, color: '#A8484F' }}>{message}</span>}
       {duplicate && <span role="status" style={{ fontSize: 13, fontWeight: 700, color: '#7A5410' }}>Another card has the same word.</span>}

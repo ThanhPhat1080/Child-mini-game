@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ECard } from '@/lib/memory/adminCards';
+import type { ECard, EGroup } from '@/lib/memory/adminCards';
 
 const h = vi.hoisted(() => ({
   loadCards: vi.fn(),
@@ -38,6 +38,7 @@ vi.mock('next/link', () => ({
 
 import CardsPage from '@/app/admin/(panel)/cards/page';
 import { AdminNav } from '@/components/AdminNav';
+import { CardPanel } from '@/components/admin/CardPanel';
 
 const card = (n: number, o: Partial<ECard> = {}): ECard => ({ id: `c${n}`, isNew: false, word: `word${n}`, image: `cards/${n}.png`, audio: null, active: true, groupId: null, ...o });
 const cards = (n: number, active = true) => Array.from({ length: n }, (_, i) => card(i + 1, { active }));
@@ -367,5 +368,48 @@ describe('Admin cards page (A11, A13)', () => {
     const link = screen.getByRole('link', { name: 'Cards' });
     expect(link.getAttribute('href')).toBe('/admin/cards');
     expect(link.getAttribute('aria-current')).toBe('page');
+  });
+});
+
+describe('CardPanel group picker (A15)', () => {
+  const GROUPS: EGroup[] = [{ id: 'g1', isNew: false, name: 'Animals' }, { id: 'g2', isNew: true, name: 'Fruit' }];
+  const WEAK = 'Sort It needs at least 4 cards with different words in a group.';
+  function renderPanel(c: ECard, weakGroup = false) {
+    const onEdit = vi.fn();
+    const noop = () => {};
+    render(
+      <CardPanel c={c} n={3} duplicate={false} message={null} autoFocus={false} groups={GROUPS} weakGroup={weakGroup}
+        onEdit={onEdit} onPickImage={noop} onPickAudio={noop} onSvg={noop} onPlay={noop} onAskDelete={noop} />,
+    );
+    return { onEdit, select: screen.getByRole('combobox', { name: 'Group for card 3' }) as HTMLSelectElement };
+  }
+
+  it('lists "No group" first, then the groups in order', () => {
+    const { select } = renderPanel(card(3));
+    expect(Array.from(select.options).map((o) => o.textContent)).toEqual(['No group', 'Animals', 'Fruit']);
+    expect(select.options[select.selectedIndex].textContent).toBe('No group');
+  });
+
+  it('shows the card\'s group and choosing another calls onEdit({ groupId })', () => {
+    const { select, onEdit } = renderPanel(card(3, { groupId: 'g1' }));
+    expect(select.options[select.selectedIndex].textContent).toBe('Animals');
+    fireEvent.change(select, { target: { value: 'g2' } });
+    expect(onEdit).toHaveBeenCalledWith({ groupId: 'g2' });
+    fireEvent.change(select, { target: { value: '' } });
+    expect(onEdit).toHaveBeenLastCalledWith({ groupId: null });
+  });
+
+  it('a card whose group is missing shows "No group"', () => {
+    const { select } = renderPanel(card(3, { groupId: 'gone' }));
+    expect(select.value).toBe('');
+    expect(select.options[select.selectedIndex].textContent).toBe('No group');
+  });
+
+  it('the weak group warning shows only when weakGroup', () => {
+    renderPanel(card(3, { groupId: 'g1' }));
+    expect(screen.queryByText(WEAK)).toBeNull();
+    cleanup();
+    renderPanel(card(3, { groupId: 'g1' }), true);
+    expect(screen.getByText(WEAK).getAttribute('role')).toBe('status');
   });
 });
