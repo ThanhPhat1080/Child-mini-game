@@ -17,6 +17,7 @@ export type Row = Record<string, unknown>;
 
 export type StandinState = {
   memory_cards: Row[];
+  card_groups: Row[];
   settings: Row[];
   quiz_sets: Row[];
   questions: Row[];
