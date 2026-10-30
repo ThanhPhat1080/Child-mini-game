@@ -12,10 +12,21 @@ export type MemoryCardRow = {
   created_at: string;
 };
 
+export type SpotLevelRow = {
+  id: string;
+  image_a_path: string;
+  image_b_path: string;
+  differences: { x: number; y: number; r: number }[];
+  active: boolean;
+  sort_order: number;
+  created_at: string;
+};
+
 export type Row = Record<string, unknown>;
 
 export type StandinState = {
   memory_cards: Row[];
+  spot_levels: Row[];
   settings: Row[];
   quiz_sets: Row[];
   questions: Row[];
@@ -46,6 +57,23 @@ export function makeCards(n: number, active = true): MemoryCardRow[] {
     image_path: 'seed/apple.svg',
     active,
     position: i + 1,
+    created_at: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
+  }));
+}
+
+/** n spot levels (garden art, 3 valid differences each), ids ...a000-00000000000N. */
+export function makeSpotLevels(n: number, active = true): SpotLevelRow[] {
+  return Array.from({ length: n }, (_, i) => ({
+    id: `00000000-0000-4000-a000-${String(i + 1).padStart(12, '0')}`,
+    image_a_path: 'seed/spot/garden-a.svg',
+    image_b_path: 'seed/spot/garden-b.svg',
+    differences: [
+      { x: 0.25, y: 0.3, r: 0.06 },
+      { x: 0.5, y: 0.6, r: 0.06 },
+      { x: 0.75, y: 0.4, r: 0.06 },
+    ],
+    active,
+    sort_order: i + 1,
     created_at: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
   }));
 }
