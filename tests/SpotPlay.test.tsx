@@ -150,6 +150,34 @@ describe('Spot play screen (S2-S10)', () => {
     expect(lit()).toBe(1);
   });
 
+  it('if settings never settle, the celebration still shows about 2 s after the win (S6)', async () => {
+    h.settings.mockReturnValue(new Promise(() => {}));
+    await ready();
+    tap('a', 0.25, 0.3);
+    tap('b', 0.5, 0.6);
+    tap('a', 0.75, 0.4);
+    await advance(1100);
+    expect(document.querySelector('[data-spot-done]')).toBeNull();
+    await advance(1800);
+    expect(document.querySelector('[data-spot-done]')).toBeNull();
+    await advance(300);
+    expect(document.querySelector('[data-spot-done]')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Play again' })).toBeTruthy();
+  });
+
+  it('the fallback does not override or double-fire when settings arrive in time', async () => {
+    await ready();
+    tap('a', 0.25, 0.3);
+    tap('b', 0.5, 0.6);
+    tap('a', 0.75, 0.4);
+    await advance(1100);
+    expect(screen.getByRole('heading').textContent).toBe('You did it, Mi!');
+    await advance(5000);
+    expect(screen.getByRole('heading').textContent).toBe('You did it, Mi!');
+    expect(h.settings).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('Esc goes back to the level grid', async () => {
     await ready();
     fireEvent.keyDown(window, { key: 'Escape' });

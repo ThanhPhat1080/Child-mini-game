@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { SpotLevel } from '@/lib/spot/types';
 
 export type SpotRipple = { side: 'a' | 'b'; x: number; y: number; key: number };
@@ -26,6 +26,8 @@ type Props = {
 export function SpotBoard({ level, urlA, urlB, found, onTap, ripple = null, reduced = false, onSide }: Props) {
   const [aspect, setAspect] = useState(DEFAULT_ASPECT);
   const [broken, setBroken] = useState({ a: false, b: false });
+  /** The padding box inside the frame: the pictures and rings are drawn here, so taps are measured here. */
+  const areas = useRef<{ a: HTMLSpanElement | null; b: HTMLSpanElement | null }>({ a: null, b: null });
   const w = Math.min(MAX_W, Math.floor(MAX_H * aspect));
   const h = Math.floor(w / aspect);
 
@@ -36,14 +38,19 @@ export function SpotBoard({ level, urlA, urlB, found, onTap, ripple = null, redu
         data-spot-pic={side}
         className="hm-spot-pic"
         onClick={(e) => {
-          const r = e.currentTarget.getBoundingClientRect();
+          const el = areas.current[side];
+          if (!el) return;
+          const r = el.getBoundingClientRect(); // read at tap time, never cached
           if (!(r.width > 0) || !(r.height > 0)) return;
+          const x = (e.clientX - r.left) / r.width;
+          const y = (e.clientY - r.top) / r.height;
+          if (x < 0 || x > 1 || y < 0 || y > 1) return; // a tap on the frame is not a tap on the picture
           onSide?.(side);
-          onTap({ x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }, aspect);
+          onTap({ x, y }, aspect);
         }}
         style={{ width: w, height: h, borderRadius: 40, background: '#fff', border: '8px solid #A9C6DE', boxShadow: '0 8px 0 #EADCC8', boxSizing: 'border-box' }}
       >
-        <span style={{ position: 'absolute', inset: 0, borderRadius: 32, overflow: 'hidden', display: 'block' }}>
+        <span ref={(el) => { areas.current[side] = el; }} data-spot-area style={{ position: 'absolute', inset: 0, borderRadius: 32, overflow: 'hidden', display: 'block' }}>
           {src ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img

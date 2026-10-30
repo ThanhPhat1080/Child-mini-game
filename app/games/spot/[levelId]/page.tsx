@@ -23,6 +23,8 @@ import { ting } from '@/lib/sfx';
 const WIN_DELAY_MS = 1000;
 /** How long a miss ripple stays on the picture. */
 const RIPPLE_MS = 800;
+/** If the settings request has not settled this long after the win, celebrate with the empty default anyway. */
+const PRAISE_FALLBACK_MS = 2000;
 const LEVELS = '/games/spot';
 
 const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
@@ -91,6 +93,7 @@ export default function SpotPlay() {
     if (!won) return;
     let live = true;
     const done = (name: string, url: string | null) => live && setPraise({ name, url });
+    later(() => { if (live) setPraise((p) => p ?? { name: '', url: null }); }, PRAISE_FALLBACK_MS);
     try {
       createSupabaseBrowserClient().from('settings').select('child_name, complete_path').eq('id', 1).single()
         .then(({ data }) => done(data?.child_name ?? '', mediaUrl(data?.complete_path)), () => done('', null));
@@ -98,7 +101,7 @@ export default function SpotPlay() {
       done('', null);
     }
     return () => { live = false; };
-  }, [won]);
+  }, [won, later]);
 
   const again = useCallback(() => {
     if (!level) return;

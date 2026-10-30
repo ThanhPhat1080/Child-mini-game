@@ -9,30 +9,54 @@ const level: SpotLevel = {
   differences: [{ x: 0.25, y: 0.3, r: 0.06 }, { x: 0.5, y: 0.6, r: 0.06 }, { x: 0.75, y: 0.4, r: 0.06 }],
 };
 const pic = (s: 'a' | 'b') => document.querySelector<HTMLElement>(`[data-spot-pic="${s}"]`)!;
+const area = (s: 'a' | 'b') => document.querySelector<HTMLElement>(`[data-spot-pic="${s}"] [data-spot-area]`)!;
 const rect = (el: HTMLElement, r: { left: number; top: number; width: number; height: number }) => {
   el.getBoundingClientRect = () => ({ ...r, right: r.left + r.width, bottom: r.top + r.height, x: r.left, y: r.top, toJSON() {} }) as DOMRect;
 };
 afterEach(cleanup);
 
 describe('SpotBoard', () => {
-  it('reports the click as fractions of the picture, same on A and B', () => {
+  it('reports the click as fractions of the inner picture area, same on A and B', () => {
     const onTap = vi.fn();
     render(<SpotBoard level={level} urlA="/a.svg" urlB="/b.svg" found={[]} onTap={onTap} />);
-    rect(pic('a'), { left: 100, top: 50, width: 400, height: 300 });
-    rect(pic('b'), { left: 700, top: 50, width: 400, height: 300 });
+    rect(area('a'), { left: 100, top: 50, width: 400, height: 300 });
+    rect(area('b'), { left: 700, top: 50, width: 400, height: 300 });
     fireEvent.click(pic('a'), { clientX: 200, clientY: 200 });
     expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 4 / 3);
     fireEvent.click(pic('b'), { clientX: 800, clientY: 200 });
     expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 4 / 3);
   });
 
-  it('uses the CURRENT rect at every tap, never a cached size', () => {
+  it('measures the inner area, not the framed outer box (S3)', () => {
     const onTap = vi.fn();
     render(<SpotBoard level={level} urlA="/a.svg" urlB="/b.svg" found={[]} onTap={onTap} />);
-    rect(pic('a'), { left: 0, top: 0, width: 400, height: 300 });
+    rect(pic('a'), { left: 92, top: 42, width: 416, height: 316 }); // outer border box incl. 8px frame
+    rect(area('a'), { left: 100, top: 50, width: 400, height: 300 });
+    fireEvent.click(pic('a'), { clientX: 200, clientY: 200 });
+    expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 4 / 3);
+  });
+
+  it('a click on the frame (outside the inner area) is not a tap', () => {
+    const onTap = vi.fn();
+    const onSide = vi.fn();
+    render(<SpotBoard level={level} urlA="/a.svg" urlB="/b.svg" found={[]} onTap={onTap} onSide={onSide} />);
+    rect(pic('a'), { left: 92, top: 42, width: 416, height: 316 });
+    rect(area('a'), { left: 100, top: 50, width: 400, height: 300 });
+    fireEvent.click(pic('a'), { clientX: 96, clientY: 200 }); // on the left frame
+    fireEvent.click(pic('a'), { clientX: 300, clientY: 46 }); // on the top frame
+    fireEvent.click(pic('a'), { clientX: 504, clientY: 200 }); // on the right frame
+    fireEvent.click(pic('a'), { clientX: 300, clientY: 354 }); // on the bottom frame
+    expect(onTap).not.toHaveBeenCalled();
+    expect(onSide).not.toHaveBeenCalled();
+  });
+
+  it('uses the CURRENT inner rect at every tap, never a cached size', () => {
+    const onTap = vi.fn();
+    render(<SpotBoard level={level} urlA="/a.svg" urlB="/b.svg" found={[]} onTap={onTap} />);
+    rect(area('a'), { left: 0, top: 0, width: 400, height: 300 });
     fireEvent.click(pic('a'), { clientX: 100, clientY: 150 });
     expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 4 / 3);
-    rect(pic('a'), { left: 0, top: 0, width: 200, height: 150 });
+    rect(area('a'), { left: 0, top: 0, width: 200, height: 150 });
     fireEvent.click(pic('a'), { clientX: 100, clientY: 75 });
     expect(onTap).toHaveBeenLastCalledWith({ x: 0.5, y: 0.5 }, 4 / 3);
   });
@@ -55,7 +79,7 @@ describe('SpotBoard', () => {
     render(<SpotBoard level={level} urlA={null} urlB="/b.svg" found={[]} onTap={onTap} />);
     expect(pic('a').querySelector('[data-placeholder]')).not.toBeNull();
     expect(pic('a').querySelector('img')).toBeNull();
-    rect(pic('a'), { left: 0, top: 0, width: 400, height: 300 });
+    rect(area('a'), { left: 0, top: 0, width: 400, height: 300 });
     expect(() => fireEvent.click(pic('a'), { clientX: 100, clientY: 100 })).not.toThrow();
   });
 
@@ -68,7 +92,7 @@ describe('SpotBoard', () => {
   it('a zero-size rect is ignored', () => {
     const onTap = vi.fn();
     render(<SpotBoard level={level} urlA="/a.svg" urlB="/b.svg" found={[]} onTap={onTap} />);
-    rect(pic('a'), { left: 0, top: 0, width: 0, height: 0 });
+    rect(area('a'), { left: 0, top: 0, width: 0, height: 0 });
     fireEvent.click(pic('a'), { clientX: 0, clientY: 0 });
     expect(onTap).not.toHaveBeenCalled();
   });

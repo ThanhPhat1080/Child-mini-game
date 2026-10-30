@@ -23,6 +23,13 @@ async function clickA(page: Page, fx: number, fy: number): Promise<void> {
   await page.mouse.click(box.x + box.width * fx, box.y + box.height * fy);
 }
 
+/** Taps a picture's inner area (inside the frame) at fractions of its CURRENT box. */
+async function tapPlay(page: Page, side: 'a' | 'b', fx: number, fy: number): Promise<void> {
+  const box = await page.locator(`[data-spot-pic="${side}"] [data-spot-area]`).boundingBox();
+  if (!box) throw new Error('picture not visible');
+  await page.mouse.click(box.x + box.width * fx, box.y + box.height * fy);
+}
+
 test.beforeEach(async ({ page }) => {
   await reset({ spot_levels: [] });
   await signInAsAdmin(page);
@@ -55,16 +62,28 @@ test('build a level, save it, play it, delete it', async ({ page }) => {
   const rows = await levelsOf();
   expect(rows).toHaveLength(1);
   expect(rows[0].differences).toHaveLength(3);
-  for (const d of rows[0].differences) {
-    expect(d.x).toBeGreaterThan(0); expect(d.x).toBeLessThan(1);
+  const clicked = [{ x: 0.25, y: 0.3 }, { x: 0.5, y: 0.6 }, { x: 0.75, y: 0.4 }];
+  rows[0].differences.forEach((d, i) => {
+    expect(d.x).toBeCloseTo(clicked[i].x, 2);
+    expect(d.y).toBeCloseTo(clicked[i].y, 2);
     expect(d.r).toBe(0.06);
-  }
+  });
   expect(rows[0].image_a_path).toMatch(/^spot\/.+\.svg$/);
   expect(rows[0].image_b_path).toMatch(/^spot\/.+\.svg$/);
   expect([...(await storage())].sort()).toEqual([rows[0].image_a_path, rows[0].image_b_path].sort());
 
   await page.goto('/games/spot');
   await expect(page.getByRole('link', { name: /^Play level/ })).toHaveCount(1);
+  await page.getByRole('link', { name: /^Play level/ }).click();
+  await expect(page).toHaveURL(new RegExp(`/games/spot/${rows[0].id}$`));
+  await expect(page.locator('[data-spot-pic="a"]')).toBeVisible();
+  await expect(page.locator('[data-spot-dot]')).toHaveCount(3);
+  await tapPlay(page, 'a', rows[0].differences[0].x, rows[0].differences[0].y);
+  await expect(page.locator('[data-spot-dot][data-lit]')).toHaveCount(1);
+  await tapPlay(page, 'b', rows[0].differences[1].x, rows[0].differences[1].y);
+  await expect(page.locator('[data-spot-dot][data-lit]')).toHaveCount(2);
+  await tapPlay(page, 'a', rows[0].differences[2].x, rows[0].differences[2].y);
+  await expect(page.locator('[data-spot-done]')).toBeVisible();
 
   await openSpot(page);
   await page.getByRole('button', { name: 'Delete level 1' }).click();

@@ -17,9 +17,9 @@ test.afterEach(() => {
   expect(errors).toEqual([]);
 });
 
-/** Clicks the picture at a fraction of its CURRENT bounding box. */
+/** Clicks the picture area (inside the frame) at a fraction of its CURRENT bounding box. */
 async function tapAt(page: Page, side: 'a' | 'b', x: number, y: number) {
-  const box = await page.locator(`[data-spot-pic="${side}"]`).boundingBox();
+  const box = await page.locator(`[data-spot-pic="${side}"] [data-spot-area]`).boundingBox();
   if (!box) throw new Error('picture not visible');
   await page.mouse.click(box.x + box.width * x, box.y + box.height * y);
 }
