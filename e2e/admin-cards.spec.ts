@@ -76,9 +76,9 @@ test('Revert discards unsaved edits', async ({ page }) => {
 
 test('turning a card off lowers the available levels, and Save stores it', async ({ page }) => {
   await openCards(page);
-  await expect(health(page)).toHaveText('12 active cards: levels 12 and 24 are available; 30 needs 15.');
+  await expect(health(page)).toHaveText('12 active cards: levels 12, 16, 20 and 24 are available; 30 needs 15.');
   await page.getByRole('switch', { name: 'Card 1 on' }).click();
-  await expect(health(page)).toHaveText('11 active cards: level 12 is available; 24 needs 12, 30 needs 15.');
+  await expect(health(page)).toHaveText('11 active cards: levels 12, 16 and 20 are available; 24 needs 12, 30 needs 15.');
   await save(page).click();
   await expect(save(page)).toBeDisabled();
   await expect.poll(async () => (await cardsOf()).find((c) => c.word === 'word1')?.active).toBe(false);

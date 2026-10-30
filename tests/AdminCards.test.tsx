@@ -250,17 +250,22 @@ describe('Admin cards page (A11, A13)', () => {
 
   it('the pool health line reflects active cards', async () => {
     await renderWith(cards(12));
-    expect(health()).toBe('12 active cards: levels 12 and 24 are available; 30 needs 15.');
+    expect(health()).toBe('12 active cards: levels 12, 16, 20 and 24 are available; 30 needs 15.');
     fireEvent.click(toggle(1));
-    expect(health()).toBe('11 active cards: level 12 is available; 24 needs 12, 30 needs 15.');
+    expect(health()).toBe('11 active cards: levels 12, 16 and 20 are available; 24 needs 12, 30 needs 15.');
+  });
+
+  it('pool health with 5 and 6 active cards', async () => {
+    await renderWith(cards(6));
+    expect(health()).toBe('6 active cards: level 12 is available; 16 needs 8, 20 needs 10, 24 needs 12, 30 needs 15.');
   });
 
   it('pool health with 0 and with 15 active cards', async () => {
     await renderWith(cards(3, false));
-    expect(health()).toBe('0 active cards: no level is available yet; 12 needs 6, 24 needs 12, 30 needs 15.');
+    expect(health()).toBe('0 active cards: no level is available yet; 12 needs 6, 16 needs 8, 20 needs 10, 24 needs 12, 30 needs 15.');
     cleanup();
     await renderWith(cards(15));
-    expect(health()).toBe('15 active cards: levels 12, 24 and 30 are available.');
+    expect(health()).toBe('15 active cards: levels 12, 16, 20, 24 and 30 are available.');
   });
 
   it('a failing save shows the error and keeps the draft', async () => {

@@ -22,10 +22,12 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('Memory level select (M1)', () => {
-  it('4 cards: all three levels are disabled buttons', async () => {
+  const ALL = [12, 16, 20, 24, 30];
+
+  it('4 cards: all five levels are disabled buttons', async () => {
     h.fetchActiveCards.mockResolvedValue(cards(4));
     render(<MemoryLevels />);
-    for (const n of [12, 24, 30]) {
+    for (const n of ALL) {
       const b = (await screen.findByRole('button', { name: `${n} cards` })) as HTMLButtonElement;
       expect(b.disabled).toBe(true);
       expect(b.getAttribute('aria-disabled')).toBe('true');
@@ -33,21 +35,34 @@ describe('Memory level select (M1)', () => {
     expect(screen.queryByRole('link', { name: /cards/ })).toBeNull();
   });
 
-  it('6 cards: only the 12-card level is enabled', async () => {
-    h.fetchActiveCards.mockResolvedValue(cards(6));
-    render(<MemoryLevels />);
-    expect((await screen.findByRole('link', { name: '12 cards' })).getAttribute('href')).toBe('/games/memory/12');
-    expect((screen.getByRole('button', { name: '24 cards' }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole('button', { name: '30 cards' }) as HTMLButtonElement).disabled).toBe(true);
-  });
+  it.each([[6, [12]], [8, [12, 16]], [10, [12, 16, 20]], [12, [12, 16, 20, 24]], [15, ALL]])(
+    '%i cards: exactly levels %j are links with their href, the rest disabled buttons',
+    async (n, on) => {
+      h.fetchActiveCards.mockResolvedValue(cards(n));
+      render(<MemoryLevels />);
+      await screen.findByRole('link', { name: '12 cards' });
+      expect(screen.getAllByRole('link', { name: /cards/ })).toHaveLength(on.length);
+      expect(screen.queryAllByRole('button', { name: /cards/ }).filter((b) => (b as HTMLButtonElement).disabled)).toHaveLength(ALL.length - on.length);
+      for (const l of ALL) {
+        if (on.includes(l)) expect(link(l).getAttribute('href')).toBe(`/games/memory/${l}`);
+        else expect((screen.getByRole('button', { name: `${l} cards` }) as HTMLButtonElement).disabled).toBe(true);
+      }
+    },
+  );
 
-  it('15 cards: all three are links to their level', async () => {
+  it('shows five buttons in one row, each with its mini grid of the right shape', async () => {
     h.fetchActiveCards.mockResolvedValue(cards(15));
     render(<MemoryLevels />);
     await screen.findByRole('link', { name: '12 cards' });
-    expect(link(12).getAttribute('href')).toBe('/games/memory/12');
-    expect(link(24).getAttribute('href')).toBe('/games/memory/24');
-    expect(link(30).getAttribute('href')).toBe('/games/memory/30');
+    const shapes: Record<number, [number, number]> = { 12: [4, 3], 16: [4, 4], 20: [5, 4], 24: [6, 4], 30: [6, 5] };
+    const group = screen.getByRole('group', { name: 'Choose how many cards' });
+    expect(group.querySelectorAll('[data-level]')).toHaveLength(5);
+    for (const l of ALL) {
+      const grid = link(l).querySelector('span') as HTMLElement;
+      const [cols, rows] = shapes[l];
+      expect(grid.style.gridTemplateColumns).toBe(`repeat(${cols}, 1fr)`);
+      expect(grid.children).toHaveLength(cols * rows);
+    }
   });
 
   it('0 cards shows a friendly picture screen, no alert, no level buttons', async () => {
@@ -78,12 +93,24 @@ describe('Memory level select (M1)', () => {
     h.fetchActiveCards.mockResolvedValue(cards(15));
     render(<MemoryLevels />);
     await waitFor(() => expect(document.activeElement).toBe(link(12)));
-    fireEvent.keyDown(window, { key: 'ArrowRight' });
-    expect(document.activeElement).toBe(link(24));
-    fireEvent.keyDown(window, { key: 'ArrowRight' });
-    expect(document.activeElement).toBe(link(30));
+    for (const n of [16, 20, 24, 30]) {
+      fireEvent.keyDown(window, { key: 'ArrowRight' });
+      expect(document.activeElement).toBe(link(n));
+    }
     fireEvent.keyDown(window, { key: 'ArrowLeft' });
     expect(document.activeElement).toBe(link(24));
+  });
+
+  it('with 10 cards Right stops at 20 (24 and 30 are disabled)', async () => {
+    h.fetchActiveCards.mockResolvedValue(cards(10));
+    render(<MemoryLevels />);
+    await waitFor(() => expect(document.activeElement).toBe(link(12)));
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(link(16));
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(link(20));
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(link(20));
   });
 
   it('Right skips disabled levels (stays on the only enabled one)', async () => {
@@ -117,7 +144,7 @@ describe('Memory level select (M1)', () => {
     h.fetchActiveCards.mockResolvedValue(cards(15));
     render(<MemoryLevels />);
     await screen.findByRole('link', { name: '12 cards' });
-    for (const n of [12, 24, 30]) {
+    for (const n of ALL) {
       const label = screen.getByText(`${n} cards`);
       expect(label.getAttribute('aria-hidden')).toBe('true');
       expect(label.closest('[data-level]')?.contains(link(n))).toBe(true);
@@ -129,8 +156,7 @@ describe('Memory level select (M1)', () => {
     render(<MemoryLevels />);
     await screen.findByRole('link', { name: '12 cards' });
     const dim = (n: number) => screen.getByText(`${n} cards`).closest('[data-level]') as HTMLElement;
-    expect(dim(24).style.opacity).toBe('0.4');
-    expect(dim(30).style.opacity).toBe('0.4');
+    for (const n of [16, 20, 24, 30]) expect(dim(n).style.opacity).toBe('0.4');
     expect(dim(12).style.opacity).toBe('');
   });
 

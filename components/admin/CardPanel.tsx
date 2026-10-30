@@ -24,7 +24,7 @@ const AUDIO_ACCEPT = ['.mp3', '.m4a', '.wav', ...Object.keys(AUDIO_ALIASES)].joi
 
 const list = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
-/** A13: which levels the active cards allow, e.g. "12 active cards: levels 12 and 24 are available; 30 needs 15." */
+/** A13: which levels the active cards allow, e.g. "12 active cards: levels 12, 16, 20 and 24 are available; 30 needs 15." */
 export function poolHealth(active: number): string {
   const ok = levelsAvailable(active);
   const yes = LEVELS.filter((l) => ok[l]).map(String);

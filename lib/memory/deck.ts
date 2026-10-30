@@ -1,6 +1,6 @@
 import type { MemoryCard } from './types'
 
-export const LEVELS = [12, 24, 30] as const
+export const LEVELS = [12, 16, 20, 24, 30] as const
 export type Level = (typeof LEVELS)[number]
 
 export function pairsOf(level: Level): number {
@@ -8,11 +8,7 @@ export function pairsOf(level: Level): number {
 }
 
 export function levelsAvailable(activeCount: number): Record<Level, boolean> {
-  return {
-    12: activeCount >= pairsOf(12),
-    24: activeCount >= pairsOf(24),
-    30: activeCount >= pairsOf(30),
-  }
+  return Object.fromEntries(LEVELS.map((l) => [l, activeCount >= pairsOf(l)])) as Record<Level, boolean>
 }
 
 export type DeckTile = { key: string; card: MemoryCard }

@@ -97,11 +97,30 @@ describe('Memory play screen (M2-M6, M8-M10)', () => {
     expect(tiles()).toHaveLength(0);
   });
 
-  it.each([12, 24, 30])('level %i shows that many tile buttons, drawn once', async (n) => {
+  it.each([12, 16, 20, 24, 30])('level %i shows that many tile buttons, drawn once', async (n) => {
     await ready(String(n));
     expect(tiles()).toHaveLength(n);
     expect(tiles().every((t) => t.tagName === 'BUTTON')).toBe(true);
     expect(h.drawDeck).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([[12, 4], [16, 4], [20, 5], [24, 6], [30, 6]])('level %i lays out %i columns of square tiles', async (n, cols) => {
+    await ready(String(n));
+    const grid = tiles()[0].parentElement as HTMLElement;
+    expect(grid.style.gridTemplateColumns).toMatch(new RegExp(`^repeat\\(${cols}, `));
+    const px = (t: HTMLElement) => parseInt(t.style.width, 10);
+    expect(px(tiles()[0])).toBeGreaterThan(100);
+    expect(tiles()[0].style.height).toBe(tiles()[0].style.width);
+  });
+
+  it('Down moves by 5 on the 20-card grid and by 4 on the 16-card grid', async () => {
+    await ready('20');
+    fireEvent.keyDown(window, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(tile(6));
+    cleanup();
+    await ready('16');
+    fireEvent.keyDown(window, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(tile(5));
   });
 
   it('the first press ticks and shows the picture', async () => {
