@@ -91,12 +91,10 @@ export async function uploadPending(token: string, folder: string): Promise<stri
 }
 
 /**
- * Uploads every picked file in the set and swaps the placeholders for real paths.
- * If any upload fails, the files uploaded so far are deleted and the error is thrown, so nothing is left behind.
+ * Uploads the picked files in `wanted` (token -> folder) and returns token -> bucket path.
+ * If any upload fails, the files uploaded so far are deleted and the error is rethrown.
  */
-export async function commitPendingMedia<T extends SetPaths>(d: T): Promise<{ d: T; uploaded: string[] }> {
-  const wanted = new Map<string, string>();
-  mapSetMedia(d, (p, folder) => { if (p && isPending(p)) wanted.set(p, folder); return p; });
+export async function commitPendingMap(wanted: Map<string, string>): Promise<Map<string, string>> {
   const done = new Map<string, string>();
   try {
     for (const [token, folder] of wanted) done.set(token, await uploadPending(token, folder));
@@ -104,5 +102,16 @@ export async function commitPendingMedia<T extends SetPaths>(d: T): Promise<{ d:
     await removeMedia([...done.values()]);
     throw e;
   }
+  return done;
+}
+
+/**
+ * Uploads every picked file in the set and swaps the placeholders for real paths.
+ * If any upload fails, the files uploaded so far are deleted and the error is thrown, so nothing is left behind.
+ */
+export async function commitPendingMedia<T extends SetPaths>(d: T): Promise<{ d: T; uploaded: string[] }> {
+  const wanted = new Map<string, string>();
+  mapSetMedia(d, (p, folder) => { if (p && isPending(p)) wanted.set(p, folder); return p; });
+  const done = await commitPendingMap(wanted);
   return { d: mapSetMedia(d, (p) => (p ? done.get(p) ?? p : p)), uploaded: [...done.values()] };
 }

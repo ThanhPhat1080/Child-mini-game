@@ -195,3 +195,10 @@
 - **Context:** The intent had a play-time limit with a rest period, a princess rest screen and a parental PIN override. The PO decided the child does not need them.
 - **Decision:** Remove "Session Management & Digital Wellbeing" and "Parental Override (King Arthur's PIN)" from the product. Phase 2 only adds games on the game registry.
 - **Consequences:** ADR-003, 004, 010 and 011 are dropped. No session table, no PIN function and no rest screen are built. Calm & Slow principles (ADR-006) still apply to every new game. If limits are wanted later, start again with a new ADR.
+
+### ADR-030: Phase 2 games use HTML/CSS first; Phaser only as a last resort
+
+- **Status:** Accepted (2026-10-29, PO decision)
+- **Context:** ADR-002 and ADR-005 planned Phaser for Phase 2 games. Quiz already works well as React + CSS (ADR-027), and Memory Match (cards, flips, a grid) needs no game engine.
+- **Decision:** New games are built with React + CSS (DOM) like Quiz. Phaser (ADR-002) is used only if a game cannot be built well with HTML/CSS.
+- **Consequences:** Memory Match is DOM-based. A game that wants Phaser must justify it in its own spec first. ADR-014 (game registry) and ADR-006 (Calm & Slow) still apply to every game.

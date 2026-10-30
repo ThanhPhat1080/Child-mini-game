@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { handleChoiceKey, isPressKey, stepFocus } from '@/lib/keynav';
+import { gridStep, handleChoiceKey, isPressKey, stepFocus } from '@/lib/keynav';
 
 afterEach(() => { document.body.innerHTML = ''; });
 
@@ -68,5 +68,46 @@ describe('keynav', () => {
     expect(handleChoiceKey(e, items)).toBe(false);
     expect(e.defaultPrevented).toBe(false);
     expect(handleChoiceKey(key('x'), items)).toBe(false);
+  });
+});
+
+describe('gridStep', () => {
+  const ev = (k: string) => ({ key: k, preventDefault: vi.fn() });
+
+  it('Down moves by cols, Up at the top stays', () => {
+    const items = row('button', 6);
+    items[0].focus();
+    const e = ev('ArrowDown');
+    expect(gridStep(items, 3, e)).toBe(true);
+    expect(e.preventDefault).toHaveBeenCalled();
+    expect(document.activeElement).toBe(items[3]);
+    items[0].focus();
+    expect(gridStep(items, 3, ev('ArrowUp'))).toBe(true);
+    expect(document.activeElement).toBe(items[0]);
+  });
+
+  it('Right at the last item stays, Left moves back one', () => {
+    const items = row('button', 6);
+    items[5].focus();
+    gridStep(items, 3, ev('ArrowRight'));
+    expect(document.activeElement).toBe(items[5]);
+    items[3].focus();
+    gridStep(items, 3, ev('ArrowLeft'));
+    expect(document.activeElement).toBe(items[2]);
+  });
+
+  it('with nothing focused, an arrow focuses the first item', () => {
+    const items = row('button', 6);
+    expect(gridStep(items, 3, ev('ArrowRight'))).toBe(true);
+    expect(document.activeElement).toBe(items[0]);
+  });
+
+  it('other keys return false and do nothing', () => {
+    const items = row('button', 6);
+    items[1].focus();
+    const e = ev('x');
+    expect(gridStep(items, 3, e)).toBe(false);
+    expect(e.preventDefault).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(items[1]);
   });
 });
