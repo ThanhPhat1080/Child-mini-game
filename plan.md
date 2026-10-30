@@ -191,8 +191,11 @@ Phase 2 only adds games on top of the game registry (ADR-014). The play-time lim
   - Apply `supabase/migrations/20261029100000_memory_cards.sql` to the real Supabase project after the PO's OK.
   - PO play-test of the flip, sounds and voice in a real browser.
   - Merging `claude/phase2/memory-match` into `develop` is the PO's decision.
-  - Spot the Differences needs its own spec first (a Phaser game must justify itself there, ADR-030).
+  - Done 2026-10-30 with the PO's OK: `supabase/migrations/20261030100000_spot_levels.sql` applied to the real Supabase project (RLS checked: anon sees active levels only, anon writes denied, 3-10 differences enforced).
+  - PO play-test of Spot the Differences (tap feel, ring growth, ripple, sounds) in a real browser.
+  - Merging the Spot branch `claude/kind-babbage-gd9qpd` is the PO's decision.
 - Game 2, Listen & Pick: spec `docs/superpowers/specs/2026-10-30-listen-pick-design.md`, plan `docs/superpowers/plans/2026-10-30-listen-pick.md`. Built on branch `claude/phase2/listen-pick` (task branches `claude/phase2/lp-t<N>-*`). No migration: it reuses `memory_cards` and the Cards admin page. Route `/games/listen`.
+- Game 3, Spot the Differences: spec `docs/superpowers/specs/2026-10-30-spot-the-differences-design.md`, plan `docs/superpowers/plans/2026-10-30-spot-the-differences.md`. Built on branch `claude/kind-babbage-gd9qpd` (IDs S1-S10, A14-A16) with Playwright E2E.
 
 ### Listen & Pick tickets (spec 3b: G1, L1-L10)
 Files: `lib/listen/rounds.ts`, `lib/listen/wrongLog.ts`, `components/listen/ListenQuestion.tsx`, `components/listen/ListenDone.tsx`, `components/ListenHelp.tsx`, `app/games/listen/page.tsx`; tests `tests/Listen*.test.ts(x)`, `tests/listenRounds.test.ts`, `tests/listenWrongLog.test.ts`, `e2e/listen-play.spec.ts`.

@@ -5,5 +5,5 @@ export const GAMES: readonly Game[] = [
   { id: 'quiz', href: '/games/quiz', ready: true },
   { id: 'memory', href: '/games/memory', ready: true },
   { id: 'listen', href: '/games/listen', ready: true },
-  { id: 'spot', href: '/games/spot', ready: false },
+  { id: 'spot', href: '/games/spot', ready: true },
 ];
