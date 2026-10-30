@@ -6,7 +6,7 @@ import { MIN_HIT_R } from '@/lib/find/validate';
 
 export type FindRipple = { x: number; y: number; key: number };
 
-const MAX_W = 1500;
+const MAX_W = 1340; // the picture column: 1920 minus the word list (420) and margins
 const MAX_H = 900;
 const DEFAULT_ASPECT = 4 / 3;
 
