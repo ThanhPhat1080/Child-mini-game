@@ -2,11 +2,11 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { commitPendingMap, isPending, removeMedia } from '@/lib/media';
 import { isBucketPath, pathsToDelete } from '@/lib/mediaPaths';
 
-export type ECard = { id: string; isNew: boolean; word: string; image: string | null; audio: string | null; active: boolean };
+export type ECard = { id: string; isNew: boolean; word: string; image: string | null; audio: string | null; active: boolean; groupId: string | null };
 
-type Row = { id: string; word: string; image_path: string | null; audio_path: string | null; active: boolean };
+type Row = { id: string; word: string; image_path: string | null; audio_path: string | null; active: boolean; group_id: string | null };
 
-export const newCard = (): ECard => ({ id: crypto.randomUUID(), isNew: true, word: '', image: null, audio: null, active: true });
+export const newCard = (): ECard => ({ id: crypto.randomUUID(), isNew: true, word: '', image: null, audio: null, active: true, groupId: null });
 
 export function isCardComplete(c: ECard): boolean {
   const n = c.word.trim().length;
@@ -33,10 +33,10 @@ export const cardMediaPaths = (c: ECard): string[] => [c.image, c.audio].filter(
 export async function loadCards(): Promise<ECard[]> {
   const { data, error } = await createSupabaseBrowserClient()
     .from('memory_cards')
-    .select('id, word, image_path, audio_path, active')
+    .select('id, word, image_path, audio_path, active, group_id')
     .order('created_at');
   if (error) throw new Error(error.message);
-  return ((data ?? []) as Row[]).map((r) => ({ id: r.id, isNew: false, word: r.word, image: r.image_path, audio: r.audio_path, active: r.active }));
+  return ((data ?? []) as Row[]).map((r) => ({ id: r.id, isNew: false, word: r.word, image: r.image_path, audio: r.audio_path, active: r.active, groupId: r.group_id ?? null }));
 }
 
 /**
@@ -73,7 +73,7 @@ export async function saveCards(saved: ECard[], draft: ECard[]): Promise<{ error
   }
   if (final.length) {
     const { error } = await sb.from('memory_cards').upsert(
-      final.map((c) => ({ id: c.id, word: c.word.trim(), image_path: c.image, audio_path: c.audio, active: c.active })),
+      final.map((c) => ({ id: c.id, word: c.word.trim(), image_path: c.image, audio_path: c.audio, active: c.active, group_id: c.groupId })),
       { onConflict: 'id' },
     );
     if (error) return fail(error.message);
@@ -82,4 +82,52 @@ export async function saveCards(saved: ECard[], draft: ECard[]): Promise<{ error
   const stale = pathsToDelete(saved.flatMap(cardMediaPaths), final.flatMap(cardMediaPaths));
   const failed = await removeMedia(stale);
   return { error: null, warning: failed ? 'The cards were saved, but some old files could not be removed from storage.' : null };
+}
+
+export type EGroup = { id: string; isNew: boolean; name: string };
+
+export const GROUP_NAME_MAX = 40;
+
+export const newGroup = (name: string): EGroup => ({ id: crypto.randomUUID(), isNew: true, name });
+
+const normName = (n: string) => n.trim().toLowerCase();
+
+/** Error text for a bad group name, or null. `selfId` is the group being renamed (it may keep its own name). */
+export function validateGroupName(name: string, groups: readonly EGroup[], selfId?: string): string | null {
+  const n = name.trim();
+  if (!n) return 'Give the group a name.';
+  if (n.length > GROUP_NAME_MAX) return `Keep the name to ${GROUP_NAME_MAX} characters or fewer.`;
+  if (groups.some((g) => g.id !== selfId && normName(g.name) === normName(n))) return 'Another group already has this name.';
+  return null;
+}
+
+/** Cards whose group is not in `groups` lose it. Returns new objects. */
+export function pruneDeletedGroups(cards: ECard[], groups: EGroup[]): ECard[] {
+  const ids = new Set(groups.map((g) => g.id));
+  return cards.map((c) => (c.groupId && !ids.has(c.groupId) ? { ...c, groupId: null } : { ...c }));
+}
+
+/** Every group, oldest first (admin only). */
+export async function loadGroups(): Promise<EGroup[]> {
+  const { data, error } = await createSupabaseBrowserClient().from('card_groups').select('id, name').order('created_at');
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as { id: string; name: string }[]).map((r) => ({ id: r.id, isNew: false, name: r.name }));
+}
+
+/** Writes new and renamed groups. Call before saveCards so cards can point to them. */
+export async function saveGroups(saved: EGroup[], draft: EGroup[]): Promise<{ error: string | null }> {
+  const before = new Map(saved.map((g) => [g.id, g.name]));
+  const rows = draft
+    .filter((g) => g.isNew || before.get(g.id) !== g.name.trim())
+    .map((g) => ({ id: g.id, name: g.name.trim() }));
+  if (!rows.length) return { error: null };
+  const { error } = await createSupabaseBrowserClient().from('card_groups').upsert(rows, { onConflict: 'id' });
+  return { error: error ? error.message : null };
+}
+
+/** Deletes groups (their cards fall back to no group in the database). Call after saveCards. */
+export async function deleteGroups(ids: string[]): Promise<{ error: string | null }> {
+  if (!ids.length) return { error: null };
+  const { error } = await createSupabaseBrowserClient().from('card_groups').delete().in('id', ids);
+  return { error: error ? error.message : null };
 }

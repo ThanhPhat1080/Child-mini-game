@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 
 const PORT = Number(process.env.STANDIN_PORT ?? 54391);
 const ADMIN = { email: 'admin@test.local', password: 'secret', id: '11111111-1111-4111-8111-111111111111' };
-const TABLES = ['memory_cards', 'settings', 'quiz_sets', 'questions', 'answers'];
+const TABLES = ['memory_cards', 'card_groups', 'spot_levels', 'settings', 'quiz_sets', 'questions', 'answers'];
 const RESERVED = new Set(['select', 'order', 'limit', 'offset', 'on_conflict', 'columns']);
 
 const SAMPLE_WORDS = [
@@ -24,6 +24,8 @@ function defaultState() {
       position: i + 1,
       created_at: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
     })),
+    card_groups: [],
+    spot_levels: [],
     settings: [{ id: 1, child_name: 'Test', music_volume: 30, greeting_path: null, music_path: null, avatar_path: null }],
     quiz_sets: [],
     questions: [],
@@ -172,6 +174,10 @@ function withDefaults(table, row) {
   if (table !== 'settings' && r.id === undefined) r.id = randomUUID();
   if (r.created_at === undefined && table !== 'settings') r.created_at = new Date().toISOString();
   if (table === 'memory_cards' && r.active === undefined) r.active = true;
+  if (table === 'spot_levels') {
+    if (r.active === undefined) r.active = true;
+    if (r.sort_order === undefined) r.sort_order = 0;
+  }
   return r;
 }
 
@@ -247,6 +253,10 @@ function rest(req, res, table, url, bodyBuf) {
   if (req.method === 'DELETE') {
     const out = rows.filter(match);
     state[table] = rows.filter((r) => !out.includes(r));
+    if (table === 'card_groups') { // ON DELETE SET NULL
+      const gone = new Set(out.map((g) => String(g.id)));
+      state.memory_cards = state.memory_cards.map((c) => (c.group_id != null && gone.has(String(c.group_id)) ? { ...c, group_id: null } : c));
+    }
     return respond(200, out);
   }
 

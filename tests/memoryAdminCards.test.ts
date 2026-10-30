@@ -22,7 +22,7 @@ vi.mock('@/lib/supabase/client', () => ({
 import { addPending, clearPending, commitPendingMap } from '@/lib/media';
 import { cardMediaPaths, duplicateWords, isCardComplete, loadCards, newCard, saveCards, type ECard } from '@/lib/memory/adminCards';
 
-const card = (o: Partial<ECard> = {}): ECard => ({ id: 'c1', isNew: false, word: 'cat', image: 'cards/1.png', audio: null, active: true, ...o });
+const card = (o: Partial<ECard> = {}): ECard => ({ id: 'c1', isNew: false, word: 'cat', image: 'cards/1.png', audio: null, active: true, groupId: null, ...o });
 const file = (name: string, type = 'image/png') => new File(['x'], name, { type });
 
 beforeEach(() => {
@@ -44,7 +44,7 @@ afterEach(() => clearPending());
 describe('newCard', () => {
   it('is a new, active, empty card with a fresh id', () => {
     const a = newCard();
-    expect(a).toMatchObject({ isNew: true, active: true, word: '', image: null, audio: null });
+    expect(a).toMatchObject({ isNew: true, active: true, word: '', image: null, audio: null, groupId: null });
     expect(a.id).not.toBe(newCard().id);
   });
 });
@@ -76,9 +76,18 @@ describe('cardMediaPaths', () => {
 });
 
 describe('loadCards', () => {
+  it('selects and maps group_id, keeping null as null', async () => {
+    h.selectResult = { data: [
+      { id: 'a', word: 'cat', image_path: 'cards/a.png', audio_path: null, active: true, group_id: 'g1' },
+      { id: 'b', word: 'dog', image_path: 'cards/b.png', audio_path: null, active: true, group_id: null },
+    ], error: null };
+    const cards = await loadCards();
+    expect(cards.map((c) => c.groupId)).toEqual(['g1', null]);
+    expect(h.select.mock.calls[0][0]).toContain('group_id');
+  });
   it('reads all cards ordered by created_at and maps the columns', async () => {
-    h.selectResult = { data: [{ id: 'a', word: 'cat', image_path: 'cards/a.png', audio_path: null, active: false }], error: null };
-    await expect(loadCards()).resolves.toEqual([{ id: 'a', isNew: false, word: 'cat', image: 'cards/a.png', audio: null, active: false }]);
+    h.selectResult = { data: [{ id: 'a', word: 'cat', image_path: 'cards/a.png', audio_path: null, active: false, group_id: null }], error: null };
+    await expect(loadCards()).resolves.toEqual([{ id: 'a', isNew: false, word: 'cat', image: 'cards/a.png', audio: null, active: false, groupId: null }]);
     expect(h.from).toHaveBeenCalledWith('memory_cards');
     expect(h.order).toHaveBeenCalledWith('created_at');
   });
@@ -144,7 +153,14 @@ describe('saveCards', () => {
 
   it('saves the word trimmed', async () => {
     await saveCards([], [card({ id: 'a', word: '  Apple  ' })]);
-    expect(h.upsert.mock.calls[0][0][0]).toEqual({ id: 'a', word: 'Apple', image_path: 'cards/1.png', audio_path: null, active: true });
+    expect(h.upsert.mock.calls[0][0][0]).toEqual({ id: 'a', word: 'Apple', image_path: 'cards/1.png', audio_path: null, active: true, group_id: null });
+  });
+
+  it('upserts group_id, null for a card without a group', async () => {
+    await saveCards([], [card({ id: 'a', groupId: 'g1' }), card({ id: 'b' })]);
+    const rows = h.upsert.mock.calls[0][0];
+    expect(rows[0].group_id).toBe('g1');
+    expect(rows[1].group_id).toBeNull();
   });
 
   it('writes nothing and removes uploaded files when an upload fails', async () => {

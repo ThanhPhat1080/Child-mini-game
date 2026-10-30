@@ -1,4 +1,4 @@
-import { newCard, type ECard } from '@/lib/memory/adminCards';
+import { GROUP_NAME_MAX, newCard, type ECard, type EGroup } from '@/lib/memory/adminCards';
 import { readImage } from '@/lib/quizImport';
 
 export const CARD_IMPORT_MAX = 100;
@@ -24,9 +24,10 @@ function readAudio(v: unknown): { value: string | null } | { error: string } {
 
 /**
  * Parses and validates a memory-cards-template.json file. Nothing is returned for import when there is any error.
+ * `group` is the name of an existing group (any case, spaces ignored); blank or missing means no group.
  * Raw SVG code is kept as normalized SVG text in `image`; the page turns it into a pending file.
  */
-export function parseCardImport(text: string): CardImportResult {
+export function parseCardImport(text: string, groups: readonly EGroup[] = []): CardImportResult {
   let root: unknown;
   try { root = JSON.parse(text); } catch (e) {
     return { cards: [], errors: [`This is not valid JSON (${(e as Error).message}).`] };
@@ -36,6 +37,7 @@ export function parseCardImport(text: string): CardImportResult {
   if (list.length === 0) return { cards: [], errors: ['The "cards" list is empty.'] };
   if (list.length > CARD_IMPORT_MAX) return { cards: [], errors: [`Too many cards (${list.length}). Import up to ${CARD_IMPORT_MAX} at a time.`] };
 
+  const byName = new Map(groups.map((g) => [g.name.trim().toLowerCase(), g.id]));
   const errors: string[] = [];
   const cards: ECard[] = [];
   list.forEach((raw, i) => {
@@ -57,6 +59,18 @@ export function parseCardImport(text: string): CardImportResult {
     if (raw.active !== undefined) {
       if (typeof raw.active === 'boolean') c.active = raw.active;
       else errors.push(`${label}: active must be true or false`);
+    }
+    if (raw.group !== undefined && raw.group !== null) {
+      if (typeof raw.group !== 'string') errors.push(`${label}: group must be text.`);
+      else {
+        const name = raw.group.trim();
+        if (name.length > GROUP_NAME_MAX) errors.push(`${label}: group is longer than ${GROUP_NAME_MAX} characters.`);
+        else if (name) {
+          const id = byName.get(name.toLowerCase());
+          if (id) c.groupId = id;
+          else errors.push(`${label}: group "${name}" does not exist. Create it under Groups first.`);
+        }
+      }
     }
     cards.push(c);
   });

@@ -3,8 +3,14 @@ import type { Game } from '@/lib/games/registry';
 /** The Memory Match green: card title text and the game-list icon ring/card strokes. */
 export const MEMORY_GREEN = '#5E8F69';
 
+/** The Spot the Differences blue: card title text and the game-list icon ring. */
+export const SPOT_BLUE = '#5F86A8';
+
 /** The Listen & Pick purple: card title text and the game-list icon ring. */
 export const LISTEN_PURPLE = '#7B6BAE';
+
+/** The Sort It gold: card title text and the game-list icon ring. */
+export const SORT_GOLD = '#A8842F';
 
 const num = (bg: string, h: number, n: number, color = '#fff') => (
   <span style={{ width: 120, height: h, borderRadius: 24, background: bg, padding: 12, boxSizing: 'border-box', fontSize: 36, fontWeight: 600, color, lineHeight: 1.1 }}>{n}</span>
@@ -67,21 +73,47 @@ export function GameArt({ id }: { id: Game['id'] }) {
       </>
     );
   }
+  if (id === 'sort') {
+    return (
+      <>
+        <span aria-hidden="true" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, height: 190, justifyContent: 'center' }}>
+          <span style={{ display: 'flex', gap: 30 }}>
+            <svg width="84" height="84" viewBox="0 0 24 24" fill="#EED79A" stroke={SORT_GOLD} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z" />
+            </svg>
+            <svg width="84" height="84" viewBox="0 0 24 24" fill="#F5C9CD" stroke={SORT_GOLD} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20.5C6 16.3 3 13 3 9.3 3 6.6 5 4.8 7.3 4.8c1.9 0 3.7 1.1 4.7 3 1-1.9 2.8-3 4.7-3C19 4.8 21 6.6 21 9.3c0 3.7-3 7-9 11.2z" />
+            </svg>
+          </span>
+          <span style={{ display: 'flex', gap: 24 }}>
+            {[0, 1].map((k) => (
+              <svg key={k} width="78" height="52" viewBox="0 0 78 52" fill="none" stroke={SORT_GOLD} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 12h66l-6 32a6 6 0 0 1-6 5H18a6 6 0 0 1-6-5z" fill="#FBF3D9" />
+                <path d="M10 24h58M13 36h52" />
+              </svg>
+            ))}
+          </span>
+        </span>
+        <span aria-hidden="true" style={{ width: 110, height: 110 }} />
+        <span style={{ fontSize: 64, fontWeight: 600, color: SORT_GOLD, lineHeight: 1, textAlign: 'center' }}>Sort It</span>
+      </>
+    );
+  }
   return (
     <>
-      <div style={{ display: 'flex', gap: 18 }}>
-        {['#9CC3A4', '#EED79A'].map((c) => (
+      <span aria-hidden="true" style={{ display: 'flex', gap: 18, alignItems: 'center', height: 190 }}>
+        {['#9CC3A4', '#EED79A'].map((c, i) => (
           <span key={c} style={{ width: 160, height: 160, borderRadius: 28, background: '#DCE8F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg aria-hidden="true" width="100" height="100" viewBox="0 0 100 100"><circle cx="34" cy="40" r="18" fill="#E59AA1" /><path d="M64 70 L 84 70 L 74 48 Z" fill={c} /><rect x="20" y="66" width="22" height="22" rx="4" fill="#8FB3D1" /></svg>
+            <svg width="100" height="100" viewBox="0 0 100 100">
+              <circle cx="34" cy="40" r="18" fill="#E59AA1" />
+              {i === 0 ? <path d="M64 70 L 84 70 L 74 48 Z" fill={c} /> : <rect x="62" y="50" width="22" height="20" rx="4" fill={c} />}
+              <rect x="20" y="66" width="22" height="22" rx="4" fill="#8FB3D1" />
+            </svg>
           </span>
         ))}
-      </div>
-      <svg aria-hidden="true" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="#5F86A8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="10.5" cy="10.5" r="7" /><path d="M21 21l-5.2-5.2" /></svg>
-      <span style={{ fontSize: 52, fontWeight: 600, color: '#5F86A8', lineHeight: 1.05, textAlign: 'center' }}>Spot the<br />Differences</span>
-      <span style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 22px', borderRadius: 999, background: '#EEF3F7', fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 24, color: '#5F7488' }}>
-        <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
-        Coming in Phase 2
       </span>
+      <span aria-hidden="true" style={{ width: 110, height: 110 }} />
+      <span style={{ height: 64, fontSize: 52, fontWeight: 600, color: SPOT_BLUE, lineHeight: 1.05, textAlign: 'center' }}>Spot the<br />Differences</span>
     </>
   );
 }
@@ -111,6 +143,17 @@ export function GameIcon({ id }: { id: Game['id'] }) {
       </svg>
     );
   }
+  if (id === 'spot') {
+    return (
+      <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" fill="#EEF3F7" stroke={SPOT_BLUE} strokeWidth="2" />
+        <g stroke={SPOT_BLUE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="4.2" />
+          <path d="M14.2 14.2L17.5 17.5" />
+        </g>
+      </svg>
+    );
+  }
   if (id === 'listen') {
     return (
       <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -118,6 +161,19 @@ export function GameIcon({ id }: { id: Game['id'] }) {
         <path d="M6.8 10.4h2.1l3-2.4v8l-3-2.4H6.8z" fill={LISTEN_PURPLE} stroke={LISTEN_PURPLE} strokeWidth="0.8" />
         <path d="M14.2 10.2a2.4 2.4 0 0 1 0 3.6" stroke={LISTEN_PURPLE} strokeWidth="1.2" />
         <path d="M16 8.6a4.8 4.8 0 0 1 0 6.8" stroke={LISTEN_PURPLE} strokeWidth="1.2" />
+      </svg>
+    );
+  }
+  if (id === 'sort') {
+    return (
+      <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" fill="#FBF3D9" stroke={SORT_GOLD} strokeWidth="2" />
+        {[6.6, 12.6].map((x) => (
+          <g key={x}>
+            <path d={`M${x} 10.2h4.8l-.7 5.1a1 1 0 0 1-1 .9h-1.4a1 1 0 0 1-1-.9z`} fill="#EED79A" stroke={SORT_GOLD} strokeWidth="0.9" />
+            <path d={`M${x + 0.6} 12.6h3.6`} stroke={SORT_GOLD} strokeWidth="0.6" />
+          </g>
+        ))}
       </svg>
     );
   }
