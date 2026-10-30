@@ -3,6 +3,9 @@ import type { Game } from '@/lib/games/registry';
 /** The Memory Match green: card title text and the game-list icon ring/card strokes. */
 export const MEMORY_GREEN = '#5E8F69';
 
+/** The Listen & Pick purple: card title text and the game-list icon ring. */
+export const LISTEN_PURPLE = '#7B6BAE';
+
 const num = (bg: string, h: number, n: number, color = '#fff') => (
   <span style={{ width: 120, height: h, borderRadius: 24, background: bg, padding: 12, boxSizing: 'border-box', fontSize: 36, fontWeight: 600, color, lineHeight: 1.1 }}>{n}</span>
 );
@@ -43,6 +46,24 @@ export function GameArt({ id }: { id: Game['id'] }) {
         </span>
         <span aria-hidden="true" style={{ width: 110, height: 110 }} />
         <span style={{ fontSize: 64, fontWeight: 600, color: MEMORY_GREEN, lineHeight: 1, textAlign: 'center' }}>Memory Match</span>
+      </>
+    );
+  }
+  if (id === 'listen') {
+    return (
+      <>
+        <span aria-hidden="true" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18, height: 190, justifyContent: 'center' }}>
+          <svg width="96" height="96" viewBox="0 0 24 24" fill="none" stroke={LISTEN_PURPLE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 9.5h3l4.5-3.5v12L7 14.5H4z" fill="#F0ECF8" />
+            <path d="M15 9.5a3.5 3.5 0 0 1 0 5" />
+            <path d="M17.5 7a7 7 0 0 1 0 10" />
+          </svg>
+          <span style={{ display: 'flex', gap: 14 }}>
+            {['#EBB7BC', '#A9C6DE', '#EED79A'].map((c) => <span key={c} style={{ width: 52, height: 52, borderRadius: 14, background: c }} />)}
+          </span>
+        </span>
+        <span aria-hidden="true" style={{ width: 110, height: 110 }} />
+        <span style={{ fontSize: 64, fontWeight: 600, color: LISTEN_PURPLE, lineHeight: 1, textAlign: 'center' }}>Listen &amp; Pick</span>
       </>
     );
   }
@@ -87,6 +108,16 @@ export function GameIcon({ id }: { id: Game['id'] }) {
       <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none">
         <circle cx="12" cy="12" r="10" fill="#EAF3EC" stroke={MEMORY_GREEN} strokeWidth="2" />
         {MEMORY_ICON.cards.map(flowerCard)}
+      </svg>
+    );
+  }
+  if (id === 'listen') {
+    return (
+      <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" fill="#F0ECF8" stroke={LISTEN_PURPLE} strokeWidth="2" />
+        <path d="M6.8 10.4h2.1l3-2.4v8l-3-2.4H6.8z" fill={LISTEN_PURPLE} stroke={LISTEN_PURPLE} strokeWidth="0.8" />
+        <path d="M14.2 10.2a2.4 2.4 0 0 1 0 3.6" stroke={LISTEN_PURPLE} strokeWidth="1.2" />
+        <path d="M16 8.6a4.8 4.8 0 0 1 0 6.8" stroke={LISTEN_PURPLE} strokeWidth="1.2" />
       </svg>
     );
   }
