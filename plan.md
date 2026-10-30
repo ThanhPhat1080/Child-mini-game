@@ -180,6 +180,16 @@ Parked (not blocking the close; pick up only when the PO asks):
 - **CI**: `.github/workflows/deploy.yml` runs typecheck and tests on pushes to `main` only (not on `develop` or PRs). Its `deploy` job was removed on 2026-10-29: it always failed for lack of Vercel secrets, and Vercel's Git integration already deploys.
 - **Voice depends on the device (known gap, accepted 2026-10-29)**: the built-in kid voice uses the browser's speech synthesis (`lib/sfx.ts`), which we set to English (`lang = 'en-US'`, page `lang="en"`) but cannot guarantee. It speaks only if the device has an English voice: Windows, macOS, iPhone/iPad and most Android phones usually do; Brave on Linux (e.g. Ubuntu) has none until `speech-dispatcher` and `espeak-ng` are installed, and Android phones without Google services may have none. Workarounds today: install a voice, or upload a recorded voice per question in the admin. A reliable fix would be pre-generated audio (cloud text-to-speech stored in Supabase Storage); that needs a provider, an API key and a server step, so it is a PO decision, not built.
 - **Listen & Pick leftovers (known, deferred):** the middle star on the finish screen sits close to the top edge when there are 10 wrong words; "Wrong 1 times" grammar follows the Memory Match style; the praise audio is not stopped on Play again.
+- **Sort It leftovers (known, deferred):**
+  - No keyboard play, by PO decision (Esc still goes back).
+  - No per-group pictures or colors; the baskets show only an example card.
+  - One tag per card (no several tags).
+  - No list of mixed-up words on the finish screen and nothing stored.
+  - "Wrong 1 times" grammar follows the Memory Match and Listen & Pick style.
+  - A tap on an object says the word twice (once on press, once on release).
+  - Admin group-save trap: if `saveCards` fails after `saveGroups` succeeded, the saved groups copy stays stale until the page is reloaded.
+  - Focus is not restored after renaming or deleting a group chip.
+  - `README.md` is still empty (T14).
 - DoD 1 (child plays a full set unaided) and DoD 2 (5-question set in under 10 minutes) were never timed or recorded.
 
 Removed from scope by the PO: TV and LG webOS testing, Magic Remote, a 120 px TV hit-area rule, and TV-specific performance work (ADR-028).
@@ -193,6 +203,7 @@ Phase 2 only adds games on top of the game registry (ADR-014). The play-time lim
   - Merging `claude/phase2/memory-match` into `develop` is the PO's decision.
   - Spot the Differences needs its own spec first (a Phaser game must justify itself there, ADR-030).
 - Game 2, Listen & Pick: spec `docs/superpowers/specs/2026-10-30-listen-pick-design.md`, plan `docs/superpowers/plans/2026-10-30-listen-pick.md`. Built on branch `claude/phase2/listen-pick` (task branches `claude/phase2/lp-t<N>-*`). No migration: it reuses `memory_cards` and the Cards admin page. Route `/games/listen`.
+- Game 3, Sort It: spec `docs/superpowers/specs/2026-10-30-sort-it-design.md`, plan `docs/superpowers/plans/2026-10-30-sort-it.md`. Implemented on branch `claude/phase2/sort-it` (task branches `claude/phase2/st-t<N>-*`). One migration: `supabase/migrations/20261030100000_card_groups.sql` (table `card_groups`, column `memory_cards.group_id`). Route `/games/sort`.
 
 ### Listen & Pick tickets (spec 3b: G1, L1-L10)
 Files: `lib/listen/rounds.ts`, `lib/listen/wrongLog.ts`, `components/listen/ListenQuestion.tsx`, `components/listen/ListenDone.tsx`, `components/ListenHelp.tsx`, `app/games/listen/page.tsx`; tests `tests/Listen*.test.ts(x)`, `tests/listenRounds.test.ts`, `tests/listenWrongLog.test.ts`, `e2e/listen-play.spec.ts`.
@@ -203,6 +214,24 @@ Files: `lib/listen/rounds.ts`, `lib/listen/wrongLog.ts`, `components/listen/List
 - [x] **LP-T5 Play page (L1-L5, L8, L10).** Acceptance: a full round plays at `/games/listen`; wrong pick says "Oh-Oh", dims and disables the picture, then repeats the word; right pick says "Hooray" and the word, then the next question; leaving cancels timers and speech; the "? Listen & Pick" help badge opens `ListenHelp`; empty/failed pool shows a friendly picture screen.
 - [x] **LP-T6 Finish screen (L6, L7).** Acceptance: celebration scene with "Wrong N times" (N highlighted), play again and back buttons; a row of round pictures with word and count when there were wrong picks (tap says the word), no row otherwise.
 - [x] **LP-T7 Docs and tickets.** Acceptance: spec.md (G1, L1-L10), plan.md, CLAUDE.md and git-workflow.md updated; L-IDs match the design spec one to one. Gate (typecheck, lint, test, build, e2e) and the PO play-test before merge into `develop` are still to do.
+
+### Sort It tickets (spec 3b/4b: G1, S1-S10, A13, A14-A16)
+Files: `lib/sort/{cards,groups,rounds,drag}.ts`, `components/sort/*` (`SortBasket`, `SortObject`, `SortDone`, `SortPicture`, `useSortDrag`), `components/SortHelp.tsx`, `app/games/sort/page.tsx`, `components/admin/GroupsPanel.tsx`, `supabase/migrations/20261030100000_card_groups.sql`; tests `tests/Sort*.test.tsx`, `tests/sort*.test.ts`, `tests/useSortDrag.test.tsx`, `tests/memorySeedGroups.test.ts`, `tests/memoryAdminGroups.test.ts`, `tests/GroupsPanel.test.tsx`, `e2e/sort-play.spec.ts`, `e2e/admin-cards.spec.ts`.
+- [x] **ST-T1 Migration and seed groups (S2, A14).** Acceptance: `card_groups` has the 1-40 check and a unique index on `lower(btrim(name))`; RLS admin-only (`is_admin()`), no anon access; `memory_cards.group_id` references it with `on delete set null`; the migration is idempotent and seeds six groups and 29 tagged cards (`ball` and `car` untagged), every seeded picture exists in `public/seed`. Migration file is written and tested as text; it is NOT applied to the real Supabase project.
+- [x] **ST-T2 Groups, rounds and card fetch (S2, A13).** Acceptance: a group is usable with at least 4 active cards with different words (same word counts once); a round is 2 different usable groups x (1 example + 3 objects), 8 different cards, 6 shuffled objects, random left/right; fewer than 2 usable groups gives `null`; `sortHealth` gives the pool-health line; `fetchSortCards` selects `group_id` without changing `fetchActiveCards`.
+- [x] **ST-T3 Drag helpers (S3).** Acceptance: stage scale and pointer-to-stage conversion, basket hit test (left inclusive, right exclusive), 8 px tap threshold, all pure and unit-tested.
+- [x] **ST-T4 Game list entry (G1).** Acceptance: registry order quiz, memory, listen, sort, spot with `sort` ready and `spot` not ready; the Sort It card has the butter-gold border `#EAD9A0` and title `#A8842F`, and a decorative `aria-hidden` icon (circle `#FBF3D9`, ring `#A8842F`); clicking opens `/games/sort`.
+- [x] **ST-T5 Presentational components (S1, S3, S9).** Acceptance: basket with its example button and three slots; draggable object with lift and slide states and a placeholder for a missing picture; `SortHelp` with 3 steps; no child-facing text hard-coded.
+- [x] **ST-T6 Pointer drag hook (S3, S9).** Acceptance: Pointer Events only; drop on basket 0, 1 or outside; a tap (movement up to 8 px) says the word and never drops; `pointercancel` slides back; a second pointer or non-primary button is ignored; unmount mid-drag removes the listeners.
+- [x] **ST-T7 Play page (S1-S6, S8-S10).** Acceptance: a full round plays at `/games/sort` with the mouse; right drop gives `chime`, fills the next slot, then says the word; wrong drop gives `ohOh`, the 1.4 s popup, slides back in 0.35 s and counts once; a drop outside plays nothing and counts nothing; presses during a slide-back or settle are ignored; empty/failed pool shows the friendly screen; Esc goes to `/games`; the "? Sort It" badge opens `SortHelp`; reduced motion removes lift and slide; leaving cancels timers, speech and any drag.
+- [x] **ST-T8 Finish screen (S7).** Acceptance: celebration scene, "You did it, <name>!", "Wrong N times" (N may be 0, highlighted), play again (new round) and back to games; nothing stored.
+- [x] **ST-T9 Admin data layer for groups (A14, A15).** Acceptance: group names validated (1-40, unique ignoring case and spaces); `saveGroups` upserts only new or renamed groups; `deleteGroups` in one call; `loadCards`/`saveCards` carry `group_id`.
+- [x] **ST-T10 Admin Groups area and card picker (A14, A15).** Acceptance: chips with rename and delete (delete always asks), add by typing; "Group" picker with "No group" on every card, weak-group warning under 4 cards; Save writes groups, then cards, then group deletes; Revert discards both.
+- [x] **ST-T11 JSON import `group` and pool health (A16, A13).** Acceptance: `group` resolved against the draft's groups (ignoring case and spaces); unknown name, wrong type and over 40 characters are errors with the card number and nothing is imported; the template shows the key; pool health also says how many groups can be played in Sort It.
+- [x] **ST-T12 Docs and tickets (this section).** Acceptance: spec.md (G1, S1-S10, A13-A16), plan.md, CLAUDE.md, git-workflow.md and the design spec status updated; S- and A-IDs match the design spec one to one.
+- [ ] **ST-T13 Release gate (NOT done).** Controller's full gate (typecheck, lint, test, build, e2e) on `claude/phase2/sort-it`.
+- [ ] **ST-T14 Apply the migration (NOT done).** Acceptance: with the PO's OK, `20261030100000_card_groups.sql` is applied to the real Supabase project (additive, idempotent) and the six groups and the 29 tagged cards are verified; only after that is the integration branch built or deployed for play-testing or the admin page used on it.
+- [ ] **ST-T15 PO play-test (NOT done).** Acceptance: the PO plays a round in a real browser (drag, sounds, voice, colors from a screenshot) and OKs; merging `claude/phase2/sort-it` into `develop` is the PO's decision.
 
 ## 6. Risks
 - Browser autoplay policy: audio only after "tap to enter" (T7).
