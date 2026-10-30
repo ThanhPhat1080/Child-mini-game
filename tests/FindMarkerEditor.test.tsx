@@ -12,7 +12,7 @@ function setup(objects: EObject[] = []) {
   const onPickSound = vi.fn();
   const onLibrarySound = vi.fn();
   render(<FindMarkerEditor src="/a.png" objects={objects} onChange={onChange} onPickSound={onPickSound} onLibrarySound={onLibrarySound} />);
-  const img = screen.getByRole('img', { name: 'Level picture' });
+  const img = screen.getByRole('img', { name: 'Picture' });
   // a 400 x 300 picture at (100, 50)
   img.getBoundingClientRect = () => ({ left: 100, top: 50, width: 400, height: 300, right: 500, bottom: 350, x: 100, y: 50, toJSON: () => ({}) });
   const clickAt = (fx: number, fy: number) => fireEvent.click(img, { clientX: 100 + fx * 400, clientY: 50 + fy * 300 });

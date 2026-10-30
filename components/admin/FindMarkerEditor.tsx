@@ -75,7 +75,7 @@ export function FindMarkerEditor({ src, objects, onChange, onPickSound, onLibrar
         <div style={{ background: '#FBF4E9', borderRadius: 14, padding: 8, display: 'flex', justifyContent: 'center' }}>
           <div onClick={place} style={{ position: 'relative', width: '100%', maxWidth: 640, lineHeight: 0, cursor: 'crosshair' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img ref={setImgEl} src={src} alt="Level picture" draggable={false} style={{ display: 'block', width: '100%', height: 'auto', borderRadius: 8 }} />
+            <img ref={setImgEl} src={src} alt="Picture" draggable={false} style={{ display: 'block', width: '100%', height: 'auto', borderRadius: 8 }} />
             {objects.map((o, i) => (
               <button
                 key={i} type="button" aria-label={`Object ${i + 1}`} aria-pressed={sel === i}
