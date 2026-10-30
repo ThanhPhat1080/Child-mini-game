@@ -34,7 +34,7 @@ Success:
 | L4 | Wrong pick: "Oh-Oh", the picture dims and is disabled, the word is said again after a short pause. |
 | L5 | Right pick: "Hooray", the word is said once, then the next question. After question 10 the finish screen shows. |
 | L6 | Finish screen: shared celebration scene (3 stars, both characters, confetti), "Wrong N times" with N highlighted, and two picture buttons: play again (new 10 questions), back to games. If any picks were wrong, a row of small round pictures with the English word and count ("apple x2"); tapping one says the word. No row when there were none. |
-| L7 | Wrong-picks log in localStorage under one key (`hamy.listen.wrong`), entries `{id, word, count}`. It survives a reload mid-round. Cleared on play again, on leaving to the game list, and when a round starts from the beginning. Blocked or failing storage: the game works, there is just no list. |
+| L7 | Wrong-picks log in localStorage under one key (`hamy.listen.wrong`), entries `{id, word, count}`. It is written at every wrong pick. Cleared when a round starts (also after a reload, which starts a new round), on play again and on leaving to the game list. Blocked or failing storage: the game works and the list still shows from memory for that page visit. |
 | L8 | Keyboard: 1/2/3 pick, Left/Right move, Enter/Space pick, R replays the word, Esc goes back. Visible focus ring. |
 | L9 | Reduced motion: no bounce or slide, pictures just fade. Sounds stay. |
 | L10 | Robustness: missing picture shows a placeholder; no English voice means no spoken word, game still works; leaving the page cancels timers and speech; clicks on a disabled picture or during the hooray pause are ignored; the question's images are preloaded. |
