@@ -74,3 +74,34 @@ describe('SortObject', () => {
     expect(el.className).toContain('hm-so-obj');
   });
 });
+
+describe('SortObject picture already loaded or failed before mount', () => {
+  const setImg = (complete: boolean, naturalWidth: number) => {
+    Object.defineProperty(HTMLImageElement.prototype, 'complete', { configurable: true, get: () => complete });
+    Object.defineProperty(HTMLImageElement.prototype, 'naturalWidth', { configurable: true, get: () => naturalWidth });
+  };
+  afterEach(() => {
+    delete (HTMLImageElement.prototype as unknown as Record<string, unknown>).complete;
+    delete (HTMLImageElement.prototype as unknown as Record<string, unknown>).naturalWidth;
+  });
+
+  it('complete with naturalWidth 0 shows the placeholder without an error event', () => {
+    setImg(true, 0);
+    const { el } = setup();
+    expect(el.querySelector('[data-placeholder]')).not.toBeNull();
+    expect(el.querySelector('img')).toBeNull();
+  });
+
+  it('complete with naturalWidth > 0 keeps the picture', () => {
+    setImg(true, 120);
+    const { el } = setup();
+    expect(el.querySelector('img')).not.toBeNull();
+    expect(el.querySelector('[data-placeholder]')).toBeNull();
+  });
+
+  it('alt, aria-label, title and src never carry the word', () => {
+    const { el } = setup();
+    const attrs = Array.from(el.querySelectorAll('*')).concat(el).flatMap((n) => ['alt', 'aria-label', 'title'].map((a) => n.getAttribute(a) ?? ''));
+    expect(attrs.join(' ').toLowerCase()).not.toContain('banana');
+  });
+});
