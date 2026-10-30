@@ -45,7 +45,7 @@ New migration, table `memory_cards`:
 | `created_at` | timestamptz | |
 
 - RLS: anon may `select` where `active`; only the admin may insert/update/delete. Storage rules are the existing `media` rules.
-- Seed: at least 15 sample cards (reuse the existing `public/seed/*.svg` pictures and add the missing ones) so every level can be tried right away. Seeded paths start with `seed/` and are never deleted from storage (T15 rule).
+- Seed: 31 sample cards (21 reused or added everyday and shape pictures from `public/seed/*.svg`, plus 10 school and home cards: ruler, pencil, pen, eraser, book, scissors, backpack, cup, chair, clock; the 10 come from a second migration) so every level can be tried right away. Seeded paths start with `seed/` and are never deleted from storage (T15 rule).
 - A level is available when enough cards are active: 12 cards needs 6, 16 cards needs 8, 20 cards needs 10, 24 cards needs 12, 30 cards needs 15.
 
 ## 6. Child screens
@@ -103,5 +103,5 @@ Progress/stars, saved or best scores, per-set boards, "words learned" statistics
 ## 12. Confirmed by the PO (2026-10-29)
 - The English word is not shown on cards; it is only heard.
 - Import limits: up to 100 cards per file, 40 characters per word.
-- Seed pool of about 16-18 cards, reusing `public/seed/*.svg` plus a few new simple drawings.
+- Seed pool of 31 cards: 21 from the first migration (reusing `public/seed/*.svg` plus new simple drawings) and 10 school and home cards from `20261030000000_memory_cards_school_home.sql`.
 - The completion screen shows the number of flips.
