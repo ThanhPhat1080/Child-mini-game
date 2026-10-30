@@ -7,9 +7,8 @@ import { Hills } from '@/components/Hills';
 import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
 import { FindBoard, type FindRipple } from '@/components/find/FindBoard';
-import { FindPrompt } from '@/components/find/FindPrompt';
+import { FindWordList } from '@/components/find/FindWordList';
 import { FindDone } from '@/components/find/FindDone';
-import { SpotDots } from '@/components/spot/SpotDots';
 import { FlowerBack } from '@/components/memory/FlowerBack';
 import { fetchFindLevel } from '@/lib/find/levels';
 import { hitCurrent } from '@/lib/find/hit';
@@ -54,8 +53,6 @@ export default function FindPlay() {
   const [game, setGame] = useState<FindState | null>(null);
   /** Indices of the objects the child has found, in the order found. */
   const [found, setFound] = useState<number[]>([]);
-  /** The object whose word is on the prompt now (-1 before the first word). */
-  const [shown, setShown] = useState(-1);
   const [won, setWon] = useState(false);
   const [praise, setPraise] = useState<{ name: string; url: string | null } | null>(null);
   const [ripple, setRipple] = useState<FindRipple | null>(null);
@@ -103,20 +100,20 @@ export default function FindPlay() {
 
   const index = game?.index ?? -1;
 
-  const say = useCallback((i: number) => {
+  /** Says one object's word. It never changes the game: the list rows use it too. */
+  const sayAt = useCallback((i: number) => {
     if (!level || !alive.current) return;
     const obj = level.objects[i];
     if (!obj) return;
-    setShown(i);
     sayWord(obj);
   }, [level]);
 
   // Each new object: the first after PROMPT_DELAY_MS, the rest as soon as the advance pause ends.
   useEffect(() => {
     if (phase !== 'ready' || !level || index < 0 || index >= level.objects.length) return;
-    if (index === 0) later(() => say(0), PROMPT_DELAY_MS);
-    else say(index);
-  }, [phase, level, index, later, say]);
+    if (index === 0) later(() => sayAt(0), PROMPT_DELAY_MS);
+    else sayAt(index);
+  }, [phase, level, index, later, sayAt]);
 
   // The completion screen needs the child's name and optional custom sound (as the Spot and Memory done pages).
   useEffect(() => {
@@ -135,20 +132,19 @@ export default function FindPlay() {
 
   // R says the current word again.
   useEffect(() => {
-    if (won) return;
+    if (won || !level) return;
     const onKey = (e: KeyboardEvent) => {
-      if ((e.key === 'r' || e.key === 'R') && shown >= 0) say(shown);
+      if ((e.key === 'r' || e.key === 'R') && index >= 0 && index < level.objects.length) sayAt(index);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [won, shown, say]);
+  }, [won, level, index, sayAt]);
 
   const again = useCallback(() => {
     if (!level) return;
     locked.current = false;
     setGame(startFind(level.objects.length));
     setFound([]);
-    setShown(-1);
     setWon(false);
     setPraise(null);
     setRipple(null);
@@ -198,15 +194,12 @@ export default function FindPlay() {
         )}
         {phase === 'ready' && level && !(won && praise) && (
           <>
-            <div style={{ position: 'absolute', top: 56, left: 0, right: 0, zIndex: 1 }}>
-              <SpotDots total={level.objects.length} found={found.length} />
+            {/* The words, in object order, on the left (F3). The asked word is the current row; the list never shows it once done. */}
+            <div data-find-col style={{ position: 'absolute', left: 56, top: 150, bottom: 56, width: 420, zIndex: 2, overflowY: 'auto' }}>
+              <FindWordList objects={level.objects} current={found.length >= level.objects.length ? -1 : index} found={found} onSay={sayAt} />
             </div>
-            <div style={{ position: 'absolute', top: 120, left: 0, right: 0, zIndex: 2 }}>
-              {shown >= 0 && level.objects[shown] && (
-                <FindPrompt word={level.objects[shown].word} keyId={shown} onSay={() => say(shown)} />
-              )}
-            </div>
-            <div style={{ position: 'absolute', top: 270, left: 0, right: 0, zIndex: 1 }}>
+            {/* The picture fills the rest of the stage (F2): FindBoard sizes it from the picture's aspect, capped at 1500 x 900. */}
+            <div style={{ position: 'absolute', left: 524, right: 56, top: 110, bottom: 56, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <FindBoard url={pictureUrl} objects={level.objects} found={found} ripple={ripple} reduced={reduced} onTap={onTap} />
             </div>
           </>

@@ -159,14 +159,15 @@ button.hm-tap:active{transform:scale(.94)}
 /* ---- Find It (F2-F9): same ring, grow and ripple as Spot, with hm-find-* names ---- */
 @keyframes hm-find-grow{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}60%{opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
 @keyframes hm-find-ripple{0%{transform:translate(-50%,-50%) scale(.3);opacity:.8}100%{transform:translate(-50%,-50%) scale(1.6);opacity:0}}
-@keyframes hm-find-word{0%{opacity:0}100%{opacity:1}}
+@keyframes hm-find-pop{0%{transform:scale(1)}40%{transform:scale(1.06)}100%{transform:scale(1)}}
 .hm-find-ring{position:absolute;transform:translate(-50%,-50%);border-radius:50%;border:8px solid #B5703A;background:rgba(181,112,58,0.18);box-shadow:0 0 0 4px rgba(255,255,255,.85);box-sizing:border-box;pointer-events:none}
 .hm-find-grow{animation:hm-find-grow .6s ease-out both}
 .hm-find-ripple{position:absolute;width:120px;height:120px;transform:translate(-50%,-50%);border-radius:50%;border:8px solid #A9C6DE;box-sizing:border-box;pointer-events:none;animation:hm-find-ripple .8s ease-out both}
-.hm-find-word{display:inline-block;animation:hm-find-word .4s ease-out both}
+.hm-find-pop{animation:hm-find-pop .35s ease-out}
 .hm-reduced .hm-find-ripple{animation:none;opacity:.7;transform:translate(-50%,-50%)}
-.hm-reduced .hm-find-word{animation:none}
-@media (prefers-reduced-motion: reduce){.hm-find-grow{animation:none}.hm-find-ripple{animation:none;opacity:.7}.hm-find-word{animation:none}}
+.hm-reduced .hm-find-pop{animation:none}
+[data-find-row] button:focus-visible{outline:6px solid #7A5C50;outline-offset:4px}
+@media (prefers-reduced-motion: reduce){.hm-find-grow{animation:none}.hm-find-ripple{animation:none;opacity:.7}.hm-find-pop{animation:none}}
 /* ---- Listen & Pick question view ---- */
 @keyframes hm-ls-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.07);opacity:.88}}
 .hm-ls-speaker{transition:transform .35s cubic-bezier(.3,1.5,.5,1)}

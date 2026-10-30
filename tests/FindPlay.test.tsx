@@ -42,10 +42,11 @@ const objects: FindObject[] = [
 const level: FindLevel = { id: 'L1', image_path: 'seed/scene.svg', objects, active: true, sort_order: 1 };
 
 const area = () => document.querySelector<HTMLElement>('[data-find-area]')!;
-const word = () => document.querySelector('[data-find-word]')?.textContent ?? null;
+/** The word of the highlighted row in the word list (data-current), read from its accessible name. */
+const word = () => document.querySelector<HTMLElement>('[data-current="true"]')?.getAttribute('aria-label')?.replace(/^Object \d+: /, '') ?? null;
 const ripples = () => document.querySelectorAll('[data-find-ripple]').length;
 const rings = () => document.querySelectorAll('[data-find-found]').length;
-const lit = () => document.querySelectorAll('[data-spot-dot][data-lit]').length;
+const lit = () => document.querySelectorAll('[data-found="true"]').length;
 const advance = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
 const origRect = HTMLElement.prototype.getBoundingClientRect;
 
@@ -80,14 +81,13 @@ afterEach(() => {
 });
 
 describe('Find It play screen (F2-F9)', () => {
-  it('the first word is shown and said after 600 ms', async () => {
+  it('the first word is highlighted at once and said after 600 ms', async () => {
     await ready();
-    expect(word()).toBeNull();
+    expect(word()).toBe('apple');
     expect(h.sayWord).not.toHaveBeenCalled();
     await advance(599);
-    expect(word()).toBeNull();
+    expect(h.sayWord).not.toHaveBeenCalled();
     await advance(1);
-    expect(word()).toBe('apple');
     expect(h.sayWord).toHaveBeenCalledTimes(1);
     expect(h.sayWord).toHaveBeenLastCalledWith(expect.objectContaining({ word: 'apple' }));
   });
@@ -151,11 +151,43 @@ describe('Find It play screen (F2-F9)', () => {
     expect(h.sayWord).toHaveBeenLastCalledWith(expect.objectContaining({ word: 'apple' }));
   });
 
-  it('the speaker button says the word again', async () => {
+  it('R still repeats the current word after a click on another row', async () => {
     await ready();
     await advance(600);
-    fireEvent.click(screen.getByRole('button', { name: 'Say the word again' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Object 2: ball' }));
+    fireEvent.keyDown(window, { key: 'r' });
+    expect(h.sayWord).toHaveBeenLastCalledWith(expect.objectContaining({ word: 'apple' }));
+  });
+
+  it('clicking a list row says that word and does not change the game or the highlight', async () => {
+    await ready();
+    await advance(600);
+    fireEvent.click(screen.getByRole('button', { name: 'Object 3: cat' }));
     expect(h.sayWord).toHaveBeenCalledTimes(2);
+    expect(h.sayWord).toHaveBeenLastCalledWith(expect.objectContaining({ word: 'cat' }));
+    expect(word()).toBe('apple');
+    expect(lit()).toBe(0);
+    expect(ripples()).toBe(0);
+    expect(h.chime).not.toHaveBeenCalled();
+  });
+
+  it('clicking the speaker of the current row says its word again', async () => {
+    await ready();
+    await advance(600);
+    fireEvent.click(screen.getByRole('button', { name: 'Say word 1' }));
+    expect(h.sayWord).toHaveBeenCalledTimes(2);
+    expect(h.sayWord).toHaveBeenLastCalledWith(expect.objectContaining({ word: 'apple' }));
+  });
+
+  it('a click on a found row says its word but never counts as a tap on the picture', async () => {
+    await ready();
+    await advance(600);
+    await found(0.25, 0.3);
+    fireEvent.click(screen.getByRole('button', { name: 'Object 1: apple' }));
+    expect(h.sayWord).toHaveBeenLastCalledWith(expect.objectContaining({ word: 'apple' }));
+    expect(h.chime).toHaveBeenCalledTimes(1);
+    expect(lit()).toBe(1);
+    expect(ripples()).toBe(0);
   });
 
   it('finding every object shows the celebration about 1 s after the last find; play again restarts at object 1', async () => {
@@ -226,13 +258,19 @@ describe('Find It play screen (F2-F9)', () => {
   });
 });
 
-describe('FindPlay prompt and board layers (F3: a long word is never hidden)', () => {
-  it('the prompt sits above the board in stacking order', async () => {
-    h.id = 'L1';
+describe('FindPlay layout (F2, F3: the word list sits beside the picture)', () => {
+  it('the word list is a 420 px column on the left, with one row per object', async () => {
     await ready();
-    await advance(700);
-    const promptLayer = document.querySelector<HTMLElement>('[data-find-prompt]')!.parentElement!;
-    const boardLayer = Array.from(document.querySelectorAll<HTMLElement>('div')).find((d) => d.style.top === '270px')!;
-    expect(Number(getComputedStyle(promptLayer).zIndex)).toBeGreaterThan(Number(getComputedStyle(boardLayer).zIndex));
+    const list = document.querySelector<HTMLElement>('[data-find-col]')!;
+    expect(list.style.width).toBe('420px');
+    expect(list.style.left).toBe('56px');
+    expect(list.querySelectorAll('[data-find-row]')).toHaveLength(3);
+  });
+
+  it('there is no progress dot row and no prompt bar', async () => {
+    await ready();
+    expect(document.querySelector('[data-spot-dot]')).toBeNull();
+    expect(document.querySelector('[data-find-prompt]')).toBeNull();
+    expect(document.querySelector('[data-find-word]')).toBeNull();
   });
 });

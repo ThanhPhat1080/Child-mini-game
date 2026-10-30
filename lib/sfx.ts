@@ -146,6 +146,6 @@ export function chime(): void {
   if (!c) return;
   const { bus } = makeBus(c, 600);
   const t = c.currentTime;
-  tone(c, bus, t, 1318, 1318, 0.25, 'sine', 0.12);
-  tone(c, bus, t + 0.14, 1760, 1760, 0.3, 'sine', 0.12);
+  tone(c, bus, t, 1318, 1318, 0.25, 'sine', 0.3);
+  tone(c, bus, t + 0.14, 1760, 1760, 0.3, 'sine', 0.3);
 }

@@ -176,7 +176,7 @@ test('(e) the child plays the objects in the admin numbering after a move', asyn
   await page.goto('/games/find');
   await page.getByRole('link', { name: /^Play level/ }).click();
   await expect(page.locator('[data-find-area]')).toBeVisible();
-  await expect(page.locator('[data-find-word]')).toHaveText('cat');
+  await expect(page.locator('[data-current="true"]')).toHaveAttribute('aria-label', 'Object 1: cat');
   await tapPlay(page, row.objects[0].x, row.objects[0].y);
-  await expect(page.locator('[data-find-word]')).toHaveText('apple', { timeout: 5000 });
+  await expect(page.locator('[data-current="true"]')).toHaveAttribute('aria-label', 'Object 2: apple', { timeout: 5000 });
 });

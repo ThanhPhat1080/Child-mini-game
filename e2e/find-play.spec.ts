@@ -25,18 +25,22 @@ async function tapAt(page: Page, x: number, y: number) {
   if (!box) throw new Error('picture not visible');
   await page.mouse.click(box.x + box.width * x, box.y + box.height * y);
 }
+/** The highlighted row of the word list (data-current) names the object being asked. */
+const currentRow = (page: Page) => page.locator('[data-current="true"]');
+const expectAsked = (page: Page, i: number) =>
+  expect(currentRow(page)).toHaveAttribute('aria-label', `Object ${i + 1}: ${OBJECTS[i].word}`);
 const open = async (page: Page) => {
   await page.goto(URL);
   await expect(page.locator('[data-find-area]')).toBeVisible();
-  await expect(page.locator('[data-spot-dot]')).toHaveCount(3);
-  await expect(page.locator('[data-find-word]')).toHaveText(OBJECTS[0].word);
+  await expect(page.locator('[data-find-row]')).toHaveCount(3);
+  await expectAsked(page, 0);
 };
-const lit = (page: Page) => page.locator('[data-spot-dot][data-lit]');
+const lit = (page: Page) => page.locator('[data-found="true"]');
 
 test('clicking each object in order finds them all and shows the celebration', async ({ page }) => {
   await open(page);
   for (let i = 0; i < OBJECTS.length; i++) {
-    await expect(page.locator('[data-find-word]')).toHaveText(OBJECTS[i].word);
+    await expectAsked(page, i);
     await tapAt(page, OBJECTS[i].x, OBJECTS[i].y);
     await expect(lit(page)).toHaveCount(i + 1);
   }
@@ -48,12 +52,12 @@ test('clicking each object in order finds them all and shows the celebration', a
 test('play again restarts from the first object', async ({ page }) => {
   await open(page);
   for (const o of OBJECTS) {
-    await expect(page.locator('[data-find-word]')).toHaveText(o.word);
+    await expectAsked(page, OBJECTS.indexOf(o));
     await tapAt(page, o.x, o.y);
   }
   await expect(page.locator('[data-find-done]')).toBeVisible();
   await page.getByRole('button', { name: 'Play again' }).click();
-  await expect(page.locator('[data-find-word]')).toHaveText(OBJECTS[0].word);
+  await expectAsked(page, 0);
   await expect(lit(page)).toHaveCount(0);
 });
 
@@ -62,7 +66,7 @@ test('a wrong click ripples and leaves the level unfinished', async ({ page }) =
   await tapAt(page, OBJECTS[2].x, OBJECTS[2].y); // the third object is not the current one
   await expect(page.locator('[data-find-ripple]')).toHaveCount(1);
   await expect(lit(page)).toHaveCount(0);
-  await expect(page.locator('[data-find-word]')).toHaveText(OBJECTS[0].word);
+  await expectAsked(page, 0);
   await expect(page.locator('[data-find-done]')).toHaveCount(0);
 });
 

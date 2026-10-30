@@ -7,7 +7,7 @@ import { MIN_HIT_R } from '@/lib/find/validate';
 export type FindRipple = { x: number; y: number; key: number };
 
 const MAX_W = 1500;
-const MAX_H = 800;
+const MAX_H = 900;
 const DEFAULT_ASPECT = 4 / 3;
 
 type Props = {
