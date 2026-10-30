@@ -126,3 +126,78 @@ test('Esc returns to the game list', async ({ page }) => {
   await page.keyboard.press('Escape');
   await page.waitForURL('**/games');
 });
+
+/** Drops `id` into its right basket, retrying while a settle or slide-back ignores the press, until it is placed. */
+async function dropRight(page: Page, id: string) {
+  await expect(async () => {
+    await dragTo(page, obj(page, id), await center(basketOf(page, id)));
+    await expect(obj(page, id)).toHaveAttribute('data-state', 'hidden', { timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
+}
+
+/** One round: `wrongDrops` wrong drops of the first object, then every object into its right basket. */
+async function playRound(page: Page, wrongDrops = 0) {
+  const all = await ids(page);
+  for (let n = 1; n <= wrongDrops; n++) {
+    await dragTo(page, obj(page, all[0]), await center(otherBasket(page, all[0])));
+    await expect(root(page)).toHaveAttribute('data-wrong-count', String(n));
+    await expect(obj(page, all[0])).toHaveAttribute('data-state', 'idle');
+  }
+  for (const id of all) await dropRight(page, id);
+}
+
+const doneRoot = (page: Page) => page.locator('[data-sort-done][data-keys="ready"]');
+const wrongLine = (page: Page) => page.locator('[data-wrong-line]');
+
+test.describe('finish screen (S7)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+  });
+
+  test('one wrong drop ends with "Wrong 1 times" and the two buttons', async ({ page }) => {
+    test.setTimeout(60_000);
+    await open(page);
+    await playRound(page, 1);
+    await expect(doneRoot(page)).toBeVisible({ timeout: 10_000 });
+    await expect(wrongLine(page)).toHaveText('Wrong 1 times');
+    await expect(page.locator('[data-wrong-total]')).toHaveText('1');
+    await expect(page.getByRole('button', { name: 'Play again' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Back to games' })).toHaveCount(1);
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByRole('link', { name: 'Back to games' })).toBeFocused();
+  });
+
+  test('a perfect round shows "Wrong 0 times"', async ({ page }) => {
+    test.setTimeout(60_000);
+    await open(page);
+    await playRound(page);
+    await expect(doneRoot(page)).toBeVisible({ timeout: 10_000 });
+    await expect(wrongLine(page)).toHaveText('Wrong 0 times');
+  });
+
+  test('Play again starts a fresh round and the next finish starts from 0', async ({ page }) => {
+    test.setTimeout(90_000);
+    await open(page);
+    await playRound(page, 1);
+    await expect(doneRoot(page)).toBeVisible({ timeout: 10_000 });
+    await expect(wrongLine(page)).toHaveText('Wrong 1 times');
+    await page.getByRole('button', { name: 'Play again' }).click();
+    await expect(page.locator('[data-sort-done]')).toHaveCount(0);
+    await expect(objects(page)).toHaveCount(6);
+    await expect(root(page)).toHaveAttribute('data-done', 'false');
+    await expect(root(page)).toHaveAttribute('data-wrong-count', '0');
+    await expect(page.locator('[data-placed]')).toHaveCount(0);
+    await playRound(page);
+    await expect(doneRoot(page)).toBeVisible({ timeout: 10_000 });
+    await expect(wrongLine(page)).toHaveText('Wrong 0 times');
+  });
+
+  test('Esc on the finish goes to the game list', async ({ page }) => {
+    test.setTimeout(60_000);
+    await open(page);
+    await playRound(page);
+    await expect(doneRoot(page)).toBeVisible({ timeout: 10_000 });
+    await page.keyboard.press('Escape');
+    await page.waitForURL('**/games');
+  });
+});
