@@ -99,7 +99,7 @@ async function ready(pool: MemoryCard[] = POOL) {
 beforeEach(() => {
   vi.useFakeTimers();
   for (const f of [h.fetchSortCards, h.sayWord, h.stopWord, h.chime, h.ohOh, h.push, h.replace, h.settings, h.select, cancel]) f.mockReset();
-  h.settings.mockResolvedValue({ data: { ohoh_path: null } });
+  h.settings.mockResolvedValue({ data: { ohoh_path: null, child_name: 'Hà My', complete_path: null } });
   h.sayWord.mockImplementation((_c: MemoryCard, onEnd?: () => void) => onEnd?.()); // a word that ends at once
   h.ohOh.mockReturnValue({ ms: 1900, stop: vi.fn() });
   Object.defineProperty(window, 'matchMedia', { configurable: true, writable: true, value: undefined });
@@ -287,19 +287,142 @@ describe('Sort It play screen (S1-S6, S8-S10)', () => {
     }
   }
 
-  it('after the 6th right drop and its word, plus FINISH_DELAY_MS, the round is done (Back button only)', async () => {
+  const finishLine = () => document.querySelector('[data-wrong-line]')?.textContent;
+  const againBtn = () => screen.getByRole('button', { name: 'Play again' });
+
+  it('after the 6th right drop and its word, plus FINISH_DELAY_MS, the finish scene appears with "Wrong 0 times"', async () => {
     await ready();
     await sortAll();
     expect(placedIn(0)).toHaveLength(3);
     expect(placedIn(1)).toHaveLength(3);
     await advance(WORD_AFTER_CHIME_MS + FINISH_DELAY_MS - 10);
     expect(root().getAttribute('data-done')).toBe('false');
+    expect(document.querySelector('[data-sort-done]')).toBeNull();
     await advance(10);
     expect(root().getAttribute('data-done')).toBe('true');
     expect(objects()).toHaveLength(0);
     expect(document.querySelector('[data-basket]')).toBeNull();
-    expect(screen.getByRole('link', { name: 'Back to games' })).toBeTruthy();
+    expect(document.querySelector('[data-sort-done]')).not.toBeNull();
+    await advance(0);
+    expect(screen.getByRole('heading').textContent).toBe('You did it, Hà My!');
+    expect(finishLine()).toBe('Wrong 0 times');
+    expect(screen.getAllByRole('link', { name: 'Back to games' })).toHaveLength(1);
     expect(screen.queryByRole('button', { name: 'What is Sort It? Show how to play' })).toBeNull();
+    expect(h.select).toHaveBeenCalledWith('child_name, complete_path');
+  });
+
+  it('the finish shows the round wrong count', async () => {
+    await ready();
+    const first = ids()[0];
+    drop(first, wrongBasket(first));
+    await advance(SLIDE_BACK_MS);
+    drop(first, wrongBasket(first));
+    await advance(SLIDE_BACK_MS);
+    await sortAll();
+    await advance(WORD_AFTER_CHIME_MS + FINISH_DELAY_MS);
+    expect(finishLine()).toBe('Wrong 2 times');
+    expect(document.querySelector('[data-wrong-total]')?.textContent).toBe('2');
+    expect(root().getAttribute('data-wrong-count')).toBe('2');
+  });
+
+  it('while the finish is pending an example tap says nothing and does not delay it', async () => {
+    await ready();
+    await sortAll();
+    h.sayWord.mockClear();
+    fireEvent.click(basketEl(0).querySelector('[data-basket-example]')!); // during the settle after the 6th drop
+    await advance(WORD_AFTER_CHIME_MS);
+    expect(h.sayWord).toHaveBeenCalledTimes(1); // only the last right word
+    fireEvent.click(basketEl(1).querySelector('[data-basket-example]')!); // during the finish pause
+    expect(h.sayWord).toHaveBeenCalledTimes(1);
+    await advance(FINISH_DELAY_MS);
+    expect(root().getAttribute('data-done')).toBe('true');
+  });
+
+  it('while the finish is pending with a word that never ends, an example tap does not postpone the cap', async () => {
+    await ready();
+    h.sayWord.mockImplementation(() => undefined);
+    await sortAll();
+    await advance(WORD_AFTER_CHIME_MS + 100);
+    h.sayWord.mockClear();
+    fireEvent.click(basketEl(0).querySelector('[data-basket-example]')!);
+    expect(h.sayWord).not.toHaveBeenCalled();
+    await advance(WORD_CAP_MS + FINISH_DELAY_MS - 100);
+    expect(root().getAttribute('data-done')).toBe('true');
+  });
+
+  it('Esc on the finish goes to the game list', async () => {
+    await ready();
+    await sortAll();
+    await advance(WORD_AFTER_CHIME_MS + FINISH_DELAY_MS);
+    await advance(0);
+    h.push.mockClear();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(h.push).toHaveBeenCalledTimes(1);
+    expect(h.push).toHaveBeenCalledWith('/games');
+  });
+
+  it('Play again starts a new round: 0 wrong, 6 objects, empty baskets, and a second round finishes with its own count', async () => {
+    h.settings.mockResolvedValue({ data: { ohoh_path: null, child_name: '', complete_path: null } });
+    await ready();
+    const first = ids()[0];
+    drop(first, wrongBasket(first));
+    await advance(SLIDE_BACK_MS);
+    await sortAll();
+    await advance(WORD_AFTER_CHIME_MS + FINISH_DELAY_MS);
+    await advance(0);
+    expect(finishLine()).toBe('Wrong 1 times');
+    h.sayWord.mockClear();
+    h.stopWord.mockClear();
+    fireEvent.click(againBtn());
+    expect(h.stopWord).toHaveBeenCalled();
+    await advance(PRELOAD_MS + 10);
+    expect(document.querySelector('[data-sort-done]')).toBeNull();
+    expect(root().getAttribute('data-done')).toBe('false');
+    expect(root().getAttribute('data-wrong-count')).toBe('0');
+    expect(objects()).toHaveLength(6);
+    expect(objects().every((o) => o.getAttribute('data-state') === 'idle')).toBe(true);
+    expect(placedIn(0)).toEqual([]);
+    expect(placedIn(1)).toEqual([]);
+    expect(popup()).toBeNull();
+    expect(screen.getByRole('button', { name: 'What is Sort It? Show how to play' })).toBeTruthy();
+    expect(h.sayWord).not.toHaveBeenCalled();
+    stubRects();
+    // a full second round: no stale counters (rightCount, wrong, finishing) from the first
+    await sortAll();
+    await advance(WORD_AFTER_CHIME_MS + FINISH_DELAY_MS - 10);
+    expect(root().getAttribute('data-done')).toBe('false');
+    await advance(10);
+    await advance(0);
+    expect(root().getAttribute('data-done')).toBe('true');
+    expect(finishLine()).toBe('Wrong 0 times');
+  });
+
+  it('Play again right after a finish leaves no old timer to fire in the new round', async () => {
+    await ready();
+    await sortAll();
+    await advance(WORD_AFTER_CHIME_MS + FINISH_DELAY_MS);
+    await advance(0);
+    fireEvent.click(againBtn());
+    await advance(PRELOAD_MS + 10);
+    stubRects();
+    await advance(10000);
+    expect(root().getAttribute('data-done')).toBe('false');
+    expect(objects()).toHaveLength(6);
+  });
+
+  it('leaving on the finish, or while it is pending, clears every timer', async () => {
+    const r = await ready();
+    await sortAll();
+    await advance(WORD_AFTER_CHIME_MS + 100);
+    r.unmount();
+    expect(vi.getTimerCount()).toBe(0);
+    h.sayWord.mockClear();
+    const r2 = await ready();
+    await sortAll();
+    await advance(WORD_AFTER_CHIME_MS + FINISH_DELAY_MS);
+    await advance(0);
+    r2.unmount();
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('the finish waits at most WORD_CAP_MS for a word that never ends', async () => {
