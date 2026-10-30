@@ -28,7 +28,7 @@ export const MEDIA_SOURCES: MediaSource[] = [
 ];
 
 /** The sound paths inside one find_levels.objects value (each object's audio_path). */
-function objectAudioPaths(objects: unknown): string[] {
+export function objectAudioPaths(objects: unknown): string[] {
   if (!Array.isArray(objects)) return [];
   return objects.flatMap((o) => {
     const p = (o as { audio_path?: unknown } | null)?.audio_path;
