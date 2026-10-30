@@ -232,3 +232,78 @@ test.describe('Quick import cards header button', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   });
 });
+
+test.describe('Groups (A14, A15)', () => {
+  type GroupRow = { id: string; name: string };
+  const groupsOf = async () => (await getState()).card_groups as GroupRow[];
+  const picker = (page: Page, n: number) => page.getByRole('combobox', { name: `Group for card ${n}`, exact: true });
+  const groupsArea = (page: Page) => page.getByRole('region', { name: 'Groups' });
+
+  test('create a group, tag a card, Save, reload: the tag is there; delete the group, Save, reload: "No group"', async ({ page }) => {
+    await openCards(page);
+    await expect(groupsArea(page)).toBeVisible();
+    await expect(groupsArea(page).getByText('No groups yet. Add one below.')).toBeVisible();
+
+    await page.getByLabel('New group name').fill('Birds');
+    await page.getByLabel('New group name').press('Enter');
+    await expect(page.getByLabel('New group name')).toHaveValue('');
+    await expect(groupsArea(page).getByRole('listitem')).toHaveText(['Birds']);
+    await picker(page, 2).selectOption({ label: 'Birds' });
+    await expect(save(page)).toBeEnabled();
+    expect(await groupsOf()).toEqual([]); // nothing is written before Save
+
+    await save(page).click();
+    await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible();
+    const [birds] = await groupsOf();
+    expect(birds.name).toBe('Birds');
+    expect((await cardsOf() as (CardRow & { group_id: string | null })[]).find((c) => c.word === 'word2')?.group_id).toBe(birds.id);
+
+    await page.reload();
+    await expect(picker(page, 2).locator('option:checked')).toHaveText('Birds');
+    await expect(picker(page, 1).locator('option:checked')).toHaveText('No group');
+    await expect(groupsArea(page).getByRole('listitem')).toHaveText(['Birds']);
+
+    await page.getByRole('button', { name: 'Delete group Birds' }).click();
+    await expect(page.getByRole('alertdialog')).toContainText('1 card uses this group. It will have no group.');
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Delete group' }).click();
+    await expect(picker(page, 2).locator('option:checked')).toHaveText('No group'); // at once, in the draft
+    expect(await groupsOf()).toHaveLength(1); // still there until Save
+
+    await save(page).click();
+    await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible();
+    await expect.poll(groupsOf).toEqual([]);
+    await page.reload();
+    await expect(picker(page, 2).locator('option:checked')).toHaveText('No group');
+    await expect(groupsArea(page).getByText('No groups yet. Add one below.')).toBeVisible();
+    expect((await cardsOf() as (CardRow & { group_id: string | null })[]).every((c) => c.group_id == null)).toBe(true);
+  });
+
+  test('rename a group inline and Save; a weak group shows the Sort It warning', async ({ page }) => {
+    const id = '20000000-0000-4000-8000-000000000001';
+    const rows = makeCards(4).map((c, i) => ({ ...c, group_id: i < 3 ? id : null }));
+    await reset({ memory_cards: rows, card_groups: [{ id, name: 'Animals', created_at: '2026-01-01T00:00:00.000Z' }] });
+    await openCards(page);
+    const weak = 'Sort It needs at least 4 cards with different words in a group.';
+    await expect(page.getByText(weak)).toHaveCount(3);
+    await picker(page, 4).selectOption({ label: 'Animals' });
+    await expect(page.getByText(weak)).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'Rename group Animals' }).click();
+    await page.getByRole('textbox', { name: 'New name for group Animals' }).fill('Pets');
+    await page.getByRole('textbox', { name: 'New name for group Animals' }).press('Enter');
+    await expect(groupsArea(page).getByRole('listitem')).toHaveText(['Pets']);
+    await expect(picker(page, 1).locator('option:checked')).toHaveText('Pets');
+    await save(page).click();
+    await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible();
+    expect(await groupsOf()).toMatchObject([{ id, name: 'Pets' }]);
+  });
+
+  test('at 390 px the Groups area does not overflow the page', async ({ page }) => {
+    const id = '20000000-0000-4000-8000-000000000001';
+    await reset({ memory_cards: makeCards(2), card_groups: [{ id, name: 'A rather long group name for a phone', created_at: '2026-01-01T00:00:00.000Z' }] });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openCards(page);
+    await expect(groupsArea(page)).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  });
+});

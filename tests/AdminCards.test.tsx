@@ -1,10 +1,13 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ECard } from '@/lib/memory/adminCards';
+import type { ECard, EGroup } from '@/lib/memory/adminCards';
 
 const h = vi.hoisted(() => ({
   loadCards: vi.fn(),
   saveCards: vi.fn(),
+  loadGroups: vi.fn(),
+  saveGroups: vi.fn(),
+  deleteGroups: vi.fn(),
   sayWord: vi.fn(),
   addPending: vi.fn(),
   clearPending: vi.fn(),
@@ -22,6 +25,9 @@ vi.mock('@/lib/memory/adminCards', async (orig) => ({
   ...(await orig<typeof import('@/lib/memory/adminCards')>()),
   loadCards: h.loadCards,
   saveCards: h.saveCards,
+  loadGroups: h.loadGroups,
+  saveGroups: h.saveGroups,
+  deleteGroups: h.deleteGroups,
 }));
 vi.mock('@/lib/memory/cards', () => ({ sayWord: h.sayWord }));
 vi.mock('@/lib/media', async (orig) => ({
@@ -38,6 +44,7 @@ vi.mock('next/link', () => ({
 
 import CardsPage from '@/app/admin/(panel)/cards/page';
 import { AdminNav } from '@/components/AdminNav';
+import { CardPanel } from '@/components/admin/CardPanel';
 
 const card = (n: number, o: Partial<ECard> = {}): ECard => ({ id: `c${n}`, isNew: false, word: `word${n}`, image: `cards/${n}.png`, audio: null, active: true, groupId: null, ...o });
 const cards = (n: number, active = true) => Array.from({ length: n }, (_, i) => card(i + 1, { active }));
@@ -49,8 +56,9 @@ const toggle = (n: number) => screen.getByRole('switch', { name: `Card ${n} on` 
 const health = () => screen.getByTestId('pool-health').textContent ?? '';
 const file = (name: string, type: string, size = 10) => new File([new Uint8Array(size)], name, { type });
 
-async function renderWith(list: ECard[]) {
+async function renderWith(list: ECard[], groups: EGroup[] = []) {
   h.loadCards.mockResolvedValue(list);
+  h.loadGroups.mockResolvedValue(groups);
   render(<CardsPage />);
   await screen.findByRole('button', { name: 'Add card' });
   await waitFor(() => expect(screen.queryByText('Loading…')).toBeNull());
@@ -59,6 +67,9 @@ async function renderWith(list: ECard[]) {
 beforeEach(() => {
   for (const f of Object.values(h)) f.mockReset();
   h.saveCards.mockResolvedValue({ error: null, warning: null });
+  h.saveGroups.mockResolvedValue({ error: null });
+  h.deleteGroups.mockResolvedValue({ error: null });
+  h.loadGroups.mockResolvedValue([]);
   let n = 0;
   h.addPending.mockImplementation(() => `pending:${++n}`);
   h.svgToPending.mockImplementation(() => 'pending:svg');
@@ -367,5 +378,287 @@ describe('Admin cards page (A11, A13)', () => {
     const link = screen.getByRole('link', { name: 'Cards' });
     expect(link.getAttribute('href')).toBe('/admin/cards');
     expect(link.getAttribute('aria-current')).toBe('page');
+  });
+});
+
+describe('CardPanel group picker (A15)', () => {
+  const GROUPS: EGroup[] = [{ id: 'g1', isNew: false, name: 'Animals' }, { id: 'g2', isNew: true, name: 'Fruit' }];
+  const WEAK = 'Sort It needs at least 4 cards with different words in a group.';
+  function renderPanel(c: ECard, weakGroup = false) {
+    const onEdit = vi.fn();
+    const noop = () => {};
+    render(
+      <CardPanel c={c} n={3} duplicate={false} message={null} autoFocus={false} groups={GROUPS} weakGroup={weakGroup}
+        onEdit={onEdit} onPickImage={noop} onPickAudio={noop} onSvg={noop} onPlay={noop} onAskDelete={noop} />,
+    );
+    return { onEdit, select: screen.getByRole('combobox', { name: 'Group for card 3' }) as HTMLSelectElement };
+  }
+
+  it('lists "No group" first, then the groups in order', () => {
+    const { select } = renderPanel(card(3));
+    expect(Array.from(select.options).map((o) => o.textContent)).toEqual(['No group', 'Animals', 'Fruit']);
+    expect(select.options[select.selectedIndex].textContent).toBe('No group');
+  });
+
+  it('shows the card\'s group and choosing another calls onEdit({ groupId })', () => {
+    const { select, onEdit } = renderPanel(card(3, { groupId: 'g1' }));
+    expect(select.options[select.selectedIndex].textContent).toBe('Animals');
+    fireEvent.change(select, { target: { value: 'g2' } });
+    expect(onEdit).toHaveBeenCalledWith({ groupId: 'g2' });
+    fireEvent.change(select, { target: { value: '' } });
+    expect(onEdit).toHaveBeenLastCalledWith({ groupId: null });
+  });
+
+  it('a card whose group is missing shows "No group"', () => {
+    const { select } = renderPanel(card(3, { groupId: 'gone' }));
+    expect(select.value).toBe('');
+    expect(select.options[select.selectedIndex].textContent).toBe('No group');
+  });
+
+  it('the weak group warning shows only when weakGroup', () => {
+    renderPanel(card(3, { groupId: 'g1' }));
+    expect(screen.queryByText(WEAK)).toBeNull();
+    cleanup();
+    renderPanel(card(3, { groupId: 'g1' }), true);
+    expect(screen.getByText(WEAK).getAttribute('role')).toBe('status');
+  });
+});
+
+describe('Admin cards page: groups (A14, A15)', () => {
+  const grp = (id: string, name: string, o: Partial<EGroup> = {}): EGroup => ({ id, isNew: false, name, ...o });
+  const ANIMALS = grp('g1', 'Animals');
+  const FRUIT = grp('g2', 'Fruit');
+  const picker = (n: number) => screen.getByRole('combobox', { name: `Group for card ${n}` }) as HTMLSelectElement;
+  const picked = (n: number) => picker(n).options[picker(n).selectedIndex].textContent;
+  const chips = () => screen.queryAllByRole('listitem').map((li) => li.querySelector('[data-chip-name]')?.textContent);
+  const addGroup = (name: string) => {
+    fireEvent.change(screen.getByLabelText('New group name'), { target: { value: name } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add group' }));
+  };
+  const rename = (from: string, to: string) => {
+    fireEvent.click(screen.getByRole('button', { name: `Rename group ${from}` }));
+    const input = screen.getByLabelText(`New name for group ${from}`);
+    fireEvent.change(input, { target: { value: to } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+  };
+  const removeGroup = (name: string) => {
+    fireEvent.click(screen.getByRole('button', { name: `Delete group ${name}` }));
+    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete group' }));
+  };
+  const order = (...fns: { mock: { invocationCallOrder: number[] } }[]) => fns.map((f) => f.mock.invocationCallOrder[0]);
+  const WEAK = 'Sort It needs at least 4 cards with different words in a group.';
+
+  it('loads the groups as chips above the cards and offers them in every picker', async () => {
+    await renderWith([card(1, { groupId: 'g2' }), card(2)], [ANIMALS, FRUIT]);
+    expect(h.loadGroups).toHaveBeenCalledTimes(1);
+    expect(chips()).toEqual(['Animals', 'Fruit']);
+    const groupsArea = screen.getByRole('region', { name: 'Groups' });
+    expect(groupsArea.compareDocumentPosition(screen.getByRole('article', { name: 'Card 1' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(picked(1)).toBe('Fruit');
+    expect(picked(2)).toBe('No group');
+    expect(Array.from(picker(2).options).map((o) => o.textContent)).toEqual(['No group', 'Animals', 'Fruit']);
+    expect(saveBtn().disabled).toBe(true);
+  });
+
+  it('group edits are unsaved changes; names are validated (empty, 41 characters, duplicate)', async () => {
+    await renderWith([card(1)], [ANIMALS]);
+    addGroup('  ');
+    expect(screen.getByRole('alert').textContent).toBe('Give the group a name.');
+    addGroup('x'.repeat(41));
+    expect(screen.getByRole('alert').textContent).toBe('Keep the name to 40 characters or fewer.');
+    addGroup(' ANIMALS ');
+    expect(screen.getByRole('alert').textContent).toBe('Another group already has this name.');
+    expect(saveBtn().disabled).toBe(true);
+    addGroup(' Birds ');
+    expect(chips()).toEqual(['Animals', 'Birds']);
+    expect(saveBtn().disabled).toBe(false);
+    expect(screen.getByText('Unsaved changes. Press Save to keep them.')).toBeTruthy();
+    expect(h.saveGroups).not.toHaveBeenCalled();
+  });
+
+  it('Save writes groups, then cards, then deletes removed groups (in that order)', async () => {
+    const before = [card(1, { groupId: 'g1' }), card(2, { groupId: 'g2' })];
+    await renderWith(before, [ANIMALS, FRUIT]);
+    rename('Animals', 'Pets');
+    removeGroup('Fruit');
+    h.loadCards.mockResolvedValue([card(1, { groupId: 'g1' }), card(2)]);
+    h.loadGroups.mockResolvedValue([grp('g1', 'Pets')]);
+    fireEvent.click(saveBtn());
+    await waitFor(() => expect(h.loadCards).toHaveBeenCalledTimes(2));
+    expect(h.saveGroups).toHaveBeenCalledWith([ANIMALS, FRUIT], [grp('g1', 'Pets')]);
+    expect(h.saveCards).toHaveBeenCalledWith(before, [card(1, { groupId: 'g1' }), card(2, { groupId: null })]);
+    expect(h.deleteGroups).toHaveBeenCalledWith(['g2']);
+    const [g, c, d] = order(h.saveGroups, h.saveCards, h.deleteGroups);
+    expect(g).toBeLessThan(c);
+    expect(c).toBeLessThan(d);
+    expect(h.loadGroups).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(saveBtn().disabled).toBe(true));
+    expect(chips()).toEqual(['Pets']);
+  });
+
+  it('Save skips deleteGroups when no group was removed', async () => {
+    await renderWith([card(1)], [ANIMALS]);
+    rename('Animals', 'Pets');
+    h.loadGroups.mockResolvedValue([grp('g1', 'Pets')]);
+    fireEvent.click(saveBtn());
+    await waitFor(() => expect(h.loadCards).toHaveBeenCalledTimes(2));
+    expect(h.saveGroups).toHaveBeenCalled();
+    expect(h.saveCards).toHaveBeenCalled();
+    expect(h.deleteGroups).not.toHaveBeenCalled();
+  });
+
+  it('deleting a group asks how many cards use it and sets its draft cards to "No group" at once', async () => {
+    await renderWith([card(1, { groupId: 'g1' }), card(2, { groupId: 'g1' }), card(3, { groupId: 'g2' })], [ANIMALS, FRUIT]);
+    fireEvent.click(screen.getByRole('button', { name: 'Delete group Animals' }));
+    expect(screen.getByRole('alertdialog').textContent).toContain('2 cards use this group. They will have no group.');
+    fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Cancel' }));
+    expect(picked(1)).toBe('Animals');
+    removeGroup('Animals');
+    expect(chips()).toEqual(['Fruit']);
+    expect(picked(1)).toBe('No group');
+    expect(picked(2)).toBe('No group');
+    expect(picked(3)).toBe('Fruit');
+    expect(Array.from(picker(1).options).map((o) => o.textContent)).toEqual(['No group', 'Fruit']);
+    expect(h.deleteGroups).not.toHaveBeenCalled();
+
+    fireEvent.click(saveBtn());
+    await waitFor(() => expect(h.deleteGroups).toHaveBeenCalledWith(['g1']));
+    const sent = h.saveCards.mock.calls[0][1] as ECard[];
+    expect(sent.map((c) => c.groupId)).toEqual([null, null, 'g2']);
+    expect(order(h.saveCards, h.deleteGroups)[0]).toBeLessThan(order(h.saveCards, h.deleteGroups)[1]);
+  });
+
+  it('a saveGroups error stops the Save: no saveCards, no deleteGroups, the draft stays', async () => {
+    await renderWith([card(1, { groupId: 'g2' })], [ANIMALS, FRUIT]);
+    rename('Animals', 'Pets');
+    removeGroup('Fruit');
+    h.saveGroups.mockResolvedValue({ error: 'network down' });
+    fireEvent.click(saveBtn());
+    expect(await screen.findByText('network down')).toBeTruthy();
+    expect(h.saveCards).not.toHaveBeenCalled();
+    expect(h.deleteGroups).not.toHaveBeenCalled();
+    expect(h.loadCards).toHaveBeenCalledTimes(1);
+    expect(chips()).toEqual(['Pets']);
+    expect(picked(1)).toBe('No group');
+    expect(saveBtn().disabled).toBe(false);
+  });
+
+  it('a duplicate-name error from the database shows a friendly message (rename to a name being deleted)', async () => {
+    await renderWith([card(1)], [ANIMALS, FRUIT]);
+    removeGroup('Fruit');
+    rename('Animals', 'Fruit'); // allowed in the draft: Fruit is gone there, but still exists until the delete runs
+    h.saveGroups.mockResolvedValue({ error: 'duplicate key value violates unique constraint "card_groups_name_unique"' });
+    fireEvent.click(saveBtn());
+    expect(await screen.findByText('A group with that name already exists.')).toBeTruthy();
+    expect(screen.queryByText(/duplicate key/)).toBeNull();
+    expect(h.saveCards).not.toHaveBeenCalled();
+    expect(h.deleteGroups).not.toHaveBeenCalled();
+    expect(chips()).toEqual(['Fruit']);
+  });
+
+  it('a swap of two names that the database refuses (code 23505) shows the friendly message', async () => {
+    await renderWith([card(1)], [ANIMALS, FRUIT]);
+    rename('Animals', 'Tmp');
+    rename('Fruit', 'Animals');
+    rename('Tmp', 'Fruit');
+    expect(chips()).toEqual(['Fruit', 'Animals']);
+    h.saveGroups.mockResolvedValue({ error: '23505' });
+    fireEvent.click(saveBtn());
+    expect(await screen.findByText('A group with that name already exists.')).toBeTruthy();
+    expect(h.saveCards).not.toHaveBeenCalled();
+    expect(chips()).toEqual(['Fruit', 'Animals']);
+  });
+
+  it('a saveCards error after the groups were written stops before deleteGroups', async () => {
+    await renderWith([card(1, { groupId: 'g2' })], [ANIMALS, FRUIT]);
+    removeGroup('Fruit');
+    h.saveCards.mockResolvedValue({ error: 'cards failed', warning: null });
+    fireEvent.click(saveBtn());
+    expect(await screen.findByText('cards failed')).toBeTruthy();
+    expect(h.deleteGroups).not.toHaveBeenCalled();
+    expect(chips()).toEqual(['Animals']);
+    expect(picked(1)).toBe('No group');
+  });
+
+  it('a deleteGroups error shows the error; the draft groups stay so Save can try the delete again', async () => {
+    await renderWith([card(1, { groupId: 'g2' })], [ANIMALS, FRUIT]);
+    removeGroup('Fruit');
+    h.deleteGroups.mockResolvedValueOnce({ error: 'delete failed' });
+    h.loadCards.mockResolvedValue([card(1)]); // the cards were saved
+    fireEvent.click(saveBtn());
+    expect(await screen.findByText('delete failed')).toBeTruthy();
+    expect(chips()).toEqual(['Animals']);
+    expect(picked(1)).toBe('No group');
+    await waitFor(() => expect(saveBtn().disabled).toBe(false));
+    h.loadGroups.mockResolvedValue([ANIMALS]);
+    fireEvent.click(saveBtn());
+    await waitFor(() => expect(h.deleteGroups).toHaveBeenCalledTimes(2));
+    expect(h.deleteGroups).toHaveBeenLastCalledWith(['g2']);
+    await waitFor(() => expect(saveBtn().disabled).toBe(true));
+  });
+
+  it('Revert discards both group and card edits', async () => {
+    await renderWith([card(1, { groupId: 'g1' })], [ANIMALS, FRUIT]);
+    fireEvent.change(word(1), { target: { value: 'changed' } });
+    rename('Fruit', 'Veg');
+    addGroup('Birds');
+    removeGroup('Animals');
+    expect(chips()).toEqual(['Veg', 'Birds']);
+    expect(picked(1)).toBe('No group');
+    fireEvent.click(revertBtn());
+    expect(chips()).toEqual(['Animals', 'Fruit']);
+    expect(word(1).value).toBe('word1');
+    expect(picked(1)).toBe('Animals');
+    expect(revertBtn().disabled).toBe(true);
+    expect(saveBtn().disabled).toBe(true);
+  });
+
+  it('Save stays disabled while a card is incomplete; groups are optional', async () => {
+    await renderWith([card(1)], []);
+    addGroup('Birds');
+    expect(saveBtn().disabled).toBe(false); // a group with no cards is fine, cards without a group are fine
+    fireEvent.click(screen.getByRole('button', { name: 'Add card' }));
+    expect(saveBtn().disabled).toBe(true);
+    fireEvent.change(picker(2), { target: { value: picker(2).options[1].value } });
+    expect(saveBtn().disabled).toBe(true); // a group never completes a card
+    fireEvent.change(word(2), { target: { value: 'robin' } });
+    fireEvent.change(screen.getByLabelText('Picture file for card 2'), { target: { files: [file('robin.png', 'image/png')] } });
+    expect(saveBtn().disabled).toBe(false);
+  });
+
+  it('adding a group and tagging a card in one session saves with the new group\'s id', async () => {
+    await renderWith([card(1), card(2)], [ANIMALS]);
+    addGroup('Birds');
+    const birds = Array.from(picker(1).options).find((o) => o.textContent === 'Birds')!.value;
+    expect(birds).toMatch(/^[0-9a-f-]{36}$/);
+    fireEvent.change(picker(1), { target: { value: birds } });
+    expect(picked(1)).toBe('Birds');
+    fireEvent.click(saveBtn());
+    await waitFor(() => expect(h.saveCards).toHaveBeenCalled());
+    expect(h.saveGroups).toHaveBeenCalledWith([ANIMALS], [ANIMALS, { id: birds, isNew: true, name: 'Birds' }]);
+    expect((h.saveCards.mock.calls[0][1] as ECard[]).map((c) => c.groupId)).toEqual([birds, null]);
+    expect(order(h.saveGroups)[0]).toBeLessThan(order(h.saveCards)[0]);
+    expect(h.deleteGroups).not.toHaveBeenCalled();
+  });
+
+  it('cards of a group with fewer than 4 different words show the Sort It warning (not a block)', async () => {
+    const list = [
+      card(1, { groupId: 'g1' }), card(2, { groupId: 'g1' }), card(3, { groupId: 'g1' }),
+      card(4, { groupId: 'g2' }), card(5, { groupId: 'g2' }), card(6, { groupId: 'g2' }), card(7, { groupId: 'g2' }),
+      card(8),
+    ];
+    await renderWith(list, [ANIMALS, FRUIT]);
+    expect(screen.getAllByText(WEAK)).toHaveLength(3);
+    for (const n of [1, 2, 3]) expect(within(screen.getByRole('article', { name: `Card ${n}` })).queryByText(WEAK)).toBeTruthy();
+    fireEvent.change(picker(8), { target: { value: 'g1' } });
+    expect(screen.queryAllByText(WEAK)).toHaveLength(0);
+    expect(saveBtn().disabled).toBe(false);
+  });
+
+  it('a load failure of the groups shows the error', async () => {
+    h.loadCards.mockResolvedValue([card(1)]);
+    h.loadGroups.mockRejectedValue(new Error('groups down'));
+    render(<CardsPage />);
+    expect(await screen.findByText('groups down')).toBeTruthy();
   });
 });
