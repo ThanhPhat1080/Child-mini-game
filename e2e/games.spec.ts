@@ -5,12 +5,12 @@ test.beforeEach(async () => {
   await reset();
 });
 
-test('the game list shows Quiz and Memory Match as playable and Spot as coming', async ({ page }) => {
+test('the game list shows Quiz, Memory Match and Spot as playable', async ({ page }) => {
   await page.goto('/games');
   await expect(page.getByRole('link', { name: 'Play Quiz' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Play Memory Match' })).toBeVisible();
-  await expect(page.getByRole('img', { name: 'Spot the Differences, coming soon' })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Spot the Differences/ })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Play Spot the Differences' })).toBeVisible();
+  await expect(page.getByRole('img', { name: /coming soon/ })).toHaveCount(0);
 });
 
 /** The view takes focus in its mount effect, so a focused view means the page is hydrated and listens to keys. */
@@ -28,22 +28,14 @@ test('ArrowRight moves to Memory Match and Enter opens it', async ({ page }) => 
   await expect(page).toHaveURL(/\/games\/memory$/);
 });
 
-test('Spot the Differences cannot be opened', async ({ page }) => {
+test('Enter on the third game opens /games/spot', async ({ page }) => {
   await openGames(page);
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowRight');
   await current(page, 3);
   await expect(page.getByRole('button', { name: 'Next game' })).toBeDisabled();
   await page.keyboard.press('Enter');
-  await page.keyboard.press('Space');
-  // Positive signal first: a later key is still handled by this page, so Enter/Space were processed and did nothing.
-  await page.keyboard.press('ArrowLeft');
-  await current(page, 2);
-  await expect(page).toHaveURL(/\/games$/);
-  await page.getByRole('img', { name: 'Spot the Differences, coming soon' }).click({ force: true });
-  await page.keyboard.press('ArrowRight');
-  await current(page, 3);
-  await expect(page).toHaveURL(/\/games$/);
+  await expect(page).toHaveURL(/\/games\/spot$/);
 });
 
 test('the game list has no "?" help buttons and never shows a dialog', async ({ page }) => {
@@ -82,12 +74,14 @@ test('Space on the focused carousel opens a ready game and no dialog appears', a
   await expect(page).toHaveURL(/\/games\/quiz$/);
 });
 
-test('Tab moves from the Quiz card link straight to the Memory card link (no stop on any icon)', async ({ page }) => {
+test('Tab moves from the Quiz card link straight to the Memory card link then Spot (no stop on any icon)', async ({ page }) => {
   await openGames(page);
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Play Quiz' })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Play Memory Match' })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: 'Play Spot the Differences' })).toBeFocused();
 });
 
 test('Memory Match has a sage border, Quiz a rose one, Spot a sky one (three distinct colors)', async ({ page }) => {
@@ -95,9 +89,10 @@ test('Memory Match has a sage border, Quiz a rose one, Spot a sky one (three dis
   const border = (loc: ReturnType<Page['locator']>) => loc.evaluate((el) => getComputedStyle(el).borderTopColor);
   const quiz = await border(page.getByRole('link', { name: 'Play Quiz' }));
   const memory = await border(page.getByRole('link', { name: 'Play Memory Match' }));
-  const spot = await border(page.getByRole('img', { name: 'Spot the Differences, coming soon' }));
+  const spot = await border(page.getByRole('link', { name: 'Play Spot the Differences' }));
   expect(memory).toBe('rgb(169, 205, 177)');
   expect(quiz).toBe('rgb(235, 183, 188)');
+  expect(spot).toBe('rgb(169, 198, 222)');
   expect(new Set([quiz, memory, spot]).size).toBe(3);
   const title = await page.getByRole('link', { name: 'Play Memory Match' }).getByText('Memory Match').evaluate((el) => getComputedStyle(el).color);
   expect(title).toBe('rgb(94, 143, 105)');

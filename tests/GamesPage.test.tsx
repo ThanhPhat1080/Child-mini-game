@@ -16,7 +16,7 @@ vi.mock('@/lib/media', () => ({ mediaUrl: (p: string | null) => (p ? `/media/${p
 vi.mock('@/components/MusicButton', () => ({ MusicButton: () => null }));
 
 import Games from '@/app/games/page';
-import { MEMORY_GREEN, MEMORY_ICON } from '@/components/games/GameArt';
+import { MEMORY_GREEN, MEMORY_ICON, SPOT_BLUE } from '@/components/games/GameArt';
 
 const icon = (id: string) => document.querySelector(`[data-game-icon="${id}"]`) as HTMLElement;
 const frame = (name: string) => screen.getByRole('link', { name }) as HTMLElement;
@@ -33,9 +33,9 @@ describe('games list decorative icons', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('Quiz and Memory cards each have a decorative 130 px icon at the same spot; only those two have one', () => {
+  it('All three cards each have a decorative 130 px icon at the same spot', () => {
     render(<Games />);
-    for (const id of ['quiz', 'memory']) {
+    for (const id of ['quiz', 'memory', 'spot']) {
       const el = icon(id);
       expect(el).toBeTruthy();
       expect(el.getAttribute('aria-hidden')).toBe('true');
@@ -48,7 +48,9 @@ describe('games list decorative icons', () => {
     }
     expect(icon('memory').style.left).toBe(icon('quiz').style.left);
     expect(icon('memory').style.top).toBe(icon('quiz').style.top);
-    expect(document.querySelectorAll('[data-game-icon]')).toHaveLength(2);
+    expect(icon('spot').style.left).toBe(icon('quiz').style.left);
+    expect(icon('spot').style.top).toBe(icon('quiz').style.top);
+    expect(document.querySelectorAll('[data-game-icon]')).toHaveLength(3);
   });
 
   it('the Memory icon is two flower cards, different from the Quiz question mark', () => {
@@ -114,6 +116,22 @@ describe('games list decorative icons', () => {
     expect(title('Play Memory Match').textContent).toBe('Memory Match');
     expect(title('Play Memory Match').style.color).toBe('rgb(94, 143, 105)');
     expect(title('Play Quiz').style.color).toBe('rgb(184, 115, 123)');
+  });
+
+  it('Spot the Differences is a playable link with a decorative sky-blue icon and no coming-soon image', () => {
+    render(<Games />);
+    expect(SPOT_BLUE).toBe('#5F86A8');
+    const link = frame('Play Spot the Differences');
+    expect(link.getAttribute('href')).toBe('/games/spot');
+    expect(screen.queryByRole('img', { name: /coming soon/ })).toBeNull();
+    const el = icon('spot');
+    expect(el.getAttribute('aria-hidden')).toBe('true');
+    expect(el.querySelectorAll('a, button, [tabindex]')).toHaveLength(0);
+    const circle = el.querySelector('circle')!;
+    expect(circle.getAttribute('fill')).toBe('#EEF3F7');
+    expect(circle.getAttribute('stroke')).toBe(SPOT_BLUE);
+    expect((link.lastElementChild as HTMLElement).style.color).toBe('rgb(95, 134, 168)');
+    expect(link.style.border).toContain('rgb(169, 198, 222)');
   });
 
   it('Enter on the focused carousel opens a ready game', () => {
