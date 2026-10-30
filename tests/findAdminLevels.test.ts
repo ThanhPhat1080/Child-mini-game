@@ -216,6 +216,13 @@ describe('loadFindLevels', () => {
 });
 
 describe('saveFindLevels', () => {
+  it('trims each word before writing it (a draft word of spaces around cat is saved as cat)', async () => {
+    const draft = [level({ id: 'x', image: 'find/p.png', objects: [obj(0.2, ' cat '), obj(0.8, 'dog')] })];
+    await saveFindLevels([], draft);
+    const rows = h.upsert.mock.calls[0][0];
+    expect(rows[0].objects.map((o: { word: string }) => o.word)).toEqual(['cat', 'dog']);
+  });
+
   it('uploads pending picture and sounds into folder find before writing, and swaps in real paths in order', async () => {
     const draft = [
       level({

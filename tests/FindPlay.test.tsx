@@ -225,3 +225,14 @@ describe('Find It play screen (F2-F9)', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 });
+
+describe('FindPlay prompt and board layers (F3: a long word is never hidden)', () => {
+  it('the prompt sits above the board in stacking order', async () => {
+    h.id = 'L1';
+    await ready();
+    await advance(700);
+    const promptLayer = document.querySelector<HTMLElement>('[data-find-prompt]')!.parentElement!;
+    const boardLayer = Array.from(document.querySelectorAll<HTMLElement>('div')).find((d) => d.style.top === '270px')!;
+    expect(Number(getComputedStyle(promptLayer).zIndex)).toBeGreaterThan(Number(getComputedStyle(boardLayer).zIndex));
+  });
+});

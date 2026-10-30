@@ -101,7 +101,7 @@ export async function saveFindLevels(saved: ELevel[], draft: ELevel[]): Promise<
   const final = draft.map((l) => ({
     ...l,
     image: swap(l.image),
-    objects: l.objects.map((o) => ({ ...o, audio_path: swap(o.audio_path) })),
+    objects: l.objects.map((o) => ({ ...o, word: o.word.trim(), audio_path: swap(o.audio_path) })),
   }));
 
   const fail = async (message: string) => {

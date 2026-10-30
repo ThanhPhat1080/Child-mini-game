@@ -1,5 +1,9 @@
 /** The current object's word (F3): large, in a rounded peach bar, with a speaker button that says it again. Picture-free: the word is the child-facing text the admin typed. */
+/** Words longer than this use the smaller size, so they fit on at most two lines in the fixed-height bar. */
+const LONG_WORD = 18;
+
 export function FindPrompt({ word, onSay, keyId }: { word: string; onSay: () => void; keyId: number }) {
+  const fontSize = word.length > LONG_WORD ? 48 : 96;
   return (
     <div
       data-find-prompt
@@ -9,7 +13,7 @@ export function FindPrompt({ word, onSay, keyId }: { word: string; onSay: () => 
         key={keyId}
         data-find-word
         className="hm-find-word"
-        style={{ fontFamily: "'Baloo 2', 'Nunito', sans-serif", fontSize: 96, fontWeight: 700, lineHeight: 1.1, color: '#B5703A', overflowWrap: 'anywhere' }}
+        style={{ fontFamily: "'Baloo 2', 'Nunito', sans-serif", fontSize, fontWeight: 700, lineHeight: 1.1, color: '#B5703A', overflowWrap: 'anywhere' }}
       >
         {word}
       </span>

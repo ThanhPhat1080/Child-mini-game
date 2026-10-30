@@ -201,7 +201,7 @@ export default function FindPlay() {
             <div style={{ position: 'absolute', top: 56, left: 0, right: 0, zIndex: 1 }}>
               <SpotDots total={level.objects.length} found={found.length} />
             </div>
-            <div style={{ position: 'absolute', top: 130, left: 0, right: 0, zIndex: 1 }}>
+            <div style={{ position: 'absolute', top: 120, left: 0, right: 0, zIndex: 2 }}>
               {shown >= 0 && level.objects[shown] && (
                 <FindPrompt word={level.objects[shown].word} keyId={shown} onSay={() => say(shown)} />
               )}

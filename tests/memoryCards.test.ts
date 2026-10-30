@@ -192,12 +192,29 @@ describe('sayWord onEnd (the page waits for the last word before the celebration
   });
 });
 
+describe('sayWord cuts off a spoken word before a recording (no overlapping voices)', () => {
+  it('cancels the browser voice before it plays the recording', async () => {
+    const cancel = vi.fn();
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { cancel } });
+    try {
+      sayWord({ word: 'cat', audio_path: 'x.mp3' });
+      await flush();
+      expect(cancel).toHaveBeenCalled();
+      expect(cancel.mock.invocationCallOrder[0]).toBeLessThan(FakeAudio.instances[0].play.mock.invocationCallOrder[0]);
+    } finally {
+      // @ts-expect-error test cleanup of the stub
+      delete window.speechSynthesis;
+    }
+  });
+});
+
 describe('stopWord (M10: leaving the page silences the word)', () => {
   it('pauses the playing recording and cancels speech', async () => {
     const cancel = vi.fn();
     Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { cancel } });
     sayWord({ word: 'cat', audio_path: 'seed/cat.mp3' });
     await flush();
+    cancel.mockClear(); // sayWord cancels speech before a recording; this test checks stopWord's cancel
     stopWord();
     expect(FakeAudio.instances[0].pause).toHaveBeenCalledTimes(1);
     expect(cancel).toHaveBeenCalledTimes(1);
