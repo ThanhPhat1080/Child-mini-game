@@ -5,7 +5,7 @@ import {
   deleteGroups, duplicateWords, isCardComplete, loadCards, loadGroups, newCard, newGroup, pruneDeletedGroups, saveCards, saveGroups, validateGroupName,
   type ECard, type EGroup,
 } from '@/lib/memory/adminCards';
-import { weakGroups } from '@/lib/sort/groups';
+import { sortHealth, weakGroups } from '@/lib/sort/groups';
 import { LEVELS, pairsOf } from '@/lib/memory/deck';
 import { sayWord } from '@/lib/memory/cards';
 import { MAX_IMAGE_BYTES, addPending, clearPending, svgToPending } from '@/lib/media';
@@ -74,7 +74,8 @@ export default function CardsPage() {
   const dups = duplicateWords(draft);
   const active = draft.filter((c) => c.active).length;
   // ECard.groupId is camelCase, the Sort It helpers read group_id
-  const weak = weakGroups(draft.map((c) => ({ word: c.word, group_id: c.groupId, active: c.active })));
+  const groupCards = draft.map((c) => ({ word: c.word, group_id: c.groupId, active: c.active }));
+  const weak = weakGroups(groupCards);
   const usage = new Map<string, number>();
   for (const c of draft) if (c.groupId) usage.set(c.groupId, (usage.get(c.groupId) ?? 0) + 1);
 
@@ -203,6 +204,7 @@ export default function CardsPage() {
       <section style={{ background: '#fff', borderRadius: 18, padding: '18px 22px', boxShadow: '0 1px 0 #EADCC8', display: 'flex', flexDirection: 'column', gap: 4 }}>
         <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>Levels</h2>
         <p data-testid="pool-health" style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{poolHealth(active)}</p>
+        <p data-testid="sort-health" style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{sortHealth(groupCards)}</p>
         <p style={{ margin: 0, fontSize: 13, color: '#7A6458' }}>
           Each level needs {LEVELS.map((l) => pairsOf(l)).join(' / ')} active cards ({LEVELS.join(' / ')} cards on the table).{dirty ? ' Counts include unsaved changes.' : ''}
         </p>
@@ -229,7 +231,7 @@ export default function CardsPage() {
         </button>
       </div>
 
-      {importOpen && <CardImportDialog onCancel={() => setImportOpen(false)} onImport={importCards} />}
+      {importOpen && <CardImportDialog groups={draftGroups} onCancel={() => setImportOpen(false)} onImport={importCards} />}
 
       {doomed && (
         <ConfirmDialog
