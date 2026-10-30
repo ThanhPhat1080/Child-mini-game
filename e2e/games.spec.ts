@@ -5,14 +5,16 @@ test.beforeEach(async () => {
   await reset();
 });
 
-test('the game list shows Quiz, Memory Match, Listen & Pick and Spot as playable', async ({ page }) => {
+test('the game list shows Quiz, Memory Match, Listen & Pick, Sort It and Spot as playable', async ({ page }) => {
   await page.goto('/games');
   await expect(page.getByRole('link', { name: 'Play Quiz' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Play Memory Match' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Play Listen & Pick' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Play Sort It' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Play Spot the Differences' })).toBeVisible();
   await expect(page.getByRole('img', { name: /coming soon/ })).toHaveCount(0);
   await expect(page.getByText('Coming in Phase 2')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Go to game \d$/ })).toHaveCount(5);
 });
 
 /** The view takes focus in its mount effect, so a focused view means the page is hydrated and listens to keys. */
@@ -39,10 +41,18 @@ test('ArrowRight twice reaches Listen & Pick and Enter opens it', async ({ page 
   await expect(page).toHaveURL(/\/games\/listen$/);
 });
 
-test('Enter on the fourth game opens /games/spot', async ({ page }) => {
+test('ArrowRight three times reaches Sort It and Enter opens it', async ({ page }) => {
   await openGames(page);
   for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowRight');
   await current(page, 4);
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/games\/sort$/);
+});
+
+test('Enter on the fifth game opens /games/spot', async ({ page }) => {
+  await openGames(page);
+  for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowRight');
+  await current(page, 5);
   await expect(page.getByRole('button', { name: 'Next game' })).toBeDisabled();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/games\/spot$/);
@@ -84,7 +94,7 @@ test('Space on the focused carousel opens a ready game and no dialog appears', a
   await expect(page).toHaveURL(/\/games\/quiz$/);
 });
 
-test('Tab moves from the Quiz card link through Memory Match and Listen & Pick to Spot (no stop on any icon)', async ({ page }) => {
+test('Tab moves from the Quiz card link through Memory Match, Listen & Pick and Sort It to Spot (no stop on any icon)', async ({ page }) => {
   await openGames(page);
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Play Quiz' })).toBeFocused();
@@ -93,10 +103,12 @@ test('Tab moves from the Quiz card link through Memory Match and Listen & Pick t
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Play Listen & Pick' })).toBeFocused();
   await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: 'Play Sort It' })).toBeFocused();
+  await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Play Spot the Differences' })).toBeFocused();
 });
 
-test('Memory Match has a sage border, Quiz a rose one, Spot a sky one (three distinct colors)', async ({ page }) => {
+test('Memory Match has a sage border, Quiz a rose one, Spot a sky one, Sort It a butter one (four distinct colors)', async ({ page }) => {
   await page.goto('/games');
   const border = (loc: ReturnType<Page['locator']>) => loc.evaluate((el) => getComputedStyle(el).borderTopColor);
   const quiz = await border(page.getByRole('link', { name: 'Play Quiz' }));
@@ -104,8 +116,10 @@ test('Memory Match has a sage border, Quiz a rose one, Spot a sky one (three dis
   const spot = await border(page.getByRole('link', { name: 'Play Spot the Differences' }));
   expect(memory).toBe('rgb(169, 205, 177)');
   expect(quiz).toBe('rgb(235, 183, 188)');
+  const sort = await border(page.getByRole('link', { name: 'Play Sort It' }));
   expect(spot).toBe('rgb(169, 198, 222)');
-  expect(new Set([quiz, memory, spot]).size).toBe(3);
+  expect(sort).toBe('rgb(234, 217, 160)');
+  expect(new Set([quiz, memory, spot, sort]).size).toBe(4);
   const title = await page.getByRole('link', { name: 'Play Memory Match' }).getByText('Memory Match').evaluate((el) => getComputedStyle(el).color);
   expect(title).toBe('rgb(94, 143, 105)');
 });

@@ -4,4 +4,5 @@ export type MemoryCard = {
   image_path: string
   audio_path: string | null
   active: boolean
+  group_id?: string | null
 }

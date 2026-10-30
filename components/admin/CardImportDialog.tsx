@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { IMPORT_MAX_BYTES } from '@/lib/quizImport';
 import { parseCardImport } from '@/lib/memory/import';
-import type { ECard } from '@/lib/memory/adminCards';
+import type { ECard, EGroup } from '@/lib/memory/adminCards';
 import s from './admin-ui.module.css';
 import { ghostBtn } from './editor-parts';
 
 const SHOW_ERRORS = 8;
 
 /** "+ Quick import cards" modal: template download, short guide, JSON file check, then append. */
-export function CardImportDialog({ onCancel, onImport }: { onCancel: () => void; onImport: (cards: ECard[]) => void }) {
+export function CardImportDialog({ groups = [], onCancel, onImport }: { groups?: readonly EGroup[]; onCancel: () => void; onImport: (cards: ECard[]) => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState('');
   const [errors, setErrors] = useState<string[]>([]);
@@ -28,7 +28,7 @@ export function CardImportDialog({ onCancel, onImport }: { onCancel: () => void;
     if (!file) return;
     setFileName(file.name); setErrors([]); setReady([]);
     if (file.size > IMPORT_MAX_BYTES) { setErrors(['This file is larger than 1 MB. Split it into smaller files.']); return; }
-    const r = parseCardImport(await file.text());
+    const r = parseCardImport(await file.text(), groups);
     setErrors(r.errors);
     setReady(r.cards);
   }
@@ -51,6 +51,7 @@ export function CardImportDialog({ onCancel, onImport }: { onCancel: () => void;
             <li><b>image</b> can be left blank (<code>&quot;&quot;</code>) to upload later, an <code>https://</code> link, or SVG code (starting with <code>&lt;svg</code>). The same SVG used on several cards is saved as <b>one file</b>.</li>
             <li>SVG is best because it stays sharp at any size. PNG, JPG and WebP up to 2 MB can be uploaded in the editor.</li>
             <li><b>audio</b> is optional: leave it blank, or give an <code>https://</code> link to a recorded pronunciation.</li>
+            <li><b>group</b> is optional: it must be the name of a group that already exists under Groups (create it there first). Leave it blank for no group.</li>
             <li><b>active</b> defaults to <code>true</code>.</li>
             <li>Cards without a picture must be finished by hand before you can Save.</li>
           </ul>

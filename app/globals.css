@@ -172,3 +172,13 @@ button.hm-tap:active{transform:scale(.94)}
 .hm-reduced .hm-pickring{opacity:0}
 .hm-reduced .hm-picked{animation:none;transform:scale(1.08)}
 @media (prefers-reduced-motion: reduce){.hm-ls-speaking{animation:none}.hm-ls-speaker{transition:none}}
+
+/* Sort It (R1, R3, R9) */
+.hm-so-obj{transition:box-shadow .3s ease}
+.hm-so-obj.hm-so-slide{transition:transform .35s cubic-bezier(.3,.7,.2,1),box-shadow .35s ease}
+.hm-so-obj:focus-visible,.hm-so-example:focus-visible{outline:6px solid #7A5C50;outline-offset:8px}
+.hm-so-example{transition:transform .3s ease}
+.hm-so-example:hover{transform:scale(1.05)}
+.hm-reduced .hm-so-obj,.hm-reduced .hm-so-obj.hm-so-slide,.hm-reduced .hm-so-example{transition:none;--so-lift:1}
+.hm-reduced .hm-so-example:hover{transform:none}
+@media (prefers-reduced-motion: reduce){.hm-so-obj,.hm-so-obj.hm-so-slide,.hm-so-example{transition:none;--so-lift:1}.hm-so-example:hover{transform:none}}

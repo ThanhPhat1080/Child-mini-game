@@ -10,6 +10,7 @@ export type MemoryCardRow = {
   active: boolean;
   position: number;
   created_at: string;
+  group_id?: string | null;
 };
 
 export type SpotLevelRow = {
@@ -26,6 +27,7 @@ export type Row = Record<string, unknown>;
 
 export type StandinState = {
   memory_cards: Row[];
+  card_groups: Row[];
   spot_levels: Row[];
   settings: Row[];
   quiz_sets: Row[];
@@ -59,6 +61,32 @@ export function makeCards(n: number, active = true): MemoryCardRow[] {
     position: i + 1,
     created_at: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
   }));
+}
+
+/** The fixed uuid of the `index`-th (0-based) group of makeGroupedCards. */
+export const groupUuid = (index: number) => `10000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`;
+
+/**
+ * Sort It cards: for each group name, `count` active cards with words <group>1..<group>N and the bundled apple art.
+ * `group_id` is a fixed uuid per group (by the order of the names, see groupUuid).
+ */
+export function makeGroupedCards(groups: Record<string, number>): MemoryCardRow[] {
+  const rows: MemoryCardRow[] = [];
+  Object.entries(groups).forEach(([name, count], g) => {
+    for (let n = 1; n <= count; n++) {
+      const i = rows.length;
+      rows.push({
+        id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
+        word: `${name}${n}`,
+        image_path: 'seed/apple.svg',
+        active: true,
+        position: i + 1,
+        created_at: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
+        group_id: groupUuid(g),
+      });
+    }
+  });
+  return rows;
 }
 
 /** n spot levels (garden art, 3 valid differences each), ids ...a000-00000000000N. */
