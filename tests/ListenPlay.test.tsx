@@ -227,6 +227,8 @@ describe('Listen & Pick play screen (L1-L5, L8, L10)', () => {
     fireEvent.click(answers()[r]);
     fireEvent.click(answers()[(r + 1) % 3]);
     for (const k of ['1', '2', '3']) fireEvent.keyDown(window, { key: k });
+    fireEvent.keyDown(window, { key: 'r' }); // no replay over the hooray
+    fireEvent.click(screen.getByRole('button', { name: 'Hear the word again' }));
     expect(h.yay).toHaveBeenCalledTimes(1);
     expect(h.ohOh).not.toHaveBeenCalled();
     expect(h.recordWrong).not.toHaveBeenCalled();

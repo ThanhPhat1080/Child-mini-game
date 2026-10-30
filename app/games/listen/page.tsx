@@ -188,7 +188,8 @@ export default function ListenPlay() {
   }, [current, index, questions.length, later, say, sayLater, cancelPendingSay, moveOn]);
 
   const replay = useCallback(() => {
-    if (current) { cancelPendingSay(); say(current.answer); }
+    // Not during the hooray pause: the right word comes on its own and must not be cut.
+    if (current && !lockedRef.current) { cancelPendingSay(); say(current.answer); }
   }, [current, cancelPendingSay, say]);
 
   useEffect(() => {
