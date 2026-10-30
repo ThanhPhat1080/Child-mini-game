@@ -5,10 +5,12 @@ test.beforeEach(async () => {
   await reset();
 });
 
-test('the game list shows Quiz and Memory Match as playable and Spot as coming', async ({ page }) => {
+test('the game list shows Quiz, Memory Match and Listen & Pick as playable and Spot as coming', async ({ page }) => {
   await page.goto('/games');
   await expect(page.getByRole('link', { name: 'Play Quiz' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Play Memory Match' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Play Listen & Pick' })).toBeVisible();
+  await expect(page.getByText('Coming in Phase 2')).toHaveCount(1);
   await expect(page.getByRole('img', { name: 'Spot the Differences, coming soon' })).toBeVisible();
   await expect(page.getByRole('link', { name: /Spot the Differences/ })).toHaveCount(0);
 });
@@ -28,21 +30,29 @@ test('ArrowRight moves to Memory Match and Enter opens it', async ({ page }) => 
   await expect(page).toHaveURL(/\/games\/memory$/);
 });
 
-test('Spot the Differences cannot be opened', async ({ page }) => {
+test('ArrowRight twice reaches Listen & Pick and Enter opens it', async ({ page }) => {
   await openGames(page);
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowRight');
   await current(page, 3);
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/games\/listen$/);
+});
+
+test('Spot the Differences cannot be opened', async ({ page }) => {
+  await openGames(page);
+  for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowRight');
+  await current(page, 4);
   await expect(page.getByRole('button', { name: 'Next game' })).toBeDisabled();
   await page.keyboard.press('Enter');
   await page.keyboard.press('Space');
   // Positive signal first: a later key is still handled by this page, so Enter/Space were processed and did nothing.
   await page.keyboard.press('ArrowLeft');
-  await current(page, 2);
+  await current(page, 3);
   await expect(page).toHaveURL(/\/games$/);
   await page.getByRole('img', { name: 'Spot the Differences, coming soon' }).click({ force: true });
   await page.keyboard.press('ArrowRight');
-  await current(page, 3);
+  await current(page, 4);
   await expect(page).toHaveURL(/\/games$/);
 });
 
