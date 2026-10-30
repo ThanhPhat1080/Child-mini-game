@@ -29,7 +29,7 @@ Success:
 ## 4. Game registry (G1)
 - New `lib/games/registry.ts`: a typed list of games, each with `id`, `href`, card art and `ready`.
 - The game list (`app/games/page.tsx`) reads it instead of `N = 3` and hand-written cards. Entries: Quiz, Memory Match (ready), Spot the Differences (placeholder, not playable).
-- A game may declare optional help (`hasHelp`). Quiz and Memory Match both do: each card on the game list has a "?" button that opens its "How to play ..." popup (Memory Match: 4 steps, `components/MemoryHelp.tsx`), built on the shared shell `components/GameHelp.tsx`. The popup never starts the game; its last-step Play opens the game.
+- The registry has no help flag (the former `hasHelp` was removed by the PO decision). Quiz and Memory Match each have a "How to play ..." popup (Memory Match: 4 steps, `components/MemoryHelp.tsx`), built on the shared shell `components/GameHelp.tsx`, opened only from the in-game badges ("? Quiz", "? Memory Match"). The game list cards show a decorative icon only (`GameIcon` in `components/games/GameArt.tsx`: Quiz "?", Memory Match two flower cards), not a button; the Memory Match card uses sage green (border `#A9CDB1`, title `#5E8F69`).
 - Enter/Space opens the game at the focused position; drag, arrows and dots keep working (C2, ADR-018).
 
 ## 5. Data
@@ -52,7 +52,7 @@ New migration, table `memory_cards`:
 ### 6.1 Level select, `/games/memory` (M1)
 - Five buttons in one centered row (about 300 px each, 48 px gaps), drawn as mini card grids (4x3, 4x4, 5x4, 6x4, 6x5), each with its label "12 cards" / "16 cards" / "20 cards" / "24 cards" / "30 cards" under the picture (decorative; the `aria-label` stays). A level without enough cards is dimmed and cannot be chosen.
 - Empty pool: a friendly picture screen, not an error (like C11). Load failure: the same screen.
-- A "? Memory Match" badge (top right, like the "? Quiz" badge on the Quiz set screen) opens the "How to play Memory Match" popup; there its last button (Play) only closes it. While the popup is open, Esc/Back/Close/backdrop close it without leaving the screen, and Left/Right do not move the level focus.
+- A "? Memory Match" badge (top right, like the "? Quiz" badge on the Quiz set screen) opens the "How to play Memory Match" popup (the only way to open it); its last button (Play) only closes it. While the popup is open, Esc/Back/Close/backdrop close it without leaving the screen, and Left/Right do not move the level focus.
 - Back button, music button. Keys: Left/Right move, Enter/Space choose, Esc goes back. Visible focus ring.
 
 ### 6.2 Play, `/games/memory/[level]` (M2-M9)
