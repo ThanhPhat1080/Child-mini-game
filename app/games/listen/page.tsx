@@ -7,6 +7,7 @@ import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
 import { ListenHelp } from '@/components/ListenHelp';
 import { ListenQuestion } from '@/components/listen/ListenQuestion';
+import { Confetti } from '@/components/Confetti';
 import { ListenDone } from '@/components/listen/ListenDone';
 import { fetchActiveCards, sayWord, stopWord } from '@/lib/memory/cards';
 import { preloadImages } from '@/lib/memory/preload';
@@ -31,6 +32,11 @@ export const FINISH_DELAY_MS = 1000;
 /** The next question comes at the latest this long after a right pick, even if the voice never reports its end. */
 export const STEP_CAP_MS = 4000;
 
+/** The "Oh-oh… try again!" popup after a wrong pick stays this long; a new wrong pick restarts it (L4). */
+export const WRONG_POPUP_MS = 1400;
+/** Stacking of the feedback overlays: above the question, below the help popup (GameHelp, 50). */
+const FX_Z = 10;
+
 /** A right pick being resolved: `cap` is its cap timer (re-armed when the help popup held the word). */
 type Step = { cap: ReturnType<typeof setTimeout> | null; last: boolean };
 
@@ -52,6 +58,9 @@ export default function ListenPlay() {
   const [finish, setFinish] = useState<readonly WrongEntry[]>([]);
   const [praise, setPraise] = useState<{ name: string; url: string | null } | null>(null);
   const [reduced, setReduced] = useState(false);
+  /** The visual feedback of the current question's picks (purely visual): `q` is the question index it belongs to. */
+  const [fx, setFx] = useState<{ kind: 'wrong' | 'right'; q: number } | null>(null);
+  const wrongFxTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const helpBtn = useRef<HTMLButtonElement>(null);
   const sounds = useRef<{ hooray: string | null; ohoh: string | null }>({ hooray: null, ohoh: null });
   const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
@@ -154,6 +163,12 @@ export default function ListenPlay() {
     pendingSay.current = later(() => { pendingSay.current = null; gateSay(() => say(card)); }, ms);
   }, [later, say, gateSay]);
 
+  const clearFx = useCallback(() => {
+    if (wrongFxTimer.current) { clearTimeout(wrongFxTimer.current); timers.current.delete(wrongFxTimer.current); }
+    wrongFxTimer.current = null;
+    setFx(null);
+  }, []);
+
   const cancelPendingSay = useCallback(() => {
     if (pendingSay.current) { clearTimeout(pendingSay.current); timers.current.delete(pendingSay.current); }
     pendingSay.current = null;
@@ -168,11 +183,12 @@ export default function ListenPlay() {
     wrongRef.current = new Set();
     setWrong(new Set());
     setLocked(false);
+    clearFx();
     // Behind the help popup the focus stays in the popup; answer 1 gets it when the popup closes.
     if (helpOpen.current) focusOnClose.current = true;
     else answerEls()[0]?.focus();
     sayLater(current.answer, SAY_AFTER_SHOW_MS);
-  }, [current, sayLater]);
+  }, [current, sayLater, clearFx]);
 
   /** Moves on after a right pick, once (the word's end and the cap both call it). */
   const moveOn = useCallback((token: Step) => {
@@ -204,11 +220,16 @@ export default function ListenPlay() {
       try { sfx.current?.stop(); } catch { /* already stopped */ }
       sfx.current = ohOh(sounds.current.ohoh) ?? null;
       recordWrong(q.answer);
+      if (wrongFxTimer.current) { clearTimeout(wrongFxTimer.current); timers.current.delete(wrongFxTimer.current); }
+      setFx({ kind: 'wrong', q: index });
+      wrongFxTimer.current = later(() => { wrongFxTimer.current = null; setFx(null); }, WRONG_POPUP_MS);
       sayLater(q.answer, SAY_AFTER_WRONG_MS);
       return;
     }
     lockedRef.current = true;
     setLocked(true);
+    if (wrongFxTimer.current) { clearTimeout(wrongFxTimer.current); timers.current.delete(wrongFxTimer.current); wrongFxTimer.current = null; }
+    setFx({ kind: 'right', q: index });
     cancelPendingSay();
     stopWord();
     try { sfx.current?.stop(); } catch { /* already stopped */ }
@@ -282,13 +303,14 @@ export default function ListenPlay() {
     clearWrong();
     stopWord();
     step.current = null;
+    clearFx();
     setFinish([]);
     setPraise(null);
     setQuestions([]);
     setIndex(0);
     setPhase('loading');
     setRound((n) => n + 1);
-  }, []);
+  }, [clearFx]);
 
   const finished = done && praise !== null;
 
@@ -328,9 +350,26 @@ export default function ListenPlay() {
         )}
         {current && (
           <div key={index} className="hm-ls-q" data-question-index={index} data-answer-id={current.answer.id} style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
-            <ListenQuestion question={current} wrong={wrong} locked={locked} speaking={speaking} onPick={pick} onReplay={replay} />
+            <ListenQuestion question={current} wrong={wrong} picked={fx?.kind === 'right' && fx.q === index ? current.answerIndex : null} locked={locked} speaking={speaking} onPick={pick} onReplay={replay} />
           </div>
         )}
+        {fx && fx.q === index && phase !== 'empty' && phase !== 'loading' && (fx.kind === 'wrong' ? (
+          <div data-feedback="wrong" style={{ position: 'absolute', inset: 0, zIndex: FX_Z, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', background: 'rgba(251,244,233,0.55)' }}>
+            <div role="status" className="hm-rise" style={{ display: 'flex', alignItems: 'center', gap: 28, padding: '36px 64px 36px 40px', borderRadius: 80, background: '#fff', boxShadow: '0 12px 0 #EADCC8' }}>
+              <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" fill="#F8DCDF" /><path d="M8.5 15.5c1-1 2.2-1.4 3.5-1.4s2.5.4 3.5 1.4" /><path d="M9 9.5h.01" /><path d="M15 9.5h.01" /></svg>
+              <span style={{ fontSize: 80, fontWeight: 600, color: '#8A6A5E' }}>Oh-oh… try again!</span>
+            </div>
+          </div>
+        ) : (
+          <div data-feedback="right" style={{ position: 'absolute', inset: 0, zIndex: FX_Z, background: 'rgba(251,244,233,0.78)', overflow: 'hidden', pointerEvents: 'none' }}>
+            <span className="hm-flash" aria-hidden="true" style={{ position: 'absolute', left: 560, top: 70, width: 800, height: 800, borderRadius: 400, background: 'radial-gradient(circle, rgba(246,226,166,0.9) 0%, rgba(246,226,166,0) 68%)' }} />
+            <Confetti count={56} />
+            <div role="status" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 30 }}>
+              <svg className="hm-pop" aria-hidden="true" width="240" height="240" viewBox="0 0 24 24" fill="#EED79A" stroke="#C9A05A" strokeWidth="1" strokeLinejoin="round"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z" /></svg>
+              <span className="hm-pop" style={{ fontSize: 140, fontWeight: 700, color: '#B8737B', lineHeight: 1 }}>Hooray!</span>
+            </div>
+          </div>
+        ))}
         </>
         )}
         <MusicButton />

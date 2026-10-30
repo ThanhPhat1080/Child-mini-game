@@ -87,6 +87,27 @@ test('a wrong pick gets a soft grayscale, also while another answer is hovered',
   await expect(answers(page).nth(wrong)).toHaveCSS('filter', 'grayscale(0.5)');
 });
 
+test('a wrong pick shows the Oh-oh popup, then it goes away; the picks still work', async ({ page }) => {
+  await open(page);
+  const right = await rightIndex(page);
+  const wrong = (right + 1) % 3;
+  await answers(page).nth(wrong).click();
+  await expect(page.locator('[data-feedback="wrong"]')).toBeVisible();
+  await expect(answers(page).nth(wrong)).toHaveClass(/hm-wobble/);
+  await expect(page.locator('[data-feedback="wrong"]')).toHaveCount(0, { timeout: 4000 });
+  await expect(page.locator('[data-feedback="right"]')).toHaveCount(0);
+});
+
+test('a right pick shows the Hooray overlay; the next question has none', async ({ page }) => {
+  await open(page);
+  const right = await rightIndex(page);
+  await answers(page).nth(right).click();
+  await expect(page.locator('[data-feedback="right"]')).toBeVisible();
+  await expect(answers(page).nth(right)).toHaveClass(/hm-picked/);
+  await expect(question(page)).toHaveAttribute('data-question-index', '1', { timeout: 8000 });
+  await expect(page.locator('[data-feedback]')).toHaveCount(0);
+});
+
 test('no card word is written on the play screen', async ({ page }) => {
   await open(page);
   await expect(page.getByText(/word\d+/)).toHaveCount(0);

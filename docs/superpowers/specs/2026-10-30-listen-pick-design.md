@@ -50,7 +50,7 @@ Success:
 ### 5.1 Play, `/games/listen` (L1-L5, L8-L10)
 - 1920x1080 stage, three large picture buttons in one row, each with its number badge and fixed color border (rose, sky, butter), a big speaker button centered above them. Back and music buttons like Quiz. A "? Listen & Pick" badge top right opens the "How to play" popup (shell `GameHelp`, 3 short steps in `ListenHelp`); the popup is opened only from this badge, Esc/Back/Close/backdrop close it without leaving the screen, and Left/Right do not move focus while it is open.
 - On a new question the word is said after a short pause. Nothing plays before "tap to enter". Background music keeps playing (ADR-016).
-- Wrong picks dim the picture (opacity and a soft grayscale), they are not hidden. The right pick lifts slightly and glows (deferred, see plan.md section 4), then the next question fades in (slow, like the other games).
+- Wrong picks dim the picture (opacity and a soft grayscale), they are not hidden. Feedback is like Quiz: a wrong pick wobbles the picture and shows the "Oh-oh… try again!" popup for 1.4 s (non-blocking, a new wrong pick restarts it); the right pick grows with a ring in its color and the Hooray overlay (soft glow, confetti, star, "Hooray!", no countdown) stays until the next question fades in (slow, like the other games). With reduced motion the popups appear without wobble, bounce, ring or flash.
 - No counter, no progress text on screen during play. A row of 10 small dots is allowed as decoration if it reads well in the mockup (PO to confirm at the mockup stage).
 
 ### 5.2 Finish (L6)
