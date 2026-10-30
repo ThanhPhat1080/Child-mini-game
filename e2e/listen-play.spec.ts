@@ -77,6 +77,16 @@ test('a wrong pick dims that button and keeps the question; the right pick then 
   await expect(page.locator('[data-answer][data-wrong="true"]')).toHaveCount(0);
 });
 
+test('a wrong pick gets a soft grayscale, also while another answer is hovered', async ({ page }) => {
+  await open(page);
+  const right = await rightIndex(page);
+  const wrong = (right + 1) % 3;
+  await answers(page).nth(wrong).click();
+  await expect(answers(page).nth(wrong)).toHaveAttribute('data-wrong', 'true');
+  await answers(page).nth(right).hover();
+  await expect(answers(page).nth(wrong)).toHaveCSS('filter', 'grayscale(0.5)');
+});
+
 test('no card word is written on the play screen', async ({ page }) => {
   await open(page);
   await expect(page.getByText(/word\d+/)).toHaveCount(0);

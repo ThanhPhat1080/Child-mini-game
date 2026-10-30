@@ -153,7 +153,7 @@ button.hm-tap:active{transform:scale(.94)}
 .hm-ls-speaker:hover,.hm-ls-speaker:focus-visible{transform:scale(1.06)}
 .hm-ls-speaker:focus-visible{outline:6px solid #7A5C50;outline-offset:8px}
 .hm-ls-speaking{animation:hm-ls-pulse 1.6s ease-in-out infinite}
-.hm-ans.hm-ls-wrong,.hm-ans.hm-ls-wrong:hover,.hm-ans.hm-ls-wrong:focus-visible{transform:none;filter:none;cursor:default}
+.hm-ans.hm-ls-wrong,.hm-ans.hm-ls-wrong:hover,.hm-ans.hm-ls-wrong:focus-visible{transform:none;filter:grayscale(.5) !important;cursor:default}
 .hm-ans.hm-ls-wrong:hover::after{opacity:0;animation:none}
 .hm-ans.hm-ls-wrong:hover .hm-num,.hm-ans.hm-ls-wrong:hover img{transform:none}
 @keyframes hm-ls-in{from{opacity:0}to{opacity:1}}

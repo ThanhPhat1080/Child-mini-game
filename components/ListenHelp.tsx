@@ -43,7 +43,7 @@ const SLIDES: Slide[] = [
   },
   {
     title: 'Hooray!',
-    text: 'A right pick makes a happy star, then comes the next word.',
+    text: 'A right pick says Hooray, then comes the next word.',
     art: (
       <span style={{ display: 'flex', alignItems: 'center', gap: 40 }}>
         <Tile ring={BUTTER}>{apple}</Tile>

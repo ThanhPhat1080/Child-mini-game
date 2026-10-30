@@ -1,3 +1,4 @@
+import { StrictMode } from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MemoryCard } from '@/lib/memory/types';
@@ -32,7 +33,11 @@ const setup = (over: Partial<React.ComponentProps<typeof ListenDone>> = {}) => {
   return { onAgain, ...r };
 };
 const again = () => screen.getByRole('button', { name: 'Play again' });
-const back = () => screen.getByRole('link', { name: 'Back to games' });
+const back = () => {
+  const a = screen.getByRole('link', { name: 'Back to games' });
+  a.addEventListener('click', (e) => e.preventDefault()); // no real navigation in jsdom
+  return a;
+};
 const items = () => Array.from(document.querySelectorAll<HTMLElement>('[data-wrong-item]'));
 
 beforeEach(() => { for (const f of Object.values(h)) f.mockReset(); });
@@ -114,6 +119,36 @@ describe('ListenDone (L6, L7)', () => {
     rerender(<ListenDone wrong={[]} cards={cardMap()} childName="Hà My" completeUrl={null} onAgain={onAgain} gamesHref="/games" />);
     expect(h.applause).toHaveBeenCalledTimes(1);
     expect(h.speakKid).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['applause', null, () => h.applause],
+    ['the custom file', '/media/yay.mp3', () => h.playFile],
+  ])('the praise sound (%s) is stopped by Play again, Back and Esc, but not on mount under StrictMode', (_n, completeUrl, sound) => {
+    const stop = vi.fn();
+    sound().mockReturnValue({ stop, ms: 3000 });
+    const onAgain = vi.fn();
+    const props = { wrong: [], cards: cardMap(), childName: 'Hà My', completeUrl, onAgain, gamesHref: '/games' };
+    render(<StrictMode><ListenDone {...props} /></StrictMode>);
+    expect(sound()).toHaveBeenCalledTimes(1);
+    expect(stop).not.toHaveBeenCalled();
+    fireEvent.click(again());
+    expect(stop).toHaveBeenCalledTimes(1);
+    expect(onAgain).toHaveBeenCalledTimes(1);
+    fireEvent.click(back());
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(stop).toHaveBeenCalledTimes(1); // the handle is dropped after the first stop
+  });
+
+  it('Back to games and Esc each stop the praise sound', () => {
+    for (const act of [() => fireEvent.click(back()), () => fireEvent.keyDown(window, { key: 'Escape' })]) {
+      const stop = vi.fn();
+      h.applause.mockReturnValue({ stop, ms: 3000 });
+      setup();
+      act();
+      expect(stop).toHaveBeenCalledTimes(1);
+      cleanup();
+    }
   });
 
   it('Play again has the focus; arrows move between the two buttons', () => {

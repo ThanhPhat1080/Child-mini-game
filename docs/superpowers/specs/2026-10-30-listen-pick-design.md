@@ -43,13 +43,14 @@ Success:
 - The pool is the active cards (`fetchActiveCards`). Needs at least 3.
 - With 3 to 9 active cards the round has as many questions as there are cards (7 cards = 7 questions); with 10 or more it has 10.
 - Answer cards are drawn without repeats. Each question's two distractors are drawn from the other active cards, different from each other and from the answer; their picture order and the answer position are shuffled.
+- Cards with the same word (trim, ignoring case) count once and never share a question.
 - Fewer than 3 active cards, or a load failure: a friendly picture screen, not an error (like C11 and M1).
 
 ## 5. Child screens
 ### 5.1 Play, `/games/listen` (L1-L5, L8-L10)
 - 1920x1080 stage, three large picture buttons in one row, each with its number badge and fixed color border (rose, sky, butter), a big speaker button centered above them. Back and music buttons like Quiz. A "? Listen & Pick" badge top right opens the "How to play" popup (shell `GameHelp`, 3 short steps in `ListenHelp`); the popup is opened only from this badge, Esc/Back/Close/backdrop close it without leaving the screen, and Left/Right do not move focus while it is open.
 - On a new question the word is said after a short pause. Nothing plays before "tap to enter". Background music keeps playing (ADR-016).
-- Wrong picks dim the picture (opacity and a soft grayscale), they are not hidden. The right pick lifts slightly and glows, then the next question fades in (slow, like the other games).
+- Wrong picks dim the picture (opacity and a soft grayscale), they are not hidden. The right pick lifts slightly and glows (deferred, see plan.md section 4), then the next question fades in (slow, like the other games).
 - No counter, no progress text on screen during play. A row of 10 small dots is allowed as decoration if it reads well in the mockup (PO to confirm at the mockup stage).
 
 ### 5.2 Finish (L6)
@@ -67,7 +68,7 @@ Friendly picture screen with a back button.
 `yay`/`ohOh` from `lib/sfx.ts` (the "custom You did it" sound from Settings applies on the finish screen as in Quiz). Word via `sayWord`. No new audio files.
 
 ## 8. Architecture notes
-- New pure units: `lib/listen/rounds.ts` (`buildRounds(cards, rng, max = 10)` returns questions `{answer, options: [c, c, c], answerIndex}` and throws or returns `null` for fewer than 3 cards) and `lib/listen/wrongLog.ts` (`read`, `record(card)`, `clear`, `summary`; all storage access in try/catch).
+- New pure units: `lib/listen/rounds.ts` (`buildRounds(cards, rng, max = 10)` returns questions `{answer, options: [c, c, c], answerIndex}` and throws or returns `null` for fewer than 3 cards) and `lib/listen/wrongLog.ts` (`readWrong`, `recordWrong(card)`, `clearWrong`, `totalWrong`; all storage access in try/catch).
 - UI: `app/games/listen/page.tsx`, `components/listen/*` (question view, finish content), `components/ListenHelp.tsx`.
 - Reuses: `fetchActiveCards`, `sayWord`/`stopWord`, `lib/keynav.ts` (`handleChoiceKey`), `Stage`, `Hills`, `BackButton`, `MusicButton`, `CelebrationScene`, `Confetti`, `GameHelp`, `preload`.
 - No migration. No change to `memory_cards` or to RLS.
