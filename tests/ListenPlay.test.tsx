@@ -184,6 +184,24 @@ describe('Listen & Pick play screen (L1-L5, L8, L10)', () => {
     expect(h.yay).not.toHaveBeenCalled();
   });
 
+  it('a pick stops the previous sound and the word first: oh-oh never plays over a word, hooray never over an oh-oh', async () => {
+    await readyAndSaid();
+    const stopOhOh = vi.fn();
+    const stopYay = vi.fn();
+    h.ohOh.mockReturnValue({ ms: 1900, stop: stopOhOh });
+    h.yay.mockReturnValue({ ms: 2400, stop: stopYay });
+    h.stopWord.mockClear();
+    fireEvent.click(answers()[wrongIdxs()[0]]);
+    expect(h.stopWord).toHaveBeenCalled();
+    expect(h.stopWord.mock.invocationCallOrder[0]).toBeLessThan(h.ohOh.mock.invocationCallOrder[0]);
+    expect(stopOhOh).not.toHaveBeenCalled();
+    fireEvent.click(answers()[wrongIdxs()[1]]); // the second oh-oh stops the first
+    expect(stopOhOh).toHaveBeenCalledTimes(1);
+    fireEvent.click(answers()[rightIdx()]); // the hooray stops the last oh-oh
+    expect(stopOhOh).toHaveBeenCalledTimes(2);
+    expect(stopYay).not.toHaveBeenCalled();
+  });
+
   it('a right pick: yay once, the word once after the hooray, the next question after the word ends + NEXT_PAUSE_MS', async () => {
     await readyAndSaid();
     const answer = answerId();
@@ -557,6 +575,7 @@ describe('Listen & Pick play screen (L1-L5, L8, L10)', () => {
     it('Esc on the finish goes to /games; leaving clears the log', async () => {
       const r = await ready(cards(5));
       await playThrough(5, { 0: 1 });
+      expect(document.querySelector('[data-listen-done]')).toBeTruthy();
       expect(window.localStorage.getItem('hamy.listen.wrong')).not.toBeNull();
       h.push.mockClear();
       fireEvent.keyDown(window, { key: 'Escape' });

@@ -200,6 +200,8 @@ export default function ListenPlay() {
     if (i !== q.answerIndex) {
       wrongRef.current.add(i);
       setWrong(new Set(wrongRef.current));
+      stopWord(); // the oh-oh does not play over a word
+      try { sfx.current?.stop(); } catch { /* already stopped */ }
       sfx.current = ohOh(sounds.current.ohoh) ?? null;
       recordWrong(q.answer);
       sayLater(q.answer, SAY_AFTER_WRONG_MS);
@@ -209,6 +211,7 @@ export default function ListenPlay() {
     setLocked(true);
     cancelPendingSay();
     stopWord();
+    try { sfx.current?.stop(); } catch { /* already stopped */ }
     const handle = yay(sounds.current.hooray) ?? null;
     sfx.current = handle;
     // A file's length is unknown (ms 0): wait the full cap so the word does not talk over it.
