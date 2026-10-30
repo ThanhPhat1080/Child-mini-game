@@ -202,3 +202,10 @@
 - **Context:** ADR-002 and ADR-005 planned Phaser for Phase 2 games. Quiz already works well as React + CSS (ADR-027), and Memory Match (cards, flips, a grid) needs no game engine.
 - **Decision:** New games are built with React + CSS (DOM) like Quiz. Phaser (ADR-002) is used only if a game cannot be built well with HTML/CSS.
 - **Consequences:** Memory Match is DOM-based. A game that wants Phaser must justify it in its own spec first. ADR-014 (game registry) and ADR-006 (Calm & Slow) still apply to every game.
+
+### ADR-031: removeMedia keeps files other records still reference
+
+- **Status:** Accepted (2026-10-30)
+- **Context:** Pictures and sounds can be reused from the `media` bucket (Find It object sounds and pictures, Memory Match cards, Spot pictures, quiz answers), so one file may be used by several records. Deleting a file that another record still points to would break that record.
+- **Decision:** `removeMedia` checks every media column that can point to a file (cards, spot levels, find levels, quiz answers and question images, settings) before deleting. A path that is still referenced is kept. If the check itself fails, every file is kept and the save does not fail.
+- **Consequences:** The check needs the `find_levels` table, so migration `20261030120000_find_levels.sql` must be applied before the Find It admin or game is released. Every new media column or table must be added to the check.

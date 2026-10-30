@@ -1,6 +1,6 @@
 # Design: Find It (Phase 2, game 6)
 
-Status: **draft, written 2026-10-30, awaiting the PO review.** Phase 2 only adds games (ADR-029). Integration branch `claude/phase2/find-it`. The name "Find It" is provisional (the PO decides); it only appears in the game list art alt text and the help badge.
+Status: **implemented on branch `claude/phase2/find-it`, awaiting the PO play-test and the migration being applied.** Phase 2 only adds games (ADR-029). Integration branch `claude/phase2/find-it`. The name "Find It" is provisional (the PO decides); it only appears in the game list art alt text and the help badge.
 
 ## 1. Goal
 Hà My (4-5, cannot read) sees one big picture full of mixed-up everyday objects. The app says the name of one object aloud (and shows the word); she finds it in the picture and clicks it. She finds each object in turn until the picture is done. Secondary goal: learn English words by hearing and seeing them, without pressure.
@@ -74,7 +74,7 @@ One migration `supabase/migrations/20261030120000_find_levels.sql`, table `find_
 - Sounds: `chime` for a right tap, voice via recorded file or `speakKid`; the finish uses the shared praise sound. No new audio files. Background music keeps playing (ADR-016).
 
 ## 7. Admin
-- Pages `app/admin/(panel)/find/page.tsx` (list) and `app/admin/(panel)/find/[id]/page.tsx` (editor), `components/admin/FindLevelPanel.tsx`, `FindMarkerEditor.tsx` (reuses the click-to-add and slider mechanics of `SpotMarkerEditor` where they fit, but adds numbers, the row list and object ordering; a shared piece is extracted only if the copy would be near-identical), `MediaLibraryDialog.tsx`.
+- One page `app/admin/(panel)/find/page.tsx` with level panels like Spot (not a per-id `[id]` route), `components/admin/FindLevelPanel.tsx`, `FindMarkerEditor.tsx` (reuses the click-to-add and slider mechanics of `SpotMarkerEditor` where they fit, but adds numbers, the row list and object ordering; a shared piece is extracted only if the copy would be near-identical), `MediaLibraryDialog.tsx`.
 - `lib/find/adminLevels.ts`: load, save (uploads first, DB second, frees files after), delete, reorder; `lib/find/types.ts`, `lib/find/validate.ts`, `lib/find/levels.ts` (child reads).
 - `lib/media/library.ts`: collects distinct bucket paths in use (pictures: `memory_cards.image_path`, `spot_levels.image_*`, `find_levels.image_path`, set covers and question images; sounds: `memory_cards.audio_path`, `find_levels.objects[].audio_path`, question voices), and `lib/media/refs.ts`: `isReferenced(path, exceptRecord?)` used by every delete path (A23). Exact table and column list is confirmed from the schema in the plan; the unit tests cover each source.
 
