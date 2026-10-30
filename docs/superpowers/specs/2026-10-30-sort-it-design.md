@@ -45,7 +45,7 @@ _IDs renumbered on 2026-10-30 when this branch was merged with Spot the Differen
 | A13 | (extended) Pool health also says how many groups can be played in Sort It, for example "Sort It: 6 groups can be played (2 are needed, each with 4 cards)." |
 
 ## 4. Data
-One new migration `supabase/migrations/20261030100000_card_groups.sql`:
+One new migration `supabase/migrations/20261030110000_card_groups.sql`:
 - Table `card_groups`: `id uuid primary key default gen_random_uuid()`, `name text not null` (1-40 characters after trim), `created_at timestamptz not null default now()`, and a unique index on `lower(btrim(name))`.
 - `alter table memory_cards add column group_id uuid null references card_groups(id) on delete set null`.
 - RLS on `card_groups`: only the admin (`is_admin()`) may select, insert, update or delete; anon has no access (the game only needs `memory_cards.group_id`, never the group names). `memory_cards` policies do not change.

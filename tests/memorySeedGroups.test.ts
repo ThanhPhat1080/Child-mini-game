@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 const root = process.cwd();
 const sql = readFileSync(
-  join(root, 'supabase/migrations/20261030100000_card_groups.sql'),
+  join(root, 'supabase/migrations/20261030110000_card_groups.sql'),
   'utf8',
 );
 
