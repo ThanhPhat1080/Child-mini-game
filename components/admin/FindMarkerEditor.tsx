@@ -83,8 +83,8 @@ export function FindMarkerEditor({ src, objects, onChange, onPickSound, onLibrar
                 style={{
                   position: 'absolute', left: `${o.x * 100}%`, top: `${o.y * 100}%`, width: `${o.r * 200}%`, aspectRatio: '1 / 1', transform: 'translate(-50%, -50%)',
                   boxSizing: 'border-box', borderRadius: '50%', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: sel === i ? '3px solid #5A4038' : '2.5px solid #fff', background: sel === i ? 'rgba(229,154,161,0.55)' : 'rgba(229,154,161,0.35)',
-                  boxShadow: '0 0 0 1.5px #A8484F', color: '#4A3830', fontWeight: 700, fontSize: 13, fontFamily: 'Nunito, sans-serif', lineHeight: 1,
+                  border: sel === i ? '3px solid #3E6B8C' : '2.5px solid #fff', background: sel === i ? 'rgba(95,136,171,0.55)' : 'rgba(95,136,171,0.35)',
+                  boxShadow: '0 0 0 1.5px #5F88AB', color: '#1F3A52', fontWeight: 700, fontSize: 13, fontFamily: 'Nunito, sans-serif', lineHeight: 1,
                 }}
               >{i + 1}</button>
             ))}
@@ -127,9 +127,9 @@ export function FindMarkerEditor({ src, objects, onChange, onPickSound, onLibrar
             <li
               key={i} aria-label={`Object ${n} row`} data-selected={on ? 'true' : 'false'}
               onFocus={() => setSelected(i)} onClick={() => setSelected(i)}
-              style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', padding: 10, borderRadius: 14, background: on ? '#FDECEE' : '#FFFDF9', border: `1.5px solid ${on ? '#E59AA1' : '#E3D5C4'}` }}
+              style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', padding: 10, borderRadius: 14, background: on ? '#EAF3FA' : '#FFFDF9', border: `1.5px solid ${on ? '#A9C6DE' : '#E3D5C4'}` }}
             >
-              <span aria-hidden="true" style={{ width: 30, height: 30, borderRadius: '50%', background: '#fff', border: '2px solid #A8484F', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flex: '0 0 auto' }}>{n}</span>
+              <span aria-hidden="true" style={{ width: 30, height: 30, borderRadius: '50%', background: '#fff', border: '2px solid #5F88AB', color: '#1F3A52', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, flex: '0 0 auto' }}>{n}</span>
               <input
                 type="text" className={s.in} aria-label={`Word for object ${n}`} maxLength={MAX_WORD} value={o.word} placeholder="e.g. cat"
                 onChange={(e) => onChange(setObjectWord(objects, i, e.target.value))}
