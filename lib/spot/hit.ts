@@ -13,6 +13,8 @@ export function hitTest(
   point: { x: number; y: number },
   aspect: number,
 ): HitResult {
+  const inside = (v: number) => Number.isFinite(v) && v > 0 && v < 1
+  if (!inside(point.x) || !inside(point.y)) return { kind: 'miss' }
   let bestUnfound = -1
   let bestUnfoundDist = Infinity
   let bestFound = -1

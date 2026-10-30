@@ -40,4 +40,22 @@ describe('hitTest', () => {
       expect(hitTest(diffs, none, p, A)).toEqual({ kind: 'miss' })
     }
   })
+  it('misses taps on or beyond the picture border even near an edge difference', () => {
+    const left = [{ x: 0.02, y: 0.5, r: 0.06 }]
+    expect(hitTest(left, none, { x: 0, y: 0.5 }, A)).toEqual({ kind: 'miss' })
+    expect(hitTest(left, none, { x: -0.01, y: 0.5 }, A)).toEqual({ kind: 'miss' })
+    expect(hitTest(left, none, { x: 0.03, y: 0.5 }, A)).toEqual({ kind: 'found', index: 0 })
+    const right = [{ x: 0.98, y: 0.5, r: 0.06 }]
+    expect(hitTest(right, none, { x: 1, y: 0.5 }, A)).toEqual({ kind: 'miss' })
+    expect(hitTest(right, none, { x: 1.01, y: 0.5 }, A)).toEqual({ kind: 'miss' })
+    expect(hitTest(right, none, { x: 0.97, y: 0.5 }, A)).toEqual({ kind: 'found', index: 0 })
+    const top = [{ x: 0.5, y: 0.02, r: 0.06 }]
+    expect(hitTest(top, none, { x: 0.5, y: 0 }, A)).toEqual({ kind: 'miss' })
+    expect(hitTest(top, none, { x: 0.5, y: -0.01 }, A)).toEqual({ kind: 'miss' })
+    expect(hitTest(top, none, { x: 0.5, y: 0.03 }, A)).toEqual({ kind: 'found', index: 0 })
+    const bottom = [{ x: 0.5, y: 0.98, r: 0.06 }]
+    expect(hitTest(bottom, none, { x: 0.5, y: 1 }, A)).toEqual({ kind: 'miss' })
+    expect(hitTest(bottom, none, { x: 0.5, y: 1.01 }, A)).toEqual({ kind: 'miss' })
+    expect(hitTest(bottom, none, { x: 0.5, y: 0.97 }, A)).toEqual({ kind: 'found', index: 0 })
+  })
 })

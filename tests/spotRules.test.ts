@@ -24,6 +24,7 @@ describe('spot rules', () => {
     const s1 = markFound(s0, 0)
     expect(s0.found).toEqual([])
     expect(s1).not.toBe(s0)
-    expect(Object.isFrozen(s1.found) || s1.found !== s0.found).toBe(true)
+    expect(s1.found).toEqual([0])
+    expect(s1.found).not.toBe(s0.found)
   })
 })
