@@ -179,6 +179,7 @@ Parked (not blocking the close; pick up only when the PO asks):
 - **Playwright e2e**: done in Phase 2 (Memory Match Task 0); `npm run e2e` runs Chromium against a stand-in Supabase (`e2e/support/`).
 - **CI**: `.github/workflows/deploy.yml` runs typecheck and tests on pushes to `main` only (not on `develop` or PRs). Its `deploy` job was removed on 2026-10-29: it always failed for lack of Vercel secrets, and Vercel's Git integration already deploys.
 - **Voice depends on the device (known gap, accepted 2026-10-29)**: the built-in kid voice uses the browser's speech synthesis (`lib/sfx.ts`), which we set to English (`lang = 'en-US'`, page `lang="en"`) but cannot guarantee. It speaks only if the device has an English voice: Windows, macOS, iPhone/iPad and most Android phones usually do; Brave on Linux (e.g. Ubuntu) has none until `speech-dispatcher` and `espeak-ng` are installed, and Android phones without Google services may have none. Workarounds today: install a voice, or upload a recorded voice per question in the admin. A reliable fix would be pre-generated audio (cloud text-to-speech stored in Supabase Storage); that needs a provider, an API key and a server step, so it is a PO decision, not built.
+- **Listen & Pick leftovers (known, deferred):** the middle star on the finish screen sits close to the top edge when there are 10 wrong words; "Wrong 1 times" grammar follows the Memory Match style; the praise audio is not stopped on Play again.
 - DoD 1 (child plays a full set unaided) and DoD 2 (5-question set in under 10 minutes) were never timed or recorded.
 
 Removed from scope by the PO: TV and LG webOS testing, Magic Remote, a 120 px TV hit-area rule, and TV-specific performance work (ADR-028).
@@ -186,14 +187,25 @@ Removed from scope by the PO: TV and LG webOS testing, Magic Remote, a 120 px TV
 ## 5. Phase 2: only more games (redefined 2026-10-29)
 Phase 2 only adds games on top of the game registry (ADR-014). The play-time limit, rest screen and PIN are dropped (ADR-029). New games use HTML/CSS first; Phaser only as a last resort (ADR-030).
 - Game 1, Memory Match: spec `docs/superpowers/specs/2026-10-29-memory-match-design.md`, plan `docs/superpowers/plans/2026-10-29-memory-match.md`. Built on branch `claude/phase2/memory-match` (task branches `claude/phase2/mm-t<N>-*`) with Playwright E2E.
-- Game 2, Spot the Differences: spec `docs/superpowers/specs/2026-10-30-spot-the-differences-design.md`, plan `docs/superpowers/plans/2026-10-30-spot-the-differences.md`. Built on branch `claude/kind-babbage-gd9qpd` (IDs S1-S10, A14-A16) with Playwright E2E.
 - Left to do:
   - Apply `supabase/migrations/20261029100000_memory_cards.sql` to the real Supabase project after the PO's OK.
   - PO play-test of the flip, sounds and voice in a real browser.
   - Merging `claude/phase2/memory-match` into `develop` is the PO's decision.
-  - Apply `supabase/migrations/20261030100000_spot_levels.sql` to the real Supabase project after the PO's OK.
+  - Done 2026-10-30 with the PO's OK: `supabase/migrations/20261030100000_spot_levels.sql` applied to the real Supabase project (RLS checked: anon sees active levels only, anon writes denied, 3-10 differences enforced).
   - PO play-test of Spot the Differences (tap feel, ring growth, ripple, sounds) in a real browser.
   - Merging the Spot branch `claude/kind-babbage-gd9qpd` is the PO's decision.
+- Game 2, Listen & Pick: spec `docs/superpowers/specs/2026-10-30-listen-pick-design.md`, plan `docs/superpowers/plans/2026-10-30-listen-pick.md`. Built on branch `claude/phase2/listen-pick` (task branches `claude/phase2/lp-t<N>-*`). No migration: it reuses `memory_cards` and the Cards admin page. Route `/games/listen`.
+- Game 3, Spot the Differences: spec `docs/superpowers/specs/2026-10-30-spot-the-differences-design.md`, plan `docs/superpowers/plans/2026-10-30-spot-the-differences.md`. Built on branch `claude/kind-babbage-gd9qpd` (IDs S1-S10, A14-A16) with Playwright E2E.
+
+### Listen & Pick tickets (spec 3b: G1, L1-L10)
+Files: `lib/listen/rounds.ts`, `lib/listen/wrongLog.ts`, `components/listen/ListenQuestion.tsx`, `components/listen/ListenDone.tsx`, `components/ListenHelp.tsx`, `app/games/listen/page.tsx`; tests `tests/Listen*.test.ts(x)`, `tests/listenRounds.test.ts`, `tests/listenWrongLog.test.ts`, `e2e/listen-play.spec.ts`.
+- [x] **LP-T1 Game list entry (G1).** Acceptance: the registry has a ready `listen` entry; its card has the lavender border/title (`#C9BFE4` / `#7B6BAE`) and a decorative `aria-hidden` icon; clicking the card opens `/games/listen`.
+- [x] **LP-T2 Round building (L2, L10).** Acceptance: 10 different answer cards, two distinct distractors per question, random answer position; 3-9 usable cards give one question per card; fewer than 3 is reported as empty.
+- [x] **LP-T3 Wrong-picks log (L7).** Acceptance: key `hamy.listen.wrong`, entries `{id, word, count}`, written at every wrong pick; cleared on round start, play again and leaving; blocked storage falls back to memory for the page visit.
+- [x] **LP-T4 Question view (L1, L3, L8, L9, L10).** Acceptance: three picture buttons with number badge and fixed color (rose, sky, butter); speaker button and key R replay the word; 1/2/3, Left/Right, Enter/Space, Esc work with a visible focus ring; reduced motion fades only; missing picture shows a placeholder.
+- [x] **LP-T5 Play page (L1-L5, L8, L10).** Acceptance: a full round plays at `/games/listen`; wrong pick says "Oh-Oh", dims and disables the picture, then repeats the word; right pick says "Hooray" and the word, then the next question; leaving cancels timers and speech; the "? Listen & Pick" help badge opens `ListenHelp`; empty/failed pool shows a friendly picture screen.
+- [x] **LP-T6 Finish screen (L6, L7).** Acceptance: celebration scene with "Wrong N times" (N highlighted), play again and back buttons; a row of round pictures with word and count when there were wrong picks (tap says the word), no row otherwise.
+- [x] **LP-T7 Docs and tickets.** Acceptance: spec.md (G1, L1-L10), plan.md, CLAUDE.md and git-workflow.md updated; L-IDs match the design spec one to one. Gate (typecheck, lint, test, build, e2e) and the PO play-test before merge into `develop` are still to do.
 
 ## 6. Risks
 - Browser autoplay policy: audio only after "tap to enter" (T7).

@@ -1,9 +1,9 @@
 # CLAUDE.md
 
-**HaMy.** Calm quiz hub for Hà My (4-5, cannot read) in a computer browser, plus a parent admin dashboard. Phase 1 is closed. Phase 2 = only more games: specs and plans live in `docs/superpowers/specs` and `docs/superpowers/plans` (Memory Match and Spot the Differences both have a spec and plan there; Spot the Differences was built on `claude/kind-babbage-gd9qpd`). New Phase 2 work goes through the integration branch `claude/phase2/memory-match` (see `docs/git-workflow.md`).
+**HaMy.** Calm quiz hub for Hà My (4-5, cannot read) in a computer browser, plus a parent admin dashboard. Phase 1 is closed. Phase 2 = only more games: specs and plans live in `docs/superpowers/specs` and `docs/superpowers/plans` (Memory Match, Listen & Pick and Spot the Differences each have a spec and plan there). Phase 2 work for the current game goes through the integration branch `claude/phase2/listen-pick` (see `docs/git-workflow.md`).
 
 ## Docs
-`spec.md` (requirement IDs C1-C15, A1-A13, A14-A16, G1, M1-M10, S1-S10; cite them in commits), `plan.md` (tickets + acceptance criteria), `docs/decision.md` (ADRs; later ones win), `docs/git-workflow.md`, `docs/superpowers/` (Phase 2 specs and plans). `docs/intent.md` is the vision, not a build source. `README.md` is still empty (plan T14).
+`spec.md` (requirement IDs C1-C15, A1-A13, A14-A16, G1, M1-M10, L1-L10, S1-S10; cite them in commits), `plan.md` (tickets + acceptance criteria), `docs/decision.md` (ADRs; later ones win), `docs/git-workflow.md`, `docs/superpowers/` (Phase 2 specs and plans). `docs/intent.md` is the vision, not a build source. `README.md` is still empty (plan T14).
 
 ## Stack and commands
 Next.js + React + TypeScript (DOM/CSS; Phaser only if HTML/CSS cannot do it, ADR-030), Supabase (Postgres, Storage, Auth), Vercel. Node 24.

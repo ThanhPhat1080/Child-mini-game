@@ -1,4 +1,4 @@
-# Design: Spot the Differences (Phase 2, game 2)
+# Design: Spot the Differences (Phase 2, game 3)
 
 Status: **implemented on branch claude/kind-babbage-gd9qpd; migration not yet applied to the real Supabase project**. Phase 2 only adds games (ADR-029). The game plugs into the registry created for Memory Match (ADR-014).
 

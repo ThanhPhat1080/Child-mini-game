@@ -16,7 +16,7 @@ vi.mock('@/lib/media', () => ({ mediaUrl: (p: string | null) => (p ? `/media/${p
 vi.mock('@/components/MusicButton', () => ({ MusicButton: () => null }));
 
 import Games from '@/app/games/page';
-import { MEMORY_GREEN, MEMORY_ICON, SPOT_BLUE } from '@/components/games/GameArt';
+import { LISTEN_PURPLE, MEMORY_GREEN, MEMORY_ICON, SPOT_BLUE } from '@/components/games/GameArt';
 
 const icon = (id: string) => document.querySelector(`[data-game-icon="${id}"]`) as HTMLElement;
 const frame = (name: string) => screen.getByRole('link', { name }) as HTMLElement;
@@ -33,9 +33,9 @@ describe('games list decorative icons', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('All three cards each have a decorative 130 px icon at the same spot', () => {
+  it('every game card has a decorative 130 px icon at the same spot', () => {
     render(<Games />);
-    for (const id of ['quiz', 'memory', 'spot']) {
+    for (const id of ['quiz', 'memory', 'listen', 'spot']) {
       const el = icon(id);
       expect(el).toBeTruthy();
       expect(el.getAttribute('aria-hidden')).toBe('true');
@@ -48,9 +48,11 @@ describe('games list decorative icons', () => {
     }
     expect(icon('memory').style.left).toBe(icon('quiz').style.left);
     expect(icon('memory').style.top).toBe(icon('quiz').style.top);
+    expect(icon('listen').style.left).toBe(icon('quiz').style.left);
+    expect(icon('listen').style.top).toBe(icon('quiz').style.top);
     expect(icon('spot').style.left).toBe(icon('quiz').style.left);
     expect(icon('spot').style.top).toBe(icon('quiz').style.top);
-    expect(document.querySelectorAll('[data-game-icon]')).toHaveLength(3);
+    expect(document.querySelectorAll('[data-game-icon]')).toHaveLength(4);
   });
 
   it('the Memory icon is two flower cards, different from the Quiz question mark', () => {
@@ -116,6 +118,25 @@ describe('games list decorative icons', () => {
     expect(title('Play Memory Match').textContent).toBe('Memory Match');
     expect(title('Play Memory Match').style.color).toBe('rgb(94, 143, 105)');
     expect(title('Play Quiz').style.color).toBe('rgb(184, 115, 123)');
+  });
+
+  it('Listen & Pick has a lavender border, purple title and a purple speaker icon; distinct from the others', () => {
+    render(<Games />);
+    expect(LISTEN_PURPLE).toBe('#7B6BAE');
+    const listen = frame('Play Listen & Pick');
+    expect(listen.style.border).toContain('rgb(201, 191, 228)');
+    const title = listen.lastElementChild as HTMLElement;
+    expect(title.textContent).toBe('Listen & Pick');
+    expect(title.style.color).toBe('rgb(123, 107, 174)');
+    for (const other of ['Play Quiz', 'Play Memory Match']) {
+      expect(listen.style.borderColor).not.toBe(frame(other).style.borderColor);
+      expect(title.style.color).not.toBe((frame(other).lastElementChild as HTMLElement).style.color);
+    }
+    expect(listen.style.borderColor).not.toBe(frame('Play Spot the Differences').style.borderColor);
+    const circle = icon('listen').querySelector('circle')!;
+    expect(circle.getAttribute('stroke')).toBe('#7B6BAE');
+    expect(circle.getAttribute('fill')).toBe('#F0ECF8');
+    expect(circle.getAttribute('stroke-width')).toBe('2');
   });
 
   it('Spot the Differences is a playable link with a decorative sky-blue icon and no coming-soon image', () => {
