@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { CelebrationScene } from '@/components/CelebrationScene';
-import { applause, playFile, speakKid } from '@/lib/sfx';
+import { applause, playFile, speakKid, type SoundHandle } from '@/lib/sfx';
 import { handleChoiceKey } from '@/lib/keynav';
 
 const btn = { width: 160, height: 160, borderRadius: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', padding: 0 } as const;
@@ -16,13 +16,19 @@ export function SpotDone({ childName, completeUrl, onAgain, levelsHref }: {
   const router = useRouter();
   const greeting = `You did it${childName ? `, ${childName}` : ''}!`;
 
-  const spoken = useRef(false);
+  // Plays once per mount; leaving (Esc, Choose level, unmount) stops the sound and the voice. Under strict-mode
+  // re-runs the cleanup stops the first play and the second run plays again, so it is still heard once.
   useEffect(() => {
-    if (spoken.current) return;
-    spoken.current = true;
-    if (completeUrl) { playFile(completeUrl); return; }
-    applause(3);
-    speakKid(greeting, { pitch: 1.9, rate: 0.9 });
+    let handle: SoundHandle | void;
+    if (completeUrl) handle = playFile(completeUrl);
+    else {
+      handle = applause(3);
+      speakKid(greeting, { pitch: 1.9, rate: 0.9 });
+    }
+    return () => {
+      handle?.stop();
+      if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
+    };
   }, [completeUrl, greeting]);
 
   useEffect(() => {
