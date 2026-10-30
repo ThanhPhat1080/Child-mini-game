@@ -1,7 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { duplicateWords, isCardComplete, loadCards, newCard, saveCards, type ECard } from '@/lib/memory/adminCards';
+import {
+  deleteGroups, duplicateWords, isCardComplete, loadCards, loadGroups, newCard, newGroup, pruneDeletedGroups, saveCards, saveGroups, validateGroupName,
+  type ECard, type EGroup,
+} from '@/lib/memory/adminCards';
+import { weakGroups } from '@/lib/sort/groups';
 import { LEVELS, pairsOf } from '@/lib/memory/deck';
 import { sayWord } from '@/lib/memory/cards';
 import { MAX_IMAGE_BYTES, addPending, clearPending, svgToPending } from '@/lib/media';
@@ -9,13 +13,19 @@ import { checkSvg } from '@/lib/quizImport';
 import { CardImportDialog } from '@/components/admin/CardImportDialog';
 import { CardsHeaderActions } from '@/components/admin/CardsHeaderActions';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
+import { GroupsPanel } from '@/components/admin/GroupsPanel';
 import { CARD_IMG_TYPES, CardPanel, MAX_SOUND_BYTES, cardAudioType, poolHealth } from '@/components/admin/CardPanel';
 import s from '@/components/admin/admin-ui.module.css';
 
-/** Memory Match card pool (A11) with pool health (A13). Nothing is uploaded or written until Save (T15). */
+/** The database refuses a second group with the same name (unique index on lower(btrim(name))). */
+const groupSaveError = (e: string) => (/duplicate|23505/i.test(e) ? 'A group with that name already exists.' : e);
+
+/** Memory Match card pool (A11) with pool health (A13) and Sort It groups (A14, A15). Nothing is uploaded or written until Save (T15). */
 export default function CardsPage() {
   const [saved, setSaved] = useState<ECard[] | null>(null);
   const [draft, setDraft] = useState<ECard[] | null>(null);
+  const [savedGroups, setSavedGroups] = useState<EGroup[] | null>(null);
+  const [draftGroups, setDraftGroups] = useState<EGroup[] | null>(null);
   const [msgs, setMsgs] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -25,10 +35,13 @@ export default function CardsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  /** Loads cards and groups as the saved copies; `keepDraftGroups` leaves the group edits in place. */
+  const load = useCallback(async (keepDraftGroups = false) => {
     try {
-      const fresh = await loadCards();
+      const [fresh, groups] = await Promise.all([loadCards(), loadGroups()]);
       setSaved(fresh); setDraft(fresh);
+      setSavedGroups(groups);
+      if (!keepDraftGroups) setDraftGroups(groups);
       return true;
     } catch (e) { setError((e as Error).message); return false; }
   }, []);
@@ -36,7 +49,10 @@ export default function CardsPage() {
   // picked files live in memory until Save (T15); free their previews when leaving
   useEffect(() => () => clearPending(), []);
 
-  const dirty = useMemo(() => (draft && saved ? JSON.stringify(draft) !== JSON.stringify(saved) : false), [draft, saved]);
+  const dirty = useMemo(
+    () => (draft && saved && draftGroups && savedGroups ? JSON.stringify([draft, draftGroups]) !== JSON.stringify([saved, savedGroups]) : false),
+    [draft, saved, draftGroups, savedGroups],
+  );
   useEffect(() => {
     if (!dirty) return;
     const h = (e: BeforeUnloadEvent) => { e.preventDefault(); };
@@ -44,7 +60,7 @@ export default function CardsPage() {
     return () => window.removeEventListener('beforeunload', h);
   }, [dirty]);
 
-  if (!draft || !saved) {
+  if (!draft || !saved || !draftGroups || !savedGroups) {
     return (
       <>
         <h1 style={{ margin: 0, fontSize: 30, fontWeight: 700 }}>Memory cards</h1>
@@ -57,6 +73,10 @@ export default function CardsPage() {
   const canSave = dirty && incomplete === 0 && !busy;
   const dups = duplicateWords(draft);
   const active = draft.filter((c) => c.active).length;
+  // ECard.groupId is camelCase, the Sort It helpers read group_id
+  const weak = weakGroups(draft.map((c) => ({ word: c.word, group_id: c.groupId, active: c.active })));
+  const usage = new Map<string, number>();
+  for (const c of draft) if (c.groupId) usage.set(c.groupId, (usage.get(c.groupId) ?? 0) + 1);
 
   const touch = () => { setNotice(null); setError(null); setWarning(null); };
   const edit = (id: string, patch: Partial<ECard>) => { touch(); setDraft(draft.map((c) => (c.id === id ? { ...c, ...patch } : c))); };
@@ -89,6 +109,31 @@ export default function CardsPage() {
     edit(id, { image: svgToPending(r.svg) }); // identical drawings share one pending file
   }
 
+  function addGroup(name: string): string | null {
+    const err = validateGroupName(name, draftGroups!);
+    if (err) return err;
+    touch();
+    setDraftGroups([...draftGroups!, newGroup(name.trim())]);
+    return null;
+  }
+
+  function renameGroup(id: string, name: string): string | null {
+    const err = validateGroupName(name, draftGroups!, id);
+    if (err) return err;
+    const n = name.trim();
+    if (draftGroups!.find((g) => g.id === id)?.name === n) return null;
+    touch();
+    setDraftGroups(draftGroups!.map((g) => (g.id === id ? { ...g, name: n } : g)));
+    return null;
+  }
+
+  function removeGroup(id: string) {
+    const rest = draftGroups!.filter((g) => g.id !== id);
+    touch();
+    setDraftGroups(rest);
+    setDraft(pruneDeletedGroups(draft!, rest)); // its cards have no group from now on
+  }
+
   function add() {
     const c = newCard();
     touch();
@@ -106,14 +151,27 @@ export default function CardsPage() {
 
   function revert() {
     clearPending(); // nothing was uploaded, so there is nothing to delete
-    setDraft(saved); setMsgs({}); touch();
+    setDraft(saved); setDraftGroups(savedGroups); setMsgs({}); touch();
   }
 
+  /** Groups first (cards may point to new ones), then cards, then the removed groups. Any failure stops there. */
   async function doSave() {
-    if (!draft || !saved || !canSave) return;
+    if (!draft || !saved || !draftGroups || !savedGroups || !canSave) return;
     setBusy(true); touch();
-    const r = await saveCards(saved, draft);
+    const g = await saveGroups(savedGroups, draftGroups);
+    if (g.error) { setError(groupSaveError(g.error)); setBusy(false); return; }
+    const r = await saveCards(saved, pruneDeletedGroups(draft, draftGroups));
     if (r.error) { setError(r.error); setBusy(false); return; }
+    const keep = new Set(draftGroups.map((x) => x.id));
+    const gone = savedGroups.map((x) => x.id).filter((id) => !keep.has(id));
+    if (gone.length) {
+      const d = await deleteGroups(gone);
+      if (d.error) {
+        // the cards are saved (their files uploaded): take them as saved, keep the group edits so Save can retry the delete
+        if (await load(true)) { clearPending(); setMsgs({}); }
+        setError(d.error); setBusy(false); return;
+      }
+    }
     if (r.warning) setWarning(r.warning);
     if (await load()) { clearPending(); setMsgs({}); setNotice('Saved'); }
     setBusy(false);
@@ -150,10 +208,12 @@ export default function CardsPage() {
         </p>
       </section>
 
+      <GroupsPanel groups={draftGroups} usage={usage} onAdd={addGroup} onRename={renameGroup} onDelete={removeGroup} />
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 16 }}>
         {draft.map((c, i) => (
           <CardPanel
-            key={c.id} c={c} n={i + 1} autoFocus={c.id === focusId} groups={[]} weakGroup={false}
+            key={c.id} c={c} n={i + 1} autoFocus={c.id === focusId} groups={draftGroups} weakGroup={!!c.groupId && weak.has(c.groupId)}
             duplicate={dups.has(c.word.trim().toLowerCase())} message={msgs[c.id] ?? null}
             onEdit={(patch) => edit(c.id, patch)}
             onPickImage={(f) => pick(c.id, f, 'image')}
