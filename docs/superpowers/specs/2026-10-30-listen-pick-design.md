@@ -1,6 +1,6 @@
 # Design: Listen & Pick (Phase 2, game 2)
 
-Status: **approved by the PO in the brainstorm (2026-10-30); awaiting written-spec review**. Phase 2 only adds games (ADR-029). Order chosen by the PO: Listen & Pick, then sorting (Group It), then Spot the Differences; each gets its own spec and plan.
+Status: **implemented on branch `claude/phase2/listen-pick` (2026-10-30), awaiting the PO play-test before merge into `develop`**. Phase 2 only adds games (ADR-029). Order chosen by the PO: Listen & Pick, then sorting (Group It), then Spot the Differences; each gets its own spec and plan.
 
 ## 1. Goal
 Hà My (4-5, cannot read) hears an English word and taps the matching picture out of three. She plays a full round of 10 questions with nobody reading to her. Secondary goal: learn English words by hearing them, without pressure.

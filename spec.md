@@ -1,7 +1,7 @@
 # Spec: HaMy (Phase 1 Quiz + admin, Phase 2 games)
 
 Source: `docs/intent.md`, `docs/decision.md` (ADR numbers below), prototype https://claude.ai/artifact/L1YRtj4NVFe6NewZ3w2s4E
-Status: **Phase 1 CLOSED 2026-10-28 by the PO.** Phase 2 game 1 (Memory Match) is built on the integration branch `claude/phase2/memory-match`, not yet released; its IDs G1, M1-M10 and A11-A13 are in sections 3b and 4b. Platform is a computer browser (ADR-028); casting the screen to a TV works but is not a requirement. Leftovers and known gaps (including the device-dependent voice) are listed in `plan.md` section 4.
+Status: **Phase 1 CLOSED 2026-10-28 by the PO.** Phase 2 game 1 (Memory Match) is built on the integration branch `claude/phase2/memory-match`, not yet released; its IDs G1, M1-M10 and A11-A13 are in sections 3b and 4b. Game 2 (Listen & Pick) is implemented on the integration branch `claude/phase2/listen-pick`, awaiting the PO play-test before merge into `develop`; its IDs L1-L10 are in section 3b. Platform is a computer browser (ADR-028); casting the screen to a TV works but is not a requirement. Leftovers and known gaps (including the device-dependent voice) are listed in `plan.md` section 4.
 
 ## 1. Goal and scope
 Hà My (4-5, cannot read) finishes a full quiz set by pictures, color and sound only, on a computer (keyboard + mouse, may be cast to a TV). Parents manage all content in the app. Same code is reused per child (one Supabase project + one deployment, ADR-009).
@@ -30,11 +30,11 @@ Out of scope for Phase 1: everything in Phase 2. Phase 2 is only "more games" (s
 | C14 | Question reading: the question is read aloud, then each answer (unless the question's "Read the answers aloud" is off); the picked answer is always read before the Hooray / Oh-oh popup; Hooray / Oh-oh / You did it can use custom sounds from Settings. Added after the first draft (plan T3, T10, T11). |
 | C15 | Progress: a question is finished only when its right answer is picked; finished questions are kept per set in localStorage and cleared when the set is completed (the star stays). Added after the first draft (plan T10, T11). |
 
-## 3b. Phase 2: game registry and Memory Match (child)
-Details for every row: `docs/superpowers/specs/2026-10-29-memory-match-design.md`.
+## 3b. Phase 2: game registry, Memory Match and Listen & Pick (child)
+Details for G1 and M1-M10: `docs/superpowers/specs/2026-10-29-memory-match-design.md`; for L1-L10: `docs/superpowers/specs/2026-10-30-listen-pick-design.md`.
 | ID | Requirement |
 |----|-------------|
-| G1 | Game registry: the game list reads a typed registry (Quiz, Memory Match, Spot the Differences placeholder); extends C2 and ADR-014. The Quiz and Memory Match cards show a purely decorative icon (Quiz: round "?"; Memory Match: two overlapping flower cards with white petals in a round pale-green circle, a green icon matching the title: circle `#EAF3EC` / ring `#5E8F69`, cards `#C9DFCE`; not buttons, not focusable, `aria-hidden`, clicks go to the card link); the help popups are opened only from the in-game badges (see M1). Card colors: Quiz rose border and title, Memory Match sage (border `#A9CDB1`, title `#5E8F69`), Spot sky blue. |
+| G1 | Game registry: the game list reads a typed registry (Quiz, Memory Match, Listen & Pick, Spot the Differences placeholder); extends C2 and ADR-014. The Quiz, Memory Match and Listen & Pick cards show a purely decorative icon (Quiz: round "?"; Memory Match: two overlapping flower cards with white petals in a round pale-green circle, a green icon matching the title: circle `#EAF3EC` / ring `#5E8F69`, cards `#C9DFCE`; Listen & Pick: a speaker with sound waves (pale-lavender fill `#F0ECF8`, purple ring and strokes `#7B6BAE`) above three small rose, sky and butter picture squares; not buttons, not focusable, `aria-hidden`, clicks go to the card link); the help popups are opened only from the in-game badges (see M1). Card colors: Quiz rose border and title, Memory Match sage (border `#A9CDB1`, title `#5E8F69`), Listen & Pick lavender (border `#C9BFE4`, title and icon ring `#7B6BAE`, icon circle `#F0ECF8`), Spot sky blue. |
 | M1 | Level select at `/games/memory`: five levels in one centered row: 12 cards (4x3 grid, needs 6 active cards), 16 (4x4, needs 8), 20 (5x4, needs 10), 24 (6x4, needs 12), 30 (6x5, needs 15); each level button is a mini grid of those small pink flower-back squares and shows its label "12 cards" / "16 cards" / "20 cards" / "24 cards" / "30 cards" under the picture (decorative, the child need not read it); a level without enough active cards is dimmed (label included); an empty pool shows a friendly picture screen. Help popup: a "? Memory Match" badge on this screen (the only way to open it; the game list card has a decorative icon only) opens the "How to play Memory Match" popup (4 steps: what it is, flip two cards, find the pair, hear the word); it shares its shell with the Quiz popup (`GameHelp`), and from this screen its last button (Play) only closes it. |
 | M2 | Card faces: back is light pink with one small white/pale-yellow flower; face-up is the picture only, no written word (the word is only heard). |
 | M3 | Flip (about 0.5 s) by click or Enter/Space, with a soft tick on every flip and flip-back. |
@@ -45,6 +45,18 @@ Details for every row: `docs/superpowers/specs/2026-10-29-memory-match-design.md
 | M8 | Keyboard: all four arrows move over the grid, Enter or Space flips or replays, Esc goes back (`lib/keynav.ts`). |
 | M9 | Reduced motion: no 3D flip and no bounce, the face just fades; sounds stay. |
 | M10 | Robustness: missing picture shows a placeholder; no English voice means no spoken word; leaving the page cancels timers and speech; a third quick click is ignored; deck images are preloaded. |
+| L1 | Entry: `/games/listen` plays directly (no level select). Registry entry `listen`, ready. |
+| L2 | Round: 10 questions, each with a different answer card; two distractors are random other cards; the answer position (1/2/3) is random. |
+| L3 | Voice: the word is said automatically when a question appears and again on speaker button / key R. Recorded file if the card has one, else `speakKid`. |
+| L4 | Wrong pick: "Oh-Oh", the picture dims and is disabled, the word is said again after a short pause. |
+| L5 | Right pick: "Hooray", the word is said once, then the next question. After question 10 the finish screen shows. |
+| L6 | Finish screen: shared celebration scene (3 stars, both characters, confetti), "Wrong N times" with N highlighted, and two picture buttons: play again (new 10 questions), back to games. If any picks were wrong, a row of small round pictures with the English word and count ("apple x2"); tapping one says the word. No row when there were none. |
+| L7 | Wrong-picks log in localStorage under one key (`hamy.listen.wrong`), entries `{id, word, count}`. It is written at every wrong pick. Cleared when a round starts (also after a reload, which starts a new round), on play again and on leaving to the game list. Blocked or failing storage: the game works and the list still shows from memory for that page visit. |
+| L8 | Keyboard: 1/2/3 pick, Left/Right move, Enter/Space pick, R replays the word, Esc goes back. Visible focus ring. |
+| L9 | Reduced motion: no bounce or slide, pictures just fade. Sounds stay. |
+| L10 | Robustness: missing picture shows a placeholder; no English voice means no spoken word, game still works; leaving the page cancels timers and speech; clicks on a disabled picture or during the hooray pause are ignored; the question's images are preloaded. |
+
+Listen & Pick decisions: the round is fixed at 10 questions x 3 pictures; with 3-9 usable cards there is one question per card (7 cards = 7 questions), fewer than 3 shows a friendly picture screen; no migration, the game reuses `memory_cards` and the Cards admin page; wrong picks are stored only in localStorage key `hamy.listen.wrong` (never sent to the server), cleared on round start, play again and leaving; the finish screen shows "Wrong N times" and the wrong words.
 
 ## 4. Admin flow (desktop, Nunito)
 | ID | Requirement |

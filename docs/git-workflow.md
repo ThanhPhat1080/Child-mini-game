@@ -62,3 +62,4 @@ Schema changes go through `supabase/migrations/*.sql` only (see `CLAUDE.md`).
 
 ## Phase 2 integration branch
 Phase 2 work (Memory Match) goes through the integration branch `claude/phase2/memory-match`, with task branches named `claude/phase2/mm-t<N>-*`. Claude merges each task branch into the integration branch after typecheck, lint, test, build and e2e are green. The PO decides when to merge the integration branch into `develop`.
+Phase 2 work for Listen & Pick goes through the integration branch `claude/phase2/listen-pick`, with task branches named `claude/phase2/lp-t<N>-<topic>` (for example `claude/phase2/lp-t7-docs`). Same rules: Claude merges each task branch into the integration branch after typecheck, lint, test, build and e2e are green; the PO decides when to merge it into `develop` (after a play-test).
