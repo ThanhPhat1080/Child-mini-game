@@ -301,6 +301,55 @@ describe('Admin cards page (A11, A13)', () => {
     await waitFor(() => expect(saveBtn().disabled).toBe(true));
   });
 
+  describe('Sort It pool health (A13)', () => {
+    const sortHealthText = () => screen.getByTestId('sort-health').textContent ?? '';
+    const grouped = (gid: string, n: number, start = 1) => Array.from({ length: n }, (_, i) => card(start + i, { groupId: gid }));
+
+    it('shows the Sort It line under the pool health', async () => {
+      await renderWith(cards(3));
+      expect(sortHealthText()).toBe('Sort It: 0 groups can be played so far (2 are needed, each with 4 cards).');
+      expect(screen.getByTestId('pool-health').compareDocumentPosition(screen.getByTestId('sort-health')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('counts saved groups with 4 cards', async () => {
+      await renderWith([...grouped('g1', 4), ...grouped('g2', 4, 5)], [{ id: 'g1', isNew: false, name: 'A' }, { id: 'g2', isNew: false, name: 'B' }]);
+      expect(sortHealthText()).toBe('Sort It: 2 groups can be played (2 are needed, each with 4 cards).');
+    });
+
+    it('counts unsaved changes: tagging a fourth card with a group, and the note says so', async () => {
+      await renderWith([...grouped('g1', 3), card(4)], [{ id: 'g1', isNew: false, name: 'A' }]);
+      expect(sortHealthText()).toMatch(/^Sort It: 0 groups/);
+      fireEvent.change(screen.getByRole('combobox', { name: 'Group for card 4' }), { target: { value: 'g1' } });
+      expect(sortHealthText()).toMatch(/^Sort It: 1 group can be played so far/);
+      expect(screen.getByText(/Counts include unsaved changes/)).toBeTruthy();
+    });
+
+    it('counts cards tagged to a group created in this session', async () => {
+      await renderWith(cards(4));
+      fireEvent.change(screen.getByLabelText('New group name'), { target: { value: 'Birds' } });
+      fireEvent.keyDown(screen.getByLabelText('New group name'), { key: 'Enter' });
+      const select = screen.getByRole('combobox', { name: 'Group for card 1' }) as HTMLSelectElement;
+      const birds = Array.from(select.options).find((o) => o.textContent === 'Birds')!.value;
+      for (let n = 1; n <= 4; n++) fireEvent.change(screen.getByRole('combobox', { name: `Group for card ${n}` }), { target: { value: birds } });
+      expect(sortHealthText()).toMatch(/^Sort It: 1 group can be played so far/);
+    });
+
+    it('Quick import resolves a group created in this session and counts it', async () => {
+      await renderWith([card(1)]);
+      fireEvent.change(screen.getByLabelText('New group name'), { target: { value: 'Birds' } });
+      fireEvent.keyDown(screen.getByLabelText('New group name'), { key: 'Enter' });
+      fireEvent.click(screen.getByRole('button', { name: 'Quick import cards' }));
+      const json = JSON.stringify({ cards: ['a', 'b', 'c', 'd'].map((w) => ({ word: w, image: 'https://example.com/b.png', group: 'birds' })) });
+      const input = document.querySelector('input[type="file"][accept=".json,application/json"]') as HTMLInputElement;
+      const f = new File([json], 'c.json', { type: 'application/json' });
+      Object.defineProperty(f, 'text', { value: () => Promise.resolve(json) });
+      fireEvent.change(input, { target: { files: [f] } });
+      fireEvent.click(await screen.findByRole('button', { name: 'Import 4 cards' }));
+      expect(sortHealthText()).toMatch(/^Sort It: 1 group can be played so far/);
+      expect((screen.getByRole('combobox', { name: 'Group for card 2' }) as HTMLSelectElement).selectedOptions[0].textContent).toBe('Birds');
+    });
+  });
+
   it('Quick import cards appends them as unsaved changes; identical SVG shares one pending token', async () => {
     const tokens = new Map<string, string>();
     h.svgToPending.mockImplementation((svg: string) => {

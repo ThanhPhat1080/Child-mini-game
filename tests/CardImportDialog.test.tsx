@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CardImportDialog } from '@/components/admin/CardImportDialog';
+import type { EGroup } from '@/lib/memory/adminCards';
 
 afterEach(cleanup);
 
@@ -28,11 +29,29 @@ describe('CardImportDialog', () => {
     expect(screen.getByText(/recorded pronunciation/)).toBeTruthy();
     expect(screen.getByText(/are unsaved until you press/)).toBeTruthy();
     expect(screen.getByText(/without a picture must be finished by hand/)).toBeTruthy();
+    expect(screen.getByText(/name of a group that already exists under Groups/)).toBeTruthy();
+  });
+
+  it('resolves group names against the groups it is given (including unsaved ones)', async () => {
+    const onImport = vi.fn();
+    const groups: EGroup[] = [{ id: 'draft-1', isNew: true, name: 'Birds' }];
+    const { container } = render(<CardImportDialog groups={groups} onCancel={() => undefined} onImport={onImport} />);
+    choose(container, JSON.stringify({ cards: [{ word: 'owl', group: ' birds ' }] }));
+    await waitFor(() => expect(screen.getByText('1 card ready to import.')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'Import 1 card' }));
+    expect(onImport.mock.calls[0][0][0].groupId).toBe('draft-1');
+  });
+
+  it('an unknown group name is shown and imports nothing', async () => {
+    const { container } = render(<CardImportDialog groups={[]} onCancel={() => undefined} onImport={() => undefined} />);
+    choose(container, JSON.stringify({ cards: [{ word: 'owl', group: 'Birds' }] }));
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/Card 1: group "Birds" does not exist/));
   });
 
   it('imports a valid file only after it is checked', async () => {
     const onImport = vi.fn();
-    const { container } = render(<CardImportDialog onCancel={() => undefined} onImport={onImport} />);
+    const seed: EGroup[] = ['food', 'animals'].map((name) => ({ id: `id-${name}`, isNew: false, name }));
+    const { container } = render(<CardImportDialog groups={seed} onCancel={() => undefined} onImport={onImport} />);
     expect((screen.getByRole('button', { name: 'Import' }) as HTMLButtonElement).disabled).toBe(true);
     choose(container, readFileSync('public/memory-cards-template.json', 'utf8'));
     await waitFor(() => expect(screen.getByText('3 cards ready to import.')).toBeTruthy());
