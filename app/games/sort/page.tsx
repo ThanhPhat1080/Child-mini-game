@@ -6,6 +6,7 @@ import { Hills } from '@/components/Hills';
 import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
 import { SortHelp } from '@/components/SortHelp';
+import { SortDone } from '@/components/sort/SortDone';
 import { SortBasket } from '@/components/sort/SortBasket';
 import { SortObject, type SortObjectState } from '@/components/sort/SortObject';
 import { useSortDrag } from '@/components/sort/useSortDrag';
@@ -39,13 +40,17 @@ const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia
 /** Sort It (S1-S6, S8-S10): drag each object into the basket of its kind. Mouse only; no timers on the child, no penalty. */
 export default function SortPlay() {
   const [phase, setPhase] = useState<'loading' | 'empty' | 'play' | 'done'>('loading');
-  /** The round's chosen cards (baskets with their examples, and the 6 objects); kept for the finish (Task 8). */
+  /** The round's chosen cards (baskets with their examples, and the 6 objects). */
   const [round, setRound] = useState<SortRound | null>(null);
   /** Row state of each object by id; 'lifted' comes from the drag. */
   const [objState, setObjState] = useState<Record<string, Exclude<SortObjectState, 'lifted'>>>({});
   const [placed, setPlaced] = useState<Placed>([[], []]);
-  /** Wrong drops of this round, shown on the finish (Task 8). */
+  /** Bumped by Play again; a new value draws a new round. */
+  const [roundNo, setRoundNo] = useState(0);
+  /** Wrong drops of this round, shown on the finish. */
   const [wrongCount, setWrongCount] = useState(0);
+  /** The child's name and the optional custom praise sound, read once when the round is done (as the Memory completion). */
+  const [praise, setPraise] = useState<{ name: string; url: string | null } | null>(null);
   const [settling, setSettling] = useState(false);
   /** Bumped by each wrong drop (restarts the popup); null when the popup is hidden. */
   const [wrongFx, setWrongFx] = useState<number | null>(null);
@@ -122,7 +127,7 @@ export default function SortPlay() {
       () => live && setPhase('empty'),
     );
     return () => { live = false; stopPreload?.(); };
-  }, []);
+  }, [roundNo]);
 
   // A custom oh-oh sound (as in Quiz); any error keeps the built-in one.
   useEffect(() => {
@@ -229,6 +234,9 @@ export default function SortPlay() {
     }, WORD_AFTER_CHIME_MS);
   }, [cardOf, round, slideBack, showWrongPopup, later, sayRight]);
 
+  /** The last right drop was made: the finish is on its way, so nothing else may speak or delay it. */
+  const finishPending = () => finishing.current !== 'none' || (!!round && rightCount.current >= round.items.length);
+
   const sliding = Object.values(objState).some((s) => s === 'sliding');
   const busy = phase !== 'play' || help || settling || sliding;
 
@@ -258,6 +266,48 @@ export default function SortPlay() {
 
   const done = phase === 'done';
 
+  // The finish needs the child's name and the optional custom praise sound.
+  useEffect(() => {
+    if (!done) return;
+    let live = true;
+    const ready = (name: string, url: string | null) => live && setPraise({ name, url });
+    try {
+      createSupabaseBrowserClient().from('settings').select('child_name, complete_path').eq('id', 1).single()
+        .then(({ data }) => ready(data?.child_name ?? '', mediaUrl(data?.complete_path)), () => ready('', null));
+    } catch { ready('', null); }
+    return () => { live = false; };
+  }, [done]);
+
+  /** Play again: every piece of round state is reset, then a new round is drawn (the round effect). */
+  const again = useCallback(() => {
+    cancelDrag.current();
+    for (const id of timers.current) clearTimeout(id);
+    timers.current.clear();
+    capTimer.current = null;
+    wrongFxTimer.current = null;
+    wordSeq.current++;
+    stopWord();
+    try { sfx.current?.stop(); } catch { /* already stopped */ }
+    sfx.current = null;
+    rightCount.current = 0;
+    wrongRef.current = 0;
+    finishing.current = 'none';
+    held.current = { say: null, finish: false };
+    helpOpen.current = false;
+    setPraise(null);
+    setRound(null);
+    setObjState({});
+    setPlaced([[], []]);
+    setWrongCount(0);
+    setSettling(false);
+    setWrongFx(null);
+    setHelp(false);
+    setPhase('loading');
+    setRoundNo((n) => n + 1);
+  }, []);
+
+  const finished = done && praise !== null;
+
   return (
     <Stage>
       <div
@@ -268,69 +318,74 @@ export default function SortPlay() {
         className={reduced ? 'hm-reduced' : undefined}
         style={{ position: 'absolute', inset: 0 }}
       >
-        <Hills />
-        <div style={{ position: 'absolute', top: 48, zIndex: 4, left: 56, right: 56, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <BackButton href="/games" label="Back to games" />
-          {!done && (
-            <button
-              type="button"
-              className="hm-tap"
-              aria-label="What is Sort It? Show how to play"
-              onClick={openHelp}
-              style={{ display: 'flex', alignItems: 'center', gap: 16, height: 120, padding: '0 40px 0 28px', borderRadius: 60, background: '#fff', border: '8px solid #EAD9A0', boxShadow: '0 8px 0 #EADCC8', boxSizing: 'border-box', fontFamily: 'inherit' }}
-            >
-              <svg aria-hidden="true" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#A8842F" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
-              <span style={{ fontSize: 44, fontWeight: 600, color: '#A8842F', lineHeight: 1 }}>Sort It</span>
-            </button>
-          )}
-        </div>
-        {phase === 'empty' && (
-          <div role="status" aria-label="New cards are coming soon" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg aria-hidden="true" width="420" height="420" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10.5" fill="#F0ECF8" stroke="#C9BFE4" strokeWidth="0.6" />
-              <path d="M10.5 8L7.5 10.4H5.6v3.2h1.9l3 2.4z" fill="#7B6BAE" />
-              <path d="M13.4 10a2.8 2.8 0 0 1 0 4" fill="none" stroke="#7B6BAE" strokeWidth="1" strokeLinecap="round" />
-              <path d="M15.4 8.2a5.4 5.4 0 0 1 0 7.6" fill="none" stroke="#7B6BAE" strokeWidth="1" strokeLinecap="round" />
-            </svg>
-          </div>
-        )}
-        {phase === 'play' && round && (
+        {finished ? (
+          <SortDone wrong={wrongCount} childName={praise.name} completeUrl={praise.url} onAgain={again} gamesHref="/games" />
+        ) : (
           <>
-            {round.baskets.map((b, i) => (
-              <div key={b.groupId} data-group={b.groupId} style={{ position: 'absolute', top: 210, left: i === 0 ? 120 : 1040, zIndex: 1 }}>
-                <SortBasket
-                  index={i as 0 | 1}
-                  basket={b}
-                  placed={placed[i]}
-                  onExampleTap={() => say(b.example)}
-                  basketRef={basketRefCbs[i]}
-                />
-              </div>
-            ))}
-            <div style={{ position: 'absolute', top: 790, left: 0, right: 0, zIndex: 2, display: 'flex', justifyContent: 'center', gap: 40 }}>
-              {round.items.map((item) => {
-                const lifted = dragging?.id === item.id;
-                return (
-                  <SortObject
-                    key={item.id}
-                    item={item}
-                    state={lifted ? 'lifted' : objState[item.id] ?? 'idle'}
-                    offset={lifted ? { x: dragging.dx, y: dragging.dy } : { x: 0, y: 0 }}
-                    onPointerDown={(e) => press(item.id, e)}
-                  />
-                );
-              })}
-            </div>
-          </>
-        )}
-        {/* Task 8: when done, this minimal state (root data-done="true", the Back button only) is replaced by the finish scene (celebration, "Wrong N times" with wrongCount, play again). */}
-        {wrongFx !== null && phase === 'play' && (
-          <div data-feedback="wrong" style={{ position: 'absolute', inset: 0, zIndex: FX_Z, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', background: 'rgba(251,244,233,0.55)' }}>
-            <div key={wrongFx} role="status" className="hm-rise" style={{ display: 'flex', alignItems: 'center', gap: 28, padding: '36px 64px 36px 40px', borderRadius: 80, background: '#fff', boxShadow: '0 12px 0 #EADCC8' }}>
-              <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" fill="#F8DCDF" /><path d="M8.5 15.5c1-1 2.2-1.4 3.5-1.4s2.5.4 3.5 1.4" /><path d="M9 9.5h.01" /><path d="M15 9.5h.01" /></svg>
-              <span style={{ fontSize: 80, fontWeight: 600, color: '#8A6A5E' }}>Oh-oh… try again!</span>
-            </div>
+          <Hills />
+          <div style={{ position: 'absolute', top: 48, zIndex: 4, left: 56, right: 56, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <BackButton href="/games" label="Back to games" />
+            {!done && (
+              <button
+                type="button"
+                className="hm-tap"
+                aria-label="What is Sort It? Show how to play"
+                onClick={openHelp}
+                style={{ display: 'flex', alignItems: 'center', gap: 16, height: 120, padding: '0 40px 0 28px', borderRadius: 60, background: '#fff', border: '8px solid #EAD9A0', boxShadow: '0 8px 0 #EADCC8', boxSizing: 'border-box', fontFamily: 'inherit' }}
+              >
+                <svg aria-hidden="true" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#A8842F" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
+                <span style={{ fontSize: 44, fontWeight: 600, color: '#A8842F', lineHeight: 1 }}>Sort It</span>
+              </button>
+            )}
           </div>
+          {phase === 'empty' && (
+            <div role="status" aria-label="New cards are coming soon" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg aria-hidden="true" width="420" height="420" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10.5" fill="#F0ECF8" stroke="#C9BFE4" strokeWidth="0.6" />
+                <path d="M10.5 8L7.5 10.4H5.6v3.2h1.9l3 2.4z" fill="#7B6BAE" />
+                <path d="M13.4 10a2.8 2.8 0 0 1 0 4" fill="none" stroke="#7B6BAE" strokeWidth="1" strokeLinecap="round" />
+                <path d="M15.4 8.2a5.4 5.4 0 0 1 0 7.6" fill="none" stroke="#7B6BAE" strokeWidth="1" strokeLinecap="round" />
+              </svg>
+            </div>
+          )}
+          {phase === 'play' && round && (
+            <>
+              {round.baskets.map((b, i) => (
+                <div key={b.groupId} data-group={b.groupId} style={{ position: 'absolute', top: 210, left: i === 0 ? 120 : 1040, zIndex: 1 }}>
+                  <SortBasket
+                    index={i as 0 | 1}
+                    basket={b}
+                    placed={placed[i]}
+                    onExampleTap={() => { if (!finishPending()) say(b.example); }}
+                    basketRef={basketRefCbs[i]}
+                  />
+                </div>
+              ))}
+              <div style={{ position: 'absolute', top: 790, left: 0, right: 0, zIndex: 2, display: 'flex', justifyContent: 'center', gap: 40 }}>
+                {round.items.map((item) => {
+                  const lifted = dragging?.id === item.id;
+                  return (
+                    <SortObject
+                      key={item.id}
+                      item={item}
+                      state={lifted ? 'lifted' : objState[item.id] ?? 'idle'}
+                      offset={lifted ? { x: dragging.dx, y: dragging.dy } : { x: 0, y: 0 }}
+                      onPointerDown={(e) => press(item.id, e)}
+                    />
+                  );
+                })}
+              </div>
+            </>
+          )}
+          {wrongFx !== null && phase === 'play' && (
+            <div data-feedback="wrong" style={{ position: 'absolute', inset: 0, zIndex: FX_Z, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', background: 'rgba(251,244,233,0.55)' }}>
+              <div key={wrongFx} role="status" className="hm-rise" style={{ display: 'flex', alignItems: 'center', gap: 28, padding: '36px 64px 36px 40px', borderRadius: 80, background: '#fff', boxShadow: '0 12px 0 #EADCC8' }}>
+                <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" fill="#F8DCDF" /><path d="M8.5 15.5c1-1 2.2-1.4 3.5-1.4s2.5.4 3.5 1.4" /><path d="M9 9.5h.01" /><path d="M15 9.5h.01" /></svg>
+                <span style={{ fontSize: 80, fontWeight: 600, color: '#8A6A5E' }}>Oh-oh… try again!</span>
+              </div>
+            </div>
+          )}
+          </>
         )}
         <MusicButton />
         {help && <SortHelp playHref={null} onClose={closeHelp} />}
