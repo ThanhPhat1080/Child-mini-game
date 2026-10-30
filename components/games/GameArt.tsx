@@ -51,7 +51,7 @@ export function GameArt({ id }: { id: Game['id'] }) {
   }
   return (
     <>
-      <span aria-hidden="true" style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
+      <span aria-hidden="true" style={{ display: 'flex', gap: 18, alignItems: 'center', height: 190 }}>
         {['#9CC3A4', '#EED79A'].map((c, i) => (
           <span key={c} style={{ width: 160, height: 160, borderRadius: 28, background: '#DCE8F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg width="100" height="100" viewBox="0 0 100 100">
@@ -62,8 +62,8 @@ export function GameArt({ id }: { id: Game['id'] }) {
           </span>
         ))}
       </span>
-      <svg aria-hidden="true" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke={SPOT_BLUE} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="10.5" cy="10.5" r="7" /><path d="M21 21l-5.2-5.2" /></svg>
-      <span style={{ fontSize: 52, fontWeight: 600, color: SPOT_BLUE, lineHeight: 1.05, textAlign: 'center' }}>Spot the<br />Differences</span>
+      <span aria-hidden="true" style={{ width: 110, height: 110 }} />
+      <span style={{ height: 64, fontSize: 52, fontWeight: 600, color: SPOT_BLUE, lineHeight: 1.05, textAlign: 'center' }}>Spot the<br />Differences</span>
     </>
   );
 }
