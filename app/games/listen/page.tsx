@@ -30,6 +30,9 @@ export const FINISH_DELAY_MS = 1000;
 /** The next question comes at the latest this long after a right pick, even if the voice never reports its end. */
 export const STEP_CAP_MS = 4000;
 
+/** A right pick being resolved: `cap` is its cap timer (re-armed when the help popup held the word). */
+type Step = { cap: ReturnType<typeof setTimeout> | null; last: boolean };
+
 const answerEls = () => Array.from(document.querySelectorAll<HTMLElement>('[data-answer]'));
 const reducedMotion = () => typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
 
@@ -55,7 +58,12 @@ export default function ListenPlay() {
   const lockedRef = useRef(false);
   const wrongRef = useRef(new Set<number>());
   /** The right pick being resolved; the normal path and the cap both try to finish it, only the first one counts. */
-  const step = useRef<object | null>(null);
+  const step = useRef<Step | null>(null);
+  /** The help popup is open: the round holds its next word and its advance until it closes (set synchronously). */
+  const helpOpen = useRef(false);
+  const held = useRef<{ say: (() => void) | null; advance: Step | null }>({ say: null, advance: null });
+  /** A question appeared behind the popup: answer 1 gets focus when it closes. */
+  const focusOnClose = useRef(false);
   /** The last hooray / oh-oh, stopped when leaving. */
   const sfx = useRef<SoundHandle | null>(null);
 
@@ -128,11 +136,17 @@ export default function ListenPlay() {
     });
   }, []);
 
+  /** Runs a word now, or keeps it (newest wins) for when the help popup closes: nothing is said under the popup. */
+  const gateSay = useCallback((fn: () => void) => {
+    if (helpOpen.current) held.current.say = fn;
+    else fn();
+  }, []);
+
   /** Says a word after `ms`, replacing any word still waiting. */
   const sayLater = useCallback((card: MemoryCard, ms: number) => {
     if (pendingSay.current) { clearTimeout(pendingSay.current); timers.current.delete(pendingSay.current); }
-    pendingSay.current = later(() => { pendingSay.current = null; say(card); }, ms);
-  }, [later, say]);
+    pendingSay.current = later(() => { pendingSay.current = null; gateSay(() => say(card)); }, ms);
+  }, [later, say, gateSay]);
 
   const cancelPendingSay = useCallback(() => {
     if (pendingSay.current) { clearTimeout(pendingSay.current); timers.current.delete(pendingSay.current); }
@@ -148,17 +162,31 @@ export default function ListenPlay() {
     wrongRef.current = new Set();
     setWrong(new Set());
     setLocked(false);
-    answerEls()[0]?.focus();
+    // Behind the help popup the focus stays in the popup; answer 1 gets it when the popup closes.
+    if (helpOpen.current) focusOnClose.current = true;
+    else answerEls()[0]?.focus();
     sayLater(current.answer, SAY_AFTER_SHOW_MS);
   }, [current, sayLater]);
 
   /** Moves on after a right pick, once (the word's end and the cap both call it). */
-  const moveOn = useCallback((token: object) => {
+  const moveOn = useCallback((token: Step) => {
     if (step.current !== token) return;
     step.current = null;
     if (index + 1 < questions.length) setIndex(index + 1);
     else setPhase('done');
   }, [index, questions.length]);
+
+  /** Advances now, or once the help popup closes. */
+  const gateAdvance = useCallback((token: Step) => {
+    if (helpOpen.current) held.current.advance = token;
+    else moveOn(token);
+  }, [moveOn]);
+
+  /** The cap of a right pick: the child never waits on a voice that does not report its end. */
+  const armCap = useCallback((token: Step) => {
+    if (token.cap) { clearTimeout(token.cap); timers.current.delete(token.cap); }
+    token.cap = later(() => gateAdvance(token), token.last ? STEP_CAP_MS + FINISH_DELAY_MS : STEP_CAP_MS);
+  }, [later, gateAdvance]);
 
   const pick = useCallback((i: 0 | 1 | 2) => {
     const q = current;
@@ -180,12 +208,31 @@ export default function ListenPlay() {
     // A file's length is unknown (ms 0): wait the full cap so the word does not talk over it.
     const hooray = handle && handle.ms > 0 ? Math.min(handle.ms, HOORAY_CAP_MS) : HOORAY_CAP_MS;
     const last = index + 1 >= questions.length;
-    const token = {};
+    const token: Step = { cap: null, last };
     step.current = token;
-    later(() => say(q.answer, () => later(() => moveOn(token), last ? FINISH_DELAY_MS : NEXT_PAUSE_MS)), hooray);
-    // The child never waits on a voice that does not report its end.
-    later(() => moveOn(token), last ? STEP_CAP_MS + FINISH_DELAY_MS : STEP_CAP_MS);
-  }, [current, index, questions.length, later, say, sayLater, cancelPendingSay, moveOn]);
+    later(() => gateSay(() => say(q.answer, () => later(() => gateAdvance(token), last ? FINISH_DELAY_MS : NEXT_PAUSE_MS))), hooray);
+    armCap(token);
+  }, [current, index, questions.length, later, say, sayLater, cancelPendingSay, gateSay, gateAdvance, armCap]);
+
+  const openHelp = useCallback(() => {
+    helpOpen.current = true;
+    setHelp(true);
+  }, []);
+
+  /** The popup closed: say the held word (re-arming the cap so it is heard), or make the held advance; then focus. */
+  const closeHelp = useCallback(() => {
+    helpOpen.current = false;
+    setHelp(false);
+    const { say: word, advance } = held.current;
+    held.current = { say: null, advance: null };
+    if (word) {
+      if (step.current) armCap(step.current);
+      word();
+    } else if (advance) moveOn(advance);
+    const toAnswer = focusOnClose.current;
+    focusOnClose.current = false;
+    setTimeout(() => (toAnswer ? answerEls()[0] : helpBtn.current)?.focus(), 0);
+  }, [armCap, moveOn]);
 
   const replay = useCallback(() => {
     // Not during the hooray pause: the right word comes on its own and must not be cut.
@@ -219,7 +266,7 @@ export default function ListenPlay() {
               type="button"
               className="hm-tap"
               aria-label="What is Listen & Pick? Show how to play"
-              onClick={() => setHelp(true)}
+              onClick={openHelp}
               style={{ display: 'flex', alignItems: 'center', gap: 16, height: 120, padding: '0 40px 0 28px', borderRadius: 60, background: '#fff', border: '8px solid #C9BFE4', boxShadow: '0 8px 0 #EADCC8', boxSizing: 'border-box', fontFamily: 'inherit' }}
             >
               <svg aria-hidden="true" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#7B6BAE" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
@@ -243,7 +290,7 @@ export default function ListenPlay() {
           </div>
         )}
         <MusicButton />
-        {help && <ListenHelp playHref={null} onClose={() => { setHelp(false); setTimeout(() => helpBtn.current?.focus(), 0); }} />}
+        {help && <ListenHelp playHref={null} onClose={closeHelp} />}
       </div>
     </Stage>
   );

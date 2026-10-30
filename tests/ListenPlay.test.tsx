@@ -281,6 +281,80 @@ describe('Listen & Pick play screen (L1-L5, L8, L10)', () => {
     expect(h.yay).toHaveBeenCalledTimes(1);
   });
 
+  describe('help popup open while the round moves on', () => {
+    const dialog = () => screen.getByRole('dialog', { name: 'How to play Listen & Pick' });
+    const inDialog = () => dialog().contains(document.activeElement);
+    const pressInDialog = () => {
+      for (const k of ['Enter', ' ', '1', '2', '3', 'r']) fireEvent.keyDown(document.activeElement ?? window, { key: k });
+    };
+    const closeHelp = () => fireEvent.keyDown(document.activeElement ?? window, { key: 'Escape' });
+
+    it('opened during the hooray pause: the round waits, nothing is said, focus stays in the popup; it goes on after closing', async () => {
+      await readyAndSaid();
+      fireEvent.click(answers()[rightIdx()]);
+      expect(h.yay).toHaveBeenCalledTimes(1);
+      fireEvent.click(badge());
+      expect(inDialog()).toBe(true);
+      await advance(STEP_CAP_MS + 5000);
+      expect(qIndex()).toBe('0');
+      expect(h.sayWord).not.toHaveBeenCalled();
+      expect(inDialog()).toBe(true);
+      pressInDialog();
+      expect(h.yay).toHaveBeenCalledTimes(1);
+      expect(h.ohOh).not.toHaveBeenCalled();
+      expect(h.recordWrong).not.toHaveBeenCalled();
+      expect(h.sayWord).not.toHaveBeenCalled();
+
+      closeHelp();
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(h.push).not.toHaveBeenCalled();
+      expect(h.sayWord).toHaveBeenCalledTimes(1); // the right word, once, after the popup
+      await advance(NEXT_PAUSE_MS + 10);
+      expect(qIndex()).toBe('1');
+      expect(document.activeElement).toBe(answers()[0]);
+      await advance(SAY_AFTER_SHOW_MS);
+      expect(h.sayWord).toHaveBeenCalledTimes(2);
+      expect(h.yay).toHaveBeenCalledTimes(1);
+    });
+
+    it('a voice that never ends after closing: the next question still comes within STEP_CAP_MS of closing', async () => {
+      await readyAndSaid();
+      h.sayWord.mockImplementation(() => undefined);
+      fireEvent.click(answers()[rightIdx()]);
+      fireEvent.click(badge());
+      await advance(STEP_CAP_MS + 1000);
+      closeHelp();
+      expect(h.sayWord).toHaveBeenCalledTimes(1);
+      await advance(STEP_CAP_MS - 10);
+      expect(qIndex()).toBe('0');
+      await advance(10);
+      expect(qIndex()).toBe('1');
+    });
+
+    it('opened while loading: question 1 appears behind it without taking focus or speaking; closing focuses answer 1 and says the word', async () => {
+      h.fetchActiveCards.mockResolvedValue(cards(31));
+      render(<ListenPlay />);
+      fireEvent.click(badge());
+      expect(inDialog()).toBe(true);
+      await advance(PRELOAD_MS + 10);
+      expect(qIndex()).toBe('0');
+      await advance(SAY_AFTER_SHOW_MS + 5000); // the auto word's time passes under the popup
+      expect(inDialog()).toBe(true);
+      expect(h.sayWord).not.toHaveBeenCalled();
+      pressInDialog();
+      expect(h.yay).not.toHaveBeenCalled();
+      expect(h.ohOh).not.toHaveBeenCalled();
+      expect(h.sayWord).not.toHaveBeenCalled();
+
+      closeHelp();
+      expect(screen.queryByRole('dialog')).toBeNull();
+      await advance(10);
+      expect(document.activeElement).toBe(answers()[0]);
+      expect(h.sayWord).toHaveBeenCalledTimes(1);
+      expect(h.sayWord.mock.calls[0][0].id).toBe(answerId());
+    });
+  });
+
   it.each([
     ['fewer than 3 usable cards', () => h.fetchActiveCards.mockResolvedValue([...cards(2), { ...cards(3)[2], active: false }])],
     ['a load failure', () => h.fetchActiveCards.mockRejectedValue(new Error('boom'))],
