@@ -206,10 +206,21 @@ test.describe('Quick import cards header button', () => {
     for (const x of [a, b, c]) expect(Math.abs(x.y + x.height / 2 - (a.y + a.height / 2))).toBeLessThan(4);
     await expect(importBtn(page)).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     await expect(importBtn(page)).toHaveCSS('color', 'rgb(63, 115, 181)');
+    const h1 = (await page.getByRole('heading', { name: 'Memory cards' }).boundingBox())!;
+    expect(a.y).toBeLessThan(h1.y + h1.height); // top right, on the title's line
+    const header = (await page.locator('div[style*="sticky"]').boundingBox())!;
+    expect(header.x + header.width - (c.x + c.width)).toBeLessThan(24);
     await page.mouse.wheel(0, 600);
     await expect(importBtn(page)).toBeInViewport();
     await importBtn(page).click();
     await expect(dialog(page)).toBeVisible();
+  });
+
+  test('at 1024 px the header does not overflow and Save stays visible', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await openCards(page);
+    await expect(save(page)).toBeInViewport({ ratio: 1 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   });
 
   test('at 390 px the header does not overflow and Save stays visible', async ({ page }) => {

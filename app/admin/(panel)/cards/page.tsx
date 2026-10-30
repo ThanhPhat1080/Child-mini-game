@@ -129,11 +129,11 @@ export default function CardsPage() {
   return (
     <>
       <div style={{ position: 'sticky', top: 0, zIndex: 20, background: '#FBF4E9', padding: '12px 0', margin: '-12px 0', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, boxShadow: '0 8px 8px -8px rgba(90,64,56,0.18)' }}>
-        <div>
+        <div style={{ flex: '1 1 320px', minWidth: 0 }}>
           <h1 style={{ margin: 0, fontSize: 30, fontWeight: 700 }}>Memory cards</h1>
           <p style={{ margin: '6px 0 0', color: '#7A6458', fontSize: 15 }}>Pictures and words for the Memory Match game. Turn a card off to keep it out of the game.</p>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+        <div style={{ flex: '0 0 auto', maxWidth: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
           <CardsHeaderActions dirty={dirty} busy={busy} canSave={canSave} onImport={() => setImportOpen(true)} onRevert={revert} onSave={doSave} />
           <span role="status" style={{ fontSize: 13, color: '#7A6458', maxWidth: 420, textAlign: 'right' }}>{status}</span>
         </div>
