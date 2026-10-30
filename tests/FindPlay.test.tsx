@@ -263,7 +263,7 @@ describe('FindPlay layout (F2, F3: the word list sits beside the picture)', () =
     await ready();
     const list = document.querySelector<HTMLElement>('[data-find-col]')!;
     expect(list.style.width).toBe('480px');
-    expect(list.style.left).toBe('56px');
+    expect(list.style.left).toBe('40px');
     expect(list.querySelectorAll('[data-find-row]')).toHaveLength(3);
   });
 
