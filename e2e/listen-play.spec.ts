@@ -188,6 +188,7 @@ test.describe('finish screen (L6, L7)', () => {
     test.setTimeout(90_000);
     await open(page);
     await playWithWrong(page, 5);
+    await expect(page.locator('[data-listen-done][data-keys="ready"]')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Play again' })).toBeFocused();
     await page.keyboard.press('ArrowRight');
     await expect(page.getByRole('link', { name: 'Back to games' })).toBeFocused();

@@ -125,6 +125,12 @@ describe('ListenDone (L6, L7)', () => {
     expect(document.activeElement).toBe(again());
   });
 
+  it('the finish keys are live as soon as Play again has the focus (data-keys="ready")', () => {
+    setup();
+    expect(document.activeElement).toBe(again());
+    expect(document.querySelector('[data-listen-done]')?.getAttribute('data-keys')).toBe('ready');
+  });
+
   it('Esc goes to the game list', () => {
     setup();
     fireEvent.keyDown(window, { key: 'Escape' });

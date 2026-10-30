@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CelebrationScene } from '@/components/CelebrationScene';
 import { applause, playFile, speakKid } from '@/lib/sfx';
 import { handleChoiceKey } from '@/lib/keynav';
@@ -43,17 +43,22 @@ export function ListenDone({ wrong, cards, childName, completeUrl, onAgain, game
     speakKid(greeting, { pitch: 1.9, rate: 0.9 });
   }, [completeUrl, greeting]);
 
-  useEffect(() => {
+  // A layout effect, so the keys are live in the same task that autoFocus puts the focus on Play again
+  // (a passive effect can run later, and a key pressed in between would be lost).
+  const root = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') router.push(gamesHref);
       else handleChoiceKey(e, Array.from(document.querySelectorAll<HTMLElement>('[data-done-btn]')));
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const el = root.current;
+    el?.setAttribute('data-keys', 'ready');
+    return () => { window.removeEventListener('keydown', onKey); el?.removeAttribute('data-keys'); };
   }, [router, gamesHref]);
 
   return (
-    <div data-listen-done style={{ position: 'absolute', inset: 0, zIndex: 5 }}>
+    <div ref={root} data-listen-done style={{ position: 'absolute', inset: 0, zIndex: 5 }}>
       <CelebrationScene greeting={greeting} extra={
         <>
           <p data-wrong-line style={{ margin: 0, fontSize: 60, fontWeight: 600, color: '#7A5C50' }}>
