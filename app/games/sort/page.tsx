@@ -216,6 +216,8 @@ export default function SortPlay() {
     }
     stopWord();
     wordSeq.current++;
+    try { sfx.current?.stop(); } catch { /* already stopped */ } // a still-playing oh-oh file must not overlap the chime and the word
+    sfx.current = null;
     chime();
     setObjState((s) => ({ ...s, [id]: 'hidden' }));
     setPlaced((p) => {
