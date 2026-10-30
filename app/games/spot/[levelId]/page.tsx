@@ -17,7 +17,7 @@ import type { SpotLevel } from '@/lib/spot/types';
 import { preloadImages } from '@/lib/memory/preload';
 import { mediaUrl } from '@/lib/media';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { ting } from '@/lib/sfx';
+import { chime } from '@/lib/sfx';
 
 /** After the last difference, a short breath before the celebration. */
 const WIN_DELAY_MS = 1000;
@@ -117,7 +117,7 @@ export default function SpotPlay() {
     if (!s || !level || isWon(s)) return;
     const hit = hitTest(level.differences, new Set(s.found), point, aspect);
     if (hit.kind === 'found') {
-      ting();
+      chime();
       game.current = markFound(s, hit.index);
       if (isWon(game.current)) later(() => setWon(true), WIN_DELAY_MS);
     } else if (hit.kind === 'miss') {

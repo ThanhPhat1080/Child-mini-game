@@ -52,14 +52,14 @@ Details for every row: `docs/superpowers/specs/2026-10-30-spot-the-differences-d
 |----|-------------|
 | S1 | Level select at `/games/spot`: a centered grid of picture-A thumbnails (active levels only, ordered by `sort_order` then `created_at`); click, Left/Right (and Up/Down) to move, Enter/Space to open, Esc back; visible focus ring; an empty pool or load failure shows a friendly picture screen. A "? Spot the Differences" badge (the only way to open it) opens the 3-step picture help popup (`SpotHelp`, built on `GameHelp`). |
 | S2 | Progress: a row of dots above the pictures, one per difference, lit when found; no numbers, no text. |
-| S3 | Correct tap on A or B: a circle grows slowly (about 0.6 s) on both pictures and stays until the level ends, a soft "ting" plays, the matching dot lights up. Hit radius is at least 5% of the picture width; the nearest not-yet-found difference wins; a tap on or outside the picture border is a miss. |
+| S3 | Correct tap on A or B: a circle grows slowly (about 0.6 s) on both pictures and stays until the level ends, the soft "ting ting" chime of Memory Match plays, the matching dot lights up. Hit radius is at least 5% of the picture width; the nearest not-yet-found difference wins; a tap on or outside the picture border is a miss. |
 | S4 | Wrong tap: a faint ripple at the tap point (about 0.8 s); no sound, no counter, no penalty, no hint, no timeout. Hit radius is at least 5% of the picture width; the nearest not-yet-found difference wins; a tap on or outside the picture border is a miss. |
 | S5 | Tapping an already found difference does nothing. Hit radius is at least 5% of the picture width; the nearest not-yet-found difference wins; a tap on or outside the picture border is a miss. |
 | S6 | Completion: about 1 s after the last difference, the shared `CelebrationScene` with two picture buttons (play again, choose level); nothing is saved. |
 | S7 | Keyboard: the game is mouse-driven; Esc goes back to the level grid; Enter/Space activate the focused button on the completion screen; visible focus ring. |
 | S8 | Reduced motion: the circle and ripple appear without growing or fading; confetti follows the shared setting; sounds stay. |
 | S9 | Robustness: a missing or failed picture shows a placeholder and the game stays leavable; leaving the page cancels timers and sounds; both pictures are preloaded before play; tap mapping stays correct after a window resize. |
-| S10 | Sounds: the "ting" is synthesized with Web Audio in `lib/sfx.ts` (no audio files); music keeps playing; nothing plays before "tap to enter"; the wrong tap is silent. |
+| S10 | Sounds: the correct-tap "ting ting" is `chime()` from `lib/sfx.ts`, synthesized with Web Audio and shared with Memory Match (no audio files); music keeps playing; nothing plays before "tap to enter"; the wrong tap is silent. |
 
 ## 4. Admin flow (desktop, Nunito)
 | ID | Requirement |

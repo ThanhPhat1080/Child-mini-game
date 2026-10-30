@@ -5,7 +5,7 @@ import type { SpotLevel } from '@/lib/spot/types';
 const h = vi.hoisted(() => ({
   id: 'L1',
   fetchLevel: vi.fn(),
-  ting: vi.fn(),
+  chime: vi.fn(),
   push: vi.fn(),
   replace: vi.fn(),
   preload: vi.fn(),
@@ -13,7 +13,7 @@ const h = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/spot/levels', () => ({ fetchLevel: h.fetchLevel }));
-vi.mock('@/lib/sfx', () => ({ ting: h.ting, applause: vi.fn(), speakKid: vi.fn(), playFile: vi.fn() }));
+vi.mock('@/lib/sfx', () => ({ chime: h.chime, applause: vi.fn(), speakKid: vi.fn(), playFile: vi.fn() }));
 vi.mock('@/lib/memory/preload', () => ({ preloadImages: h.preload }));
 vi.mock('@/lib/supabase/client', () => ({
   createSupabaseBrowserClient: () => ({ from: () => ({ select: () => ({ eq: () => ({ single: () => h.settings() }) }) }) }),
@@ -54,7 +54,7 @@ async function ready() {
 
 beforeEach(() => {
   vi.useFakeTimers();
-  for (const f of [h.fetchLevel, h.ting, h.push, h.replace, h.preload, h.settings]) f.mockReset();
+  for (const f of [h.fetchLevel, h.chime, h.push, h.replace, h.preload, h.settings]) f.mockReset();
   h.id = 'L1';
   h.preload.mockImplementation((_urls: unknown, done: () => void) => { done(); return () => {}; });
   h.settings.mockResolvedValue({ data: { child_name: 'Mi', complete_path: null } });
@@ -78,11 +78,11 @@ describe('Spot play screen (S2-S10)', () => {
     expect(pic('a')).not.toBeNull();
   });
 
-  it('a tap on a difference tings once, lights one dot and rings both pictures', async () => {
+  it('a tap on a difference chimes once, lights one dot and rings both pictures', async () => {
     await ready();
     expect(lit()).toBe(0);
     tap('a', 0.25, 0.3);
-    expect(h.ting).toHaveBeenCalledTimes(1);
+    expect(h.chime).toHaveBeenCalledTimes(1);
     expect(lit()).toBe(1);
     expect(rings('a')).toHaveLength(1);
     expect(rings('b')).toHaveLength(1);
@@ -99,17 +99,17 @@ describe('Spot play screen (S2-S10)', () => {
     tap('a', 0.25, 0.3);
     tap('a', 0.25, 0.3);
     tap('b', 0.26, 0.31);
-    expect(h.ting).toHaveBeenCalledTimes(1);
+    expect(h.chime).toHaveBeenCalledTimes(1);
     expect(lit()).toBe(1);
     expect(rings('a')).toHaveLength(1);
     expect(ripples()).toHaveLength(0);
   });
 
-  it('a tap on empty space makes one ripple, no ting, no dot change', async () => {
+  it('a tap on empty space makes one ripple, no chime, no dot change', async () => {
     await ready();
     tap('a', 0.9, 0.9);
     expect(ripples()).toHaveLength(1);
-    expect(h.ting).not.toHaveBeenCalled();
+    expect(h.chime).not.toHaveBeenCalled();
     expect(lit()).toBe(0);
     tap('a', 0.25, 0.3); // no penalty afterwards
     expect(lit()).toBe(1);

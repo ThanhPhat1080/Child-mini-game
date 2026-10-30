@@ -59,7 +59,7 @@ New migration, table `spot_levels`:
 Layout: 1920x1080 stage, two pictures side by side, equal size, pastel rounded border, centered. Each picture is up to 880x860 px (a 4:3 picture shows 880x660, a portrait picture of aspect 0.73 about 628x860), so the differences are easy to see. The header band holds the back button and, on the same row, the progress dots centered; the board starts at y=190, leaving clear space below the dots, and its 8 px shadow stays inside the 1080 px stage.
 
 - **S2 Progress.** A row of dots above the pictures, one per difference. A dot lights up when its difference is found. No numbers, no text.
-- **S3 Correct tap.** Tapping a not-yet-found difference on A or B shows a circle (the difference's radius) that grows slowly (about 0.6 s) on both pictures and stays until the level ends. A soft "ting" sound plays; the matching dot lights up.
+- **S3 Correct tap.** Tapping a not-yet-found difference on A or B shows a circle (the difference's radius) that grows slowly (about 0.6 s) on both pictures and stays until the level ends. The soft "ting ting" chime (the same `chime()` as a Memory Match pair) plays; the matching dot lights up.
 - **S4 Wrong tap.** A faint ripple at the tap point (about 0.8 s). No sound, no counter, no penalty, no hint, no timeout.
 - **S5 Repeat tap.** Tapping an already found difference does nothing.
 - **S6 Completion.** When all differences are found, after about 1 s the shared `CelebrationScene` shows (confetti, praise sound, 3 stars, both characters, as in the Quiz set-done page) with two picture buttons: "play again" and "choose level". Nothing is saved.
@@ -68,7 +68,7 @@ Layout: 1920x1080 stage, two pictures side by side, equal size, pastel rounded b
 - **S9 Robustness.** A missing or failed picture shows a plain placeholder and the game remains leavable (Esc/Back). Leaving the page cancels timers and sounds. Both pictures are preloaded before play starts. Window resize keeps tap mapping correct (coordinates are computed from the picture's current bounding box).
 
 ### 6.3 Sounds (S10)
-- "ting" for a correct tap is synthesized with Web Audio in `lib/sfx.ts` (reuse or lightly vary the match chime); no audio files. Background music keeps playing (ADR-016). Nothing plays before "tap to enter". The wrong tap has no sound.
+- The correct tap plays `chime()` ("ting ting", synthesized with Web Audio in `lib/sfx.ts`, shared with Memory Match); no audio files. Background music keeps playing (ADR-016). Nothing plays before "tap to enter". The wrong tap has no sound.
 
 ## 7. Admin (A14-A16)
 New "Spot" item in the admin nav, `/admin/spot`.
