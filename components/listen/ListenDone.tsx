@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { CelebrationScene } from '@/components/CelebrationScene';
-import { applause, playFile, speakKid } from '@/lib/sfx';
+import { applause, playFile, speakKid, type SoundHandle } from '@/lib/sfx';
 import { handleChoiceKey } from '@/lib/keynav';
 import { sayWord } from '@/lib/memory/cards';
 import { mediaUrl } from '@/lib/media';
@@ -35,11 +35,17 @@ export function ListenDone({ wrong, cards, childName, completeUrl, onAgain, game
   const greeting = `You did it${childName ? `, ${childName}` : ''}!`;
 
   const spoken = useRef(false);
+  /** The praise sound, kept so leaving the finish (Play again, Back, Esc) can stop it. Never stopped in an effect cleanup: StrictMode runs that right after mount. */
+  const praise = useRef<SoundHandle | null>(null);
+  const stopPraise = () => {
+    try { praise.current?.stop(); } catch { /* already stopped */ }
+    praise.current = null;
+  };
   useEffect(() => {
     if (spoken.current) return;
     spoken.current = true;
-    if (completeUrl) { playFile(completeUrl); return; }
-    applause(3);
+    if (completeUrl) { praise.current = playFile(completeUrl) ?? null; return; }
+    praise.current = applause(3) ?? null;
     speakKid(greeting, { pitch: 1.9, rate: 0.9 });
   }, [completeUrl, greeting]);
 
@@ -48,7 +54,7 @@ export function ListenDone({ wrong, cards, childName, completeUrl, onAgain, game
   const root = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') router.push(gamesHref);
+      if (e.key === 'Escape') { stopPraise(); router.push(gamesHref); }
       else handleChoiceKey(e, Array.from(document.querySelectorAll<HTMLElement>('[data-done-btn]')));
     };
     window.addEventListener('keydown', onKey);
@@ -86,10 +92,10 @@ export function ListenDone({ wrong, cards, childName, completeUrl, onAgain, game
           )}
         </>
       }>
-        <button type="button" data-done-btn autoFocus onClick={onAgain} className="hm-tap" aria-label="Play again" style={{ ...btn, background: '#9CC3A4', boxShadow: '0 12px 0 #7FA889' }}>
+        <button type="button" data-done-btn autoFocus onClick={() => { stopPraise(); onAgain(); }} className="hm-tap" aria-label="Play again" style={{ ...btn, background: '#9CC3A4', boxShadow: '0 12px 0 #7FA889' }}>
           <svg aria-hidden="true" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v5h5" /></svg>
         </button>
-        <Link href={gamesHref} data-done-btn className="hm-tap" aria-label="Back to games" style={{ ...btn, background: '#fff', boxShadow: '0 12px 0 #EADCC8' }}>
+        <Link href={gamesHref} data-done-btn onClick={stopPraise} className="hm-tap" aria-label="Back to games" style={{ ...btn, background: '#fff', boxShadow: '0 12px 0 #EADCC8' }}>
           <svg aria-hidden="true" width="80" height="80" viewBox="0 0 24 24" fill="#B8737B" stroke="#B8737B" strokeWidth="1" strokeLinejoin="round"><rect x="3" y="3" width="8" height="8" rx="2" /><rect x="13" y="3" width="8" height="8" rx="2" /><rect x="3" y="13" width="8" height="8" rx="2" /><rect x="13" y="13" width="8" height="8" rx="2" /></svg>
         </Link>
       </CelebrationScene>
