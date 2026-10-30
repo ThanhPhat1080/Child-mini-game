@@ -102,3 +102,15 @@ test('Memory Match has a sage border, Quiz a rose one, Spot a sky one (three dis
   const title = await page.getByRole('link', { name: 'Play Memory Match' }).getByText('Memory Match').evaluate((el) => getComputedStyle(el).color);
   expect(title).toBe('rgb(94, 143, 105)');
 });
+
+test('the Memory icon ring matches the green Memory title; the Quiz icon stays rose', async ({ page }) => {
+  await page.goto('/games');
+  const title = await page.getByRole('link', { name: 'Play Memory Match' }).getByText('Memory Match').evaluate((el) => getComputedStyle(el).color);
+  const ring = await page.locator('[data-game-icon="memory"] svg > circle').first().evaluate((el) => getComputedStyle(el).stroke);
+  expect(ring).toBe(title);
+  expect(ring).toBe('rgb(94, 143, 105)');
+  await expect(page.locator('[data-game-icon="memory"] svg > circle').first()).toHaveAttribute('fill', '#EAF3EC');
+  const quizRing = await page.locator('[data-game-icon="quiz"] svg').evaluate((el) => getComputedStyle(el).stroke);
+  expect(quizRing).toBe('rgb(184, 115, 123)');
+  await expect(page.locator('[data-game-icon="quiz"] svg')).toHaveAttribute('stroke', '#B8737B');
+});

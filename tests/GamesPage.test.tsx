@@ -16,7 +16,7 @@ vi.mock('@/lib/media', () => ({ mediaUrl: (p: string | null) => (p ? `/media/${p
 vi.mock('@/components/MusicButton', () => ({ MusicButton: () => null }));
 
 import Games from '@/app/games/page';
-import { MEMORY_ICON } from '@/components/games/GameArt';
+import { MEMORY_GREEN, MEMORY_ICON } from '@/components/games/GameArt';
 
 const icon = (id: string) => document.querySelector(`[data-game-icon="${id}"]`) as HTMLElement;
 const frame = (name: string) => screen.getByRole('link', { name }) as HTMLElement;
@@ -60,7 +60,7 @@ describe('games list decorative icons', () => {
   it('the Memory icon cards (rotated corners) fit inside the circle, and the circle is drawn', () => {
     render(<Games />);
     const circle = icon('memory').querySelector('circle') as SVGCircleElement;
-    expect(circle.getAttribute('fill')).toBe('#F8DCDF');
+    expect(circle.getAttribute('fill')).toBe('#EAF3EC');
     expect(Number(circle.getAttribute('r'))).toBe(10);
     for (const { dx, dy, rot } of MEMORY_ICON.cards) {
       const t = (rot * Math.PI) / 180;
@@ -70,6 +70,34 @@ describe('games list decorative icons', () => {
         expect(Math.hypot(cx, cy)).toBeLessThanOrEqual(MEMORY_ICON.maxR);
       }
     }
+  });
+
+  it('the Memory icon is green and uses the same green as the Memory title; Quiz icon stays rose', () => {
+    render(<Games />);
+    expect(MEMORY_GREEN).toBe('#5E8F69');
+    const titleColor = ((frame('Play Memory Match').lastElementChild as HTMLElement).style.color);
+    const probe = document.createElement('span');
+    probe.style.color = MEMORY_GREEN;
+    expect(titleColor).toBe(probe.style.color);
+    const svg = icon('memory');
+    expect(svg.querySelector('circle')!.getAttribute('stroke')).toBe(MEMORY_GREEN);
+    expect(svg.querySelector('circle')!.getAttribute('stroke-width')).toBe('2');
+    const rects = svg.querySelectorAll('rect');
+    expect(rects).toHaveLength(2);
+    rects.forEach((r) => {
+      expect(r.getAttribute('fill')).toBe('#C9DFCE');
+      expect(r.getAttribute('stroke')).toBe(MEMORY_GREEN);
+      expect(r.getAttribute('stroke-width')).toBe('0.7');
+    });
+    const petals = svg.querySelectorAll('ellipse');
+    expect(petals).toHaveLength(10);
+    petals.forEach((p) => expect(p.getAttribute('fill')).toBe('#fff'));
+    const centers = Array.from(svg.querySelectorAll('circle')).slice(1);
+    expect(centers).toHaveLength(2);
+    centers.forEach((c) => expect(c.getAttribute('fill')).toBe('#EED79A'));
+    const quiz = icon('quiz').querySelector('svg')!;
+    expect(quiz.getAttribute('stroke')).toBe('#B8737B');
+    expect(quiz.querySelector('circle')!.getAttribute('fill')).toBe('#F8DCDF');
   });
 
   it('the icons are not in the Tab order (only card links, arrows, dots)', () => {

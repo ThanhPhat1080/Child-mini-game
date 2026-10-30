@@ -29,7 +29,7 @@ Success:
 ## 4. Game registry (G1)
 - New `lib/games/registry.ts`: a typed list of games, each with `id`, `href`, card art and `ready`.
 - The game list (`app/games/page.tsx`) reads it instead of `N = 3` and hand-written cards. Entries: Quiz, Memory Match (ready), Spot the Differences (placeholder, not playable).
-- The registry has no help flag (the former `hasHelp` was removed by the PO decision). Quiz and Memory Match each have a "How to play ..." popup (Memory Match: 4 steps, `components/MemoryHelp.tsx`), built on the shared shell `components/GameHelp.tsx`, opened only from the in-game badges ("? Quiz", "? Memory Match"). The game list cards show a decorative icon only (`GameIcon` in `components/games/GameArt.tsx`: Quiz "?", Memory Match two flower cards), not a button; the Memory Match card uses sage green (border `#A9CDB1`, title `#5E8F69`).
+- The registry has no help flag (the former `hasHelp` was removed by the PO decision). Quiz and Memory Match each have a "How to play ..." popup (Memory Match: 4 steps, `components/MemoryHelp.tsx`), built on the shared shell `components/GameHelp.tsx`, opened only from the in-game badges ("? Quiz", "? Memory Match"). The game list cards show a decorative icon only (`GameIcon` in `components/games/GameArt.tsx`: Quiz "?", Memory Match two flower cards), not a button; the Memory Match card uses sage green (border `#A9CDB1`, title `#5E8F69`), and its icon is green to match the title (circle `#EAF3EC` / ring `#5E8F69`, cards `#C9DFCE`, white petals; the ring green is the exported `MEMORY_GREEN`, shared with the title).
 - Enter/Space opens the game at the focused position; drag, arrows and dots keep working (C2, ADR-018).
 
 ## 5. Data
