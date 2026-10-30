@@ -60,7 +60,7 @@ export function ListenDone({ wrong, cards, childName, completeUrl, onAgain, game
             Wrong <strong data-wrong-total style={{ fontSize: 88, fontWeight: 600, color: '#B8737B', background: '#F7ECCB', borderRadius: 36, padding: '0 28px' }}>{totalWrong(wrong)}</strong> times
           </p>
           {wrong.length > 0 && (
-            <div data-wrong-list style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '12px 28px', maxWidth: 840, marginTop: -16 }}>
+            <div data-wrong-list style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '12px 28px', maxWidth: 800, marginTop: -16 }}>
               {wrong.map((e) => (
                 <button
                   key={e.id}
