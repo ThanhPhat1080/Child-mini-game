@@ -5,16 +5,17 @@ test.beforeEach(async () => {
   await reset();
 });
 
-test('the game list shows Quiz, Memory Match, Listen & Pick, Sort It and Spot as playable', async ({ page }) => {
+test('the game list shows Quiz, Memory Match, Listen & Pick, Sort It, Spot and Find It as playable', async ({ page }) => {
   await page.goto('/games');
   await expect(page.getByRole('link', { name: 'Play Quiz' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Play Memory Match' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Play Listen & Pick' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Play Sort It' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Play Spot the Differences' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Play Find It' })).toBeVisible();
   await expect(page.getByRole('img', { name: /coming soon/ })).toHaveCount(0);
   await expect(page.getByText('Coming in Phase 2')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /^Go to game \d$/ })).toHaveCount(5);
+  await expect(page.getByRole('button', { name: /^Go to game \d$/ })).toHaveCount(6);
 });
 
 /** The view takes focus in its mount effect, so a focused view means the page is hydrated and listens to keys. */
@@ -53,9 +54,18 @@ test('Enter on the fifth game opens /games/spot', async ({ page }) => {
   await openGames(page);
   for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowRight');
   await current(page, 5);
-  await expect(page.getByRole('button', { name: 'Next game' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Next game' })).toBeEnabled();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/games\/spot$/);
+});
+
+test('Enter on the sixth game opens /games/find', async ({ page }) => {
+  await openGames(page);
+  for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowRight');
+  await current(page, 6);
+  await expect(page.getByRole('button', { name: 'Next game' })).toBeDisabled();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/games\/find$/);
 });
 
 test('the game list has no "?" help buttons and never shows a dialog', async ({ page }) => {
@@ -106,6 +116,8 @@ test('Tab moves from the Quiz card link through Memory Match, Listen & Pick and 
   await expect(page.getByRole('link', { name: 'Play Sort It' })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link', { name: 'Play Spot the Differences' })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: 'Play Find It' })).toBeFocused();
 });
 
 test('Memory Match has a sage border, Quiz a rose one, Spot a sky one, Sort It a butter one (four distinct colors)', async ({ page }) => {
