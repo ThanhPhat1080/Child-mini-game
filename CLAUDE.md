@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-**HaMy.** Calm quiz hub for Hà My (4-5, cannot read) in a computer browser, plus a parent admin dashboard. Phase 1 is closed. Phase 2 = only more games: specs and plans live in `docs/superpowers/specs` and `docs/superpowers/plans` (Memory Match is the first game; Spot the Differences needs its own spec first). Phase 2 work goes through the integration branch `claude/phase2/memory-match` (see `docs/git-workflow.md`).
+**HaMy.** Calm quiz hub for Hà My (4-5, cannot read) in a computer browser, plus a parent admin dashboard. Phase 1 is closed. Phase 2 = only more games: specs and plans live in `docs/superpowers/specs` and `docs/superpowers/plans` (Memory Match and Spot the Differences both have a spec and plan there; Spot is built on `claude/kind-babbage-gd9qpd`). Phase 2 work goes through the integration branch `claude/phase2/memory-match` (see `docs/git-workflow.md`).
 
 ## Docs
 `spec.md` (requirement IDs C1-C15, A1-A13, G1, M1-M10; cite them in commits), `plan.md` (tickets + acceptance criteria), `docs/decision.md` (ADRs; later ones win), `docs/git-workflow.md`, `docs/superpowers/` (Phase 2 specs and plans). `docs/intent.md` is the vision, not a build source. `README.md` is still empty (plan T14).

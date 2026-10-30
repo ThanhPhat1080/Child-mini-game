@@ -1,6 +1,6 @@
 # Design: Spot the Differences (Phase 2, game 2)
 
-Status: **design approved by the PO in the brainstorm (2026-10-30); this written spec awaits the PO's review.** Phase 2 only adds games (ADR-029). The game plugs into the registry created for Memory Match (ADR-014).
+Status: **implemented on branch claude/kind-babbage-gd9qpd; migration not yet applied to the real Supabase project**. Phase 2 only adds games (ADR-029). The game plugs into the registry created for Memory Match (ADR-014).
 
 ## 1. Goal
 Hà My (4-5, cannot read) looks at two almost identical pictures and taps the places where they differ, without anyone reading to her.
