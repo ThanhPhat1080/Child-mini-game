@@ -61,4 +61,31 @@ describe('wrong-picks log', () => {
     clearWrong();
     expect(readWrong()).toEqual([]);
   });
+
+  it('keeps counting from memory when only setItem throws', () => {
+    recordWrong(A);
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota'); });
+    recordWrong(A);
+    recordWrong(B);
+    expect(readWrong()).toEqual([
+      { id: 'a', word: 'apple', count: 2 },
+      { id: 'b', word: 'ball', count: 1 },
+    ]);
+  });
+
+  it('after a write in this visit, junk in storage does not change reads and the next write repairs it', () => {
+    recordWrong(A);
+    localStorage.setItem(WRONG_KEY, 'not json');
+    expect(readWrong()).toEqual([{ id: 'a', word: 'apple', count: 1 }]);
+    recordWrong(A);
+    expect(JSON.parse(localStorage.getItem(WRONG_KEY) as string)).toEqual([{ id: 'a', word: 'apple', count: 2 }]);
+  });
+
+  it('treats duplicate ids in stored data as junk', () => {
+    localStorage.setItem(WRONG_KEY, JSON.stringify([
+      { id: 'a', word: 'apple', count: 1 },
+      { id: 'a', word: 'apple', count: 2 },
+    ]));
+    expect(readWrong()).toEqual([]);
+  });
 });

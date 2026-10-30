@@ -3,8 +3,9 @@ export const WRONG_KEY = 'hamy.listen.wrong';
 
 export type WrongEntry = { id: string; word: string; count: number };
 
-/** Fallback for this page visit, used when storage is blocked or holds junk. */
+/** Source of truth once something was recorded in this page visit; storage is then only a best-effort mirror. */
 let memory: WrongEntry[] = [];
+let recorded = false;
 
 function parse(raw: string | null): WrongEntry[] | null {
   if (raw === null) return null;
@@ -18,6 +19,7 @@ function parse(raw: string | null): WrongEntry[] | null {
         && typeof x.count === 'number' && Number.isInteger(x.count) && x.count > 0;
     });
     if (!ok) return null;
+    if (new Set((list as WrongEntry[]).map((e) => e.id)).size !== list.length) return null;
     return (list as WrongEntry[]).map((e) => ({ id: e.id, word: e.word, count: e.count }));
   } catch {
     return null;
@@ -29,7 +31,7 @@ function stored(): WrongEntry[] | null {
 }
 
 export function readWrong(): WrongEntry[] {
-  return (stored() ?? memory).map((e) => ({ ...e }));
+  return (recorded ? memory : stored() ?? []).map((e) => ({ ...e }));
 }
 
 export function recordWrong(card: { id: string; word: string }): void {
@@ -38,11 +40,13 @@ export function recordWrong(card: { id: string; word: string }): void {
   if (hit) hit.count += 1;
   else next.push({ id: card.id, word: card.word, count: 1 });
   memory = next;
+  recorded = true;
   try { window.localStorage.setItem(WRONG_KEY, JSON.stringify(next)); } catch { /* blocked or full: memory copy only */ }
 }
 
 export function clearWrong(): void {
   memory = [];
+  recorded = false;
   try { window.localStorage.removeItem(WRONG_KEY); } catch { /* ignore */ }
 }
 
