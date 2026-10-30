@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { DEFAULT_R, MAX_DIFFS, MAX_R, MIN_R } from '@/lib/spot/validate';
+import { DEFAULT_R, MAX_DIFFS, MAX_R, MIN_R, SMALL_R } from '@/lib/spot/validate';
 import type { Difference } from '@/lib/spot/types';
 import s from './admin-ui.module.css';
 import { PicIcon, dangerBtn, ghostBtn } from './editor-parts';
@@ -46,6 +46,7 @@ export function SpotMarkerEditor({ srcA, srcB, differences, onChange }: { srcA: 
     setSelected(null);
   }
 
+  const smallCount = differences.filter((d) => d.r < SMALL_R).length;
   const tab = (on: boolean) => ({ ...ghostBtn, height: 36, background: on ? '#5A4038' : '#fff', color: on ? '#fff' : '#4A3830' }) as const;
 
   return (
@@ -81,6 +82,12 @@ export function SpotMarkerEditor({ srcA, srcB, differences, onChange }: { srcA: 
         <div style={{ height: 160, borderRadius: 14, background: '#FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A8968A', gap: 8, fontSize: 14 }}>
           <PicIcon size={28} /> Add both pictures first.
         </div>
+      )}
+
+      {smallCount > 0 && (
+        <span role="status" style={{ fontSize: 13, fontWeight: 700, color: '#7A5410' }}>
+          {smallCount === 1 ? '1 spot is small' : `${smallCount} spots are small`} and may be hard for a young child to see.
+        </span>
       )}
 
       {notice && <span role="alert" style={{ fontSize: 13, fontWeight: 700, color: '#A8484F' }}>{notice}</span>}

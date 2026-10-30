@@ -97,4 +97,15 @@ describe('SpotMarkerEditor (A15)', () => {
     fireEvent.click(img, { clientX: 100, clientY: 50 });
     expect(onChange).toHaveBeenCalledWith([{ x: 0.5, y: 0.5, r: 0.06 }]);
   });
+
+  it('warns about small spots (r below 6%), with a correct count, and never for 6%', () => {
+    const { unmount } = render(<SpotMarkerEditor srcA="/a.png" srcB="/b.png" differences={[d(0.2, 0.2, 0.05), d(0.5, 0.5, 0.04), d(0.8, 0.8)]} onChange={() => {}} />);
+    expect(screen.getByText('2 spots are small and may be hard for a young child to see.')).toBeTruthy();
+    unmount();
+    const one = render(<SpotMarkerEditor srcA="/a.png" srcB="/b.png" differences={[d(0.2, 0.2, 0.05), d(0.5, 0.5)]} onChange={() => {}} />);
+    expect(screen.getByText('1 spot is small and may be hard for a young child to see.')).toBeTruthy();
+    one.unmount();
+    render(<SpotMarkerEditor srcA="/a.png" srcB="/b.png" differences={[d(0.2, 0.2, 0.06), d(0.5, 0.5, 0.12)]} onChange={() => {}} />);
+    expect(screen.queryByText(/small and may be hard/)).toBeNull();
+  });
 });

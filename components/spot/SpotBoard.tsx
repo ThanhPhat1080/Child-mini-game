@@ -6,7 +6,7 @@ import type { SpotLevel } from '@/lib/spot/types';
 export type SpotRipple = { side: 'a' | 'b'; x: number; y: number; key: number };
 
 const MAX_W = 880;
-const MAX_H = 700;
+const MAX_H = 860;
 const GAP = 48;
 const DEFAULT_ASPECT = 4 / 3;
 
@@ -28,8 +28,9 @@ export function SpotBoard({ level, urlA, urlB, found, onTap, ripple = null, redu
   const [broken, setBroken] = useState({ a: false, b: false });
   /** The padding box inside the frame: the pictures and rings are drawn here, so taps are measured here. */
   const areas = useRef<{ a: HTMLSpanElement | null; b: HTMLSpanElement | null }>({ a: null, b: null });
-  const w = Math.min(MAX_W, Math.floor(MAX_H * aspect));
-  const h = Math.floor(w / aspect);
+  const heightBound = MAX_H * aspect <= MAX_W; // tall pictures fill the full height, wide ones the full width
+  const w = heightBound ? Math.floor(MAX_H * aspect) : MAX_W;
+  const h = heightBound ? MAX_H : Math.floor(MAX_W / aspect);
 
   const pic = (side: 'a' | 'b', url: string | null) => {
     const src = url && !broken[side] ? url : null;

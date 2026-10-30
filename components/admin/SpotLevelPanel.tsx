@@ -48,8 +48,8 @@ function PicturePicker({ side, n, path, onPick, onSvg }: { side: Side; n: number
 }
 
 /** One level: both pictures, the spots, on/off, order, preview and delete. Edits go up through `onEdit`. */
-export function SpotLevelPanel({ l, n, count, message, shapeWarning, onEdit, onPick, onSvg, onMove, onAskDelete }: {
-  l: ELevel; n: number; count: number; message: string | null; shapeWarning: boolean;
+export function SpotLevelPanel({ l, n, count, message, shapeWarning, tallWarning, onEdit, onPick, onSvg, onMove, onAskDelete }: {
+  l: ELevel; n: number; count: number; message: string | null; shapeWarning: boolean; tallWarning: boolean;
   onEdit: (patch: Partial<ELevel>) => void; onPick: (side: Side, f: File) => void; onSvg: (side: Side, code: string) => void;
   onMove: (dir: -1 | 1) => void; onAskDelete: () => void;
 }) {
@@ -77,6 +77,10 @@ export function SpotLevelPanel({ l, n, count, message, shapeWarning, onEdit, onP
         <PicturePicker side="a" n={n} path={l.a} onPick={(f) => onPick('a', f)} onSvg={(c) => onSvg('a', c)} />
         <PicturePicker side="b" n={n} path={l.b} onPick={(f) => onPick('b', f)} onSvg={(c) => onSvg('b', c)} />
       </div>
+
+      <span style={hint}>Tip: use landscape pictures (4:3 or 3:2) and make every difference big and clear, so a young child can see it from the chair.</span>
+
+      {tallWarning && <span role="status" style={{ fontSize: 13, fontWeight: 700, color: '#7A5410' }}>This picture is tall, so it will be shown smaller. A landscape picture (4:3 or 3:2) works best.</span>}
 
       {shapeWarning && <span role="status" style={{ fontSize: 13, fontWeight: 700, color: '#7A5410' }}>The two pictures have different shapes. The spots may not line up on picture B, so use pictures of the same size.</span>}
 

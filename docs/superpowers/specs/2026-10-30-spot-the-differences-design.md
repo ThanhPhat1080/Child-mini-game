@@ -56,7 +56,7 @@ New migration, table `spot_levels`:
 - Back button, music button.
 
 ### 6.2 Play, `/games/spot/[levelId]` (S2-S9)
-Layout: 1920x1080 stage, two pictures side by side, equal size, pastel rounded border, centered. Header with the back button.
+Layout: 1920x1080 stage, two pictures side by side, equal size, pastel rounded border, centered. Each picture is up to 880x860 px (a 4:3 picture shows 880x660, a portrait picture of aspect 0.73 about 628x860), so the differences are easy to see. The header band holds the back button and, on the same row, the progress dots centered; the board starts at y=190, leaving clear space below the dots, and its 8 px shadow stays inside the 1080 px stage.
 
 - **S2 Progress.** A row of dots above the pictures, one per difference. A dot lights up when its difference is found. No numbers, no text.
 - **S3 Correct tap.** Tapping a not-yet-found difference on A or B shows a circle (the difference's radius) that grows slowly (about 0.6 s) on both pictures and stays until the level ends. A soft "ting" sound plays; the matching dot lights up.
@@ -74,7 +74,7 @@ Layout: 1920x1080 stage, two pictures side by side, equal size, pastel rounded b
 New "Spot" item in the admin nav, `/admin/spot`.
 
 - **A14 Level list.** A grid of all levels (thumbnail of A, number of differences, on/off). Add, edit, delete (always with a confirmation, ADR-022), reorder (up/down buttons, no drag needed).
-- **A15 Level editor.** Upload picture A and picture B (or SVG code, as for cards). The editor warns (does not block) if the aspect ratios differ by more than 2%. The marking tool shows picture A large: click to add a difference at that point, click an existing marker to select it, a slider sets its radius (default 6%, range 4%-12% of picture width), a Delete button removes it. A toggle switches the preview to picture B so the parent can check the spots against it. Save is disabled until both pictures are set and there are 3-10 differences.
+- **A15 Level editor.** Upload picture A and picture B (or SVG code, as for cards). The editor warns (does not block) if the aspect ratios differ by more than 2%. It also shows a permanent tip ("use landscape pictures (4:3 or 3:2) and make every difference big and clear, so a young child can see it from the chair"), warns when either picture is portrait (tall pictures are shown smaller on the play screen; one warning per level), and shows a status line when spots are small (radius below 6%, e.g. "2 spots are small and may be hard for a young child to see"). None of these warnings blocks Save. The marking tool shows picture A large: click to add a difference at that point, click an existing marker to select it, a slider sets its radius (default 6%, range 4%-12% of picture width), a Delete button removes it. A toggle switches the preview to picture B so the parent can check the spots against it. Save is disabled until both pictures are set and there are 3-10 differences.
 - **A15 Saving** follows T15: picking a file only previews it; Save uploads new files first, then writes the database; replaced, removed or deleted files are freed after a successful save; Revert discards unsaved edits.
 - **A16 Preview as child.** A "Preview as child" button opens the real play screen using the authenticated client, so drafts (inactive levels) can be tried before publishing (as T12).
 

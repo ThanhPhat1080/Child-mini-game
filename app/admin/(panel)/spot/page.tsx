@@ -110,6 +110,8 @@ export default function SpotPage() {
     return !!a && !!b && !aspectsClose(a, b);
   };
 
+  const tallOff = (l: ELevel) => [l.a, l.b].some((p) => { const r = p ? ratios[p] : null; return !!r && r < 1; });
+
   const doomed = confirm !== null ? draft[confirm] : null;
   let status = 'All changes saved.';
   if (busy) status = 'Saving…';
@@ -136,7 +138,7 @@ export default function SpotPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {draft.map((l, i) => (
           <SpotLevelPanel
-            key={l.id} l={l} n={i + 1} count={draft.length} message={msgs[l.id] ?? null} shapeWarning={shapeOff(l)}
+            key={l.id} l={l} n={i + 1} count={draft.length} message={msgs[l.id] ?? null} shapeWarning={shapeOff(l)} tallWarning={tallOff(l)}
             onEdit={(patch) => edit(l.id, patch)}
             onPick={(side, f) => pick(l.id, side, f)}
             onSvg={(side, code) => applySvg(l.id, side, code)}

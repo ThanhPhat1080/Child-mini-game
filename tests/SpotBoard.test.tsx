@@ -89,6 +89,25 @@ describe('SpotBoard', () => {
     expect(pic('b').querySelector('[data-placeholder]')).not.toBeNull();
   });
 
+  it('shows a portrait picture 860 tall (aspect 0.73) and a 4:3 picture 880x660', () => {
+    const { unmount } = render(<SpotBoard level={level} urlA="/a.svg" urlB="/b.svg" found={[]} onTap={() => {}} />);
+    const img = pic('a').querySelector('img')!;
+    Object.defineProperty(img, 'naturalWidth', { value: 730, configurable: true });
+    Object.defineProperty(img, 'naturalHeight', { value: 1000, configurable: true });
+    fireEvent.load(img);
+    expect(pic('a').style.height).toBe('860px');
+    expect(pic('a').style.width).toBe(`${Math.floor(860 * 0.73)}px`);
+    expect(pic('b').style.height).toBe('860px');
+    unmount();
+    render(<SpotBoard level={level} urlA="/a.svg" urlB="/b.svg" found={[]} onTap={() => {}} />);
+    const img2 = pic('a').querySelector('img')!;
+    Object.defineProperty(img2, 'naturalWidth', { value: 1600, configurable: true });
+    Object.defineProperty(img2, 'naturalHeight', { value: 1200, configurable: true });
+    fireEvent.load(img2);
+    expect(pic('a').style.width).toBe('880px');
+    expect(pic('a').style.height).toBe('660px');
+  });
+
   it('a zero-size rect is ignored', () => {
     const onTap = vi.fn();
     render(<SpotBoard level={level} urlA="/a.svg" urlB="/b.svg" found={[]} onTap={onTap} />);

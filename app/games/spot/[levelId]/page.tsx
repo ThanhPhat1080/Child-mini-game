@@ -154,10 +154,10 @@ export default function SpotPlay() {
         )}
         {phase === 'ready' && s && level && !(won && praise) && (
           <>
-            <div style={{ position: 'absolute', top: 100, left: 0, right: 0, zIndex: 1 }}>
+            <div style={{ position: 'absolute', top: 78, left: 0, right: 0, zIndex: 1 }}>
               <SpotDots total={s.total} found={s.found.length} />
             </div>
-            <div style={{ position: 'absolute', top: 230, left: 0, right: 0, zIndex: 1 }}>
+            <div style={{ position: 'absolute', top: 190, left: 0, right: 0, zIndex: 1 }}>
               <SpotBoard level={level} urlA={urlA} urlB={urlB} found={s.found} ripple={ripple} reduced={reduced} onTap={onTap} onSide={(sd) => { side.current = sd; }} />
             </div>
           </>

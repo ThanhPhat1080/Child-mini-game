@@ -106,6 +106,34 @@ describe('Admin Spot page (A14-A16)', () => {
     expect(saveBtn().disabled).toBe(false);
   });
 
+  it('always shows the tip about landscape pictures and big differences', async () => {
+    await renderWith([level(1)]);
+    expect(screen.getByText('Tip: use landscape pictures (4:3 or 3:2) and make every difference big and clear, so a young child can see it from the chair.')).toBeTruthy();
+  });
+
+  it('a tall picture warns once per level, does not block Save; 4:3 does not warn', async () => {
+    h.naturalSize.mockImplementation(async () => ({ w: 300, h: 400 }));
+    await renderWith([level(1)]);
+    const msg = 'This picture is tall, so it will be shown smaller. A landscape picture (4:3 or 3:2) works best.';
+    expect(await screen.findAllByText(msg)).toHaveLength(1);
+    fireEvent.click(screen.getByLabelText('Level 1 on'));
+    expect(saveBtn().disabled).toBe(false);
+    cleanup();
+    h.naturalSize.mockReset();
+    h.naturalSize.mockResolvedValue({ w: 400, h: 300 });
+    await renderWith([level(1)]);
+    await waitFor(() => expect(h.naturalSize).toHaveBeenCalledTimes(2));
+    await Promise.resolve();
+    expect(screen.queryByText(/picture is tall/i)).toBeNull();
+  });
+
+  it('small spots warn but do not block Save', async () => {
+    await renderWith([level(1, { differences: [{ x: 0.2, y: 0.2, r: 0.05 }, { x: 0.5, y: 0.5, r: 0.06 }, { x: 0.8, y: 0.8, r: 0.06 }] })]);
+    expect(screen.getByText('1 spot is small and may be hard for a young child to see.')).toBeTruthy();
+    fireEvent.click(screen.getByLabelText('Level 1 on'));
+    expect(saveBtn().disabled).toBe(false);
+  });
+
   it('no warning when the shapes are within 2%', async () => {
     h.naturalSize.mockImplementation(async (url: string) => (url.endsWith('1b.png') ? { w: 404, h: 300 } : { w: 400, h: 300 }));
     await renderWith([level(1)]);

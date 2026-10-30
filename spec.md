@@ -88,7 +88,7 @@ Details for every row: `docs/superpowers/specs/2026-10-30-spot-the-differences-d
 | ID | Requirement |
 |----|-------------|
 | A14 | Level list at `/admin/spot`: grid of all levels (thumbnail of A, number of differences, on/off); add, edit, delete (always with a confirmation, ADR-022), reorder with up/down buttons. |
-| A15 | Level editor: upload picture A and B (or SVG code); warns, does not block, when aspect ratios differ by more than 2%; marking tool on picture A (click to add, click a marker to select, radius slider 4%-12% of picture width, default 6%, Delete button), toggle to preview picture B; Save disabled until both pictures are set and there are 3-10 differences; saved like A10 (T15: files uploaded first, database second, freed files after success, Revert discards edits). |
+| A15 | Level editor: upload picture A and B (or SVG code); warns, does not block, when aspect ratios differ by more than 2%, when a picture is portrait, or when spots are small (radius below 6%), plus a permanent tip to use landscape pictures and big differences; marking tool on picture A (click to add, click a marker to select, radius slider 4%-12% of picture width, default 6%, Delete button), toggle to preview picture B; Save disabled until both pictures are set and there are 3-10 differences; saved like A10 (T15: files uploaded first, database second, freed files after success, Revert discards edits). |
 | A16 | "Preview as child" opens the real play screen with the authenticated client, so inactive levels can be tried (as T12). |
 
 ## 5. Data model (Supabase / Postgres)

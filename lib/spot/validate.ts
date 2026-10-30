@@ -1,6 +1,8 @@
 export const MIN_DIFFS = 3
 export const MAX_DIFFS = 10
 export const DEFAULT_R = 0.06
+/** Spots with a radius below this are flagged in the editor as hard for a young child to see. */
+export const SMALL_R = 0.06
 export const MIN_R = 0.04
 export const MAX_R = 0.12
 export const MIN_HIT_R = 0.05
