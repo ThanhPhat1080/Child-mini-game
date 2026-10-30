@@ -1,11 +1,11 @@
-# Intent: Kid-Friendly Interactive Web Gaming Hub & Parental Control System
+# Intent: Kid-Friendly Interactive Web Gaming Hub
 
 ## 1. Overview & Vision
-A personalized, safe, web-based gaming platform built specifically for a 4-5-year-old child (Hà My) who cannot yet read. The application runs in a computer browser (the child plays on a computer; the screen can be cast to a TV, see ADR-028), combining a friendly, customized UI with strict digital wellbeing controls (time-boxing and parental lock) to prevent screen addiction and exposure to toxic content.
+A personalized, safe, web-based gaming platform built specifically for a 4-5-year-old child (Hà My) who cannot yet read. The application runs in a computer browser (the child plays on a computer; the screen can be cast to a TV, see ADR-028), combining a friendly, customized UI with calm, gentle games chosen by the parent, so the child plays in a safe, toxic-free environment.
 
 ## 2. Target Audience & Personas & Creator Philosophy
 * **Primary User (The Child):** Hà My (4-5 years old). Needs ultra-simplified UI ("Mega Buttons"), large click targets, visual/auditory feedback (anime princess graphics, personalized audio greetings), and zero negative reinforcement (no punishment for wrong answers).
-* **Secondary User (The Parent):** Looking for a secure, controlled environment to let the child play safely for limited durations with automated guardrails.
+* **Secondary User (The Parent):** Looking for a safe environment where they can add and update games and content themselves, without touching code.
 * **Creator Philosophy (Calm & Slow Gaming):** Inspired by the innocent, straightforward nature of 8x/9x retro games, the webapp strictly avoids over-hyped, flashy, high-stimulation elements (such as neon colors, rapid jarring animations, and loud sensory overload). The goal is to cultivate a **calm, focused, and stress-free cognitive environment** that prevents unwanted hyperactivity and screen fatigue.
 
 ## 3. Core Functional Requirements & Aesthetic Principles
@@ -14,22 +14,17 @@ A personalized, safe, web-based gaming platform built specifically for a 4-5-yea
   * **Color Palette:** Desaturated, warm pastel tones (soft warm cream, muted pinks, soft peach, gentle yellows) avoiding high-saturation neon glare to protect eyes and maintain deep focus.
   * **Audio Experience:** Continuous, gentle, lofi/acoustic instrumental background music (Studio Ghibli style) with soft, comforting feedback sounds (gentle "Hooray" with slow pastel confetti, mild "Oh-oh" for wrong attempts without harsh penalties).
 * **Intuitive Input:** Mouse clicks plus direct **number key shortcuts** on the keyboard (e.g., pressing `1`, `2`, `3` to answer questions instantly).
-* **Session Management & Digital Wellbeing (Phase 2):**
-  * **Play Limit:** Maximum 1 hour of continuous gameplay per session.
-  * **Cool-down Period:** Mandatory 3-hour rest interval between sessions.
-  * **Graceful Lock Screen:** When time expires, an animated princess gently appears to guide the child to rest, accompanied by a parental override PIN pad.
-* **Parental Override (King Arthur's PIN) (Phase 2):** A 4-digit PIN input screen requiring authentication from "King Arthur" to instantly reset the session lock.
-* **Extensible Mini-Game Hub (Spot the Differences is Phase 2):** A modular architecture built with Phaser.js allowing seamless expansion of new mini-games (starting with "Spot the Differences").
+* **Extensible Mini-Game Hub (more games are Phase 2):** A modular game registry (ADR-014) so new mini-games can be added one by one; Phaser.js is the plan for canvas games (starting with "Spot the Differences").
 
 ## 4. Technical Architecture & Tech Stack
-* **Frontend Hub & Shell:** Next.js + React + TypeScript (see ADR-027; DOM/CSS for the Phase 1 quiz, see ADR-014) for managing routing, splash screens, and splash screens.
+* **Frontend Hub & Shell:** Next.js + React + TypeScript (see ADR-027; DOM/CSS for the Phase 1 quiz, see ADR-014) for routing and splash screens.
 * **Game Engine:** Phaser.js 2D for lightweight, high-performance canvas rendering for the next mini-games.
-* **Backend & Database:** Supabase (Postgres, Storage, Auth; Firebase is not used, see ADR-008) for storing child profile metadata, session timers, state checkpoints, and dynamic mini-game content (JSON-driven levels).
+* **Backend & Database:** Supabase (Postgres, Storage, Auth; Firebase is not used, see ADR-008) for storing child profile metadata and dynamic mini-game content (JSON-driven levels).
 * **Deployment & Delivery:** Web-based deployment (Vercel/Netlify), accessed in a computer browser.
 
-## Phasing (updated 2026-10-28)
+## Phasing (updated 2026-10-29)
 
-**Phase 1 is closed (2026-10-28).** Phase 2 is now "other games"; the play limit, rest screen and PIN below are parked. See `plan.md` sections 4-5.
+**Phase 1 is closed (2026-10-28).** Phase 2 is only "more games". The play-time limit, rest screen and PIN were dropped on 2026-10-29 (ADR-029). See `plan.md` sections 4-5.
 
 ### Phase 1: MVP (build first)
 
@@ -44,7 +39,7 @@ A personalized, safe, web-based gaming platform built specifically for a 4-5-yea
 - **Reuse for other children**: same source code, one Supabase project and one deployment URL per child. Only environment variables change. Set up an admin and enter content by following the setup README.
 - **Platform:** web on a computer browser (Chromium). Casting to a TV works but is not a requirement (ADR-028).
 
-**Out of scope for Phase 1:** play-time limit, cool-down, rest screen, PIN, Spot the Differences.
+**Out of scope for Phase 1:** any other game (Spot the Differences etc.).
 
 **Definition of done (proposed, adjust as needed):**
 
@@ -52,10 +47,10 @@ A personalized, safe, web-based gaming platform built specifically for a 4-5-yea
 - A parent creates a new quiz set (at least 5 questions) in under 10 minutes.
 - A second child's deployment can be set up from the README alone, without code changes.
 
-### Phase 2 (redefined 2026-10-28: other games)
+### Phase 2 (redefined 2026-10-29: only more games)
 
-- Build more mini-games on the game registry. First candidate: Spot the Differences (Phaser.js, levels stored as JSON, a tool to pick hotspot coordinates).
-- Parked (not scheduled): play-time limit of 1 hour and a mandatory 3-hour rest with server timestamps (one session row, no user identification); rest screen with a princess and a 4-digit PIN (checked on the server, stored as a hash).
+- Add more mini-games to the game registry. First candidate: Spot the Differences (Phaser.js, levels stored as JSON, a tool to pick hotspot coordinates). The exact list of games is decided in the Phase 2 brainstorm.
+- Dropped for good: play-time limit and rest period, rest screen, parental PIN override (ADR-029).
 
 ### Design constraints (input for Claude Design)
 

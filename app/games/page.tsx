@@ -10,11 +10,14 @@ import { Hills } from '@/components/Hills';
 import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
 import { AvatarSay } from '@/components/AvatarSay';
-import { QuizHelp } from '@/components/QuizHelp';
 import { isPressKey } from '@/lib/keynav';
+import { GAMES } from '@/lib/games/registry';
+import { GameArt, GameIcon } from '@/components/games/GameArt';
 
 const PITCH = 712;
-const N = 3;
+const N = GAMES.length;
+const TITLE = { quiz: 'Quiz', memory: 'Memory Match', spot: 'Spot the Differences' } as const;
+const BORDER = { quiz: '#EBB7BC', memory: '#A9CDB1', spot: '#A9C6DE' } as const;
 
 /** Game list carousel (C2) — mirrors the GameList board: drag/arrows/keys, 120px swipe threshold. */
 export default function Games() {
@@ -24,8 +27,6 @@ export default function Games() {
   const [dragging, setDragging] = useState(false);
   const [initials, setInitials] = useState('HM');
   const [avatar, setAvatar] = useState<string | null>(null);
-  const [help, setHelp] = useState(false);
-  const helpBtn = useRef<HTMLButtonElement>(null);
   const startX = useRef(0);
   const scale = useRef(1);
   const moved = useRef(false);
@@ -62,7 +63,7 @@ export default function Games() {
         onKeyDown={(e) => {
           if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
           else if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
-          else if (isPressKey(e) && idx === 0 && e.target === e.currentTarget) { e.preventDefault(); router.push('/games/quiz'); }
+          else if (isPressKey(e) && GAMES[idx].ready && e.target === e.currentTarget) { e.preventDefault(); router.push(GAMES[idx].href); }
         }}
         onPointerDown={(e) => { const r = e.currentTarget.getBoundingClientRect(); scale.current = r.width / 1920 || 1; startX.current = e.clientX; moved.current = false; setDragging(true); setDx(0); }}
         onPointerMove={(e) => { if (!dragging) return; const d = (e.clientX - startX.current) / scale.current; setDx(d); if (Math.abs(d) > 10) moved.current = true; }}
@@ -71,49 +72,31 @@ export default function Games() {
         onPointerLeave={() => { if (dragging) { setDragging(false); setDx(0); } }}
       >
         <div style={{ position: 'absolute', top: 210, left: 0, display: 'flex', gap: 72, transform: `translateX(${base + dx}px)`, transition: dragging ? 'none' : 'transform .7s cubic-bezier(.3,.7,.2,1)' }}>
-          <div style={{ position: 'relative', flex: 'none', width: 640, height: 640, transform: `scale(${idx === 0 ? 1 : 0.86})`, opacity: idx === 0 ? 1 : 0.7, transition: trans }}>
-          <Link href="/games/quiz" draggable={false} aria-label="Play Quiz" onClick={(e) => { if (moved.current) e.preventDefault(); }} style={{ ...card(0), transform: 'none', opacity: 1, transition: 'none', border: '14px solid #EBB7BC' }}>
-            <span style={{ display: 'flex', gap: 20, alignItems: 'flex-end' }}>
-              <span style={{ width: 120, height: 150, borderRadius: 24, background: '#EBB7BC', padding: 12, boxSizing: 'border-box', fontSize: 36, fontWeight: 600, color: '#fff', lineHeight: 1.1 }}>1</span>
-              <span style={{ width: 120, height: 190, borderRadius: 24, background: '#A9C6DE', padding: 12, boxSizing: 'border-box', fontSize: 36, fontWeight: 600, color: '#fff', lineHeight: 1.1 }}>2</span>
-              <span style={{ width: 120, height: 150, borderRadius: 24, background: '#EED79A', padding: 12, boxSizing: 'border-box', fontSize: 36, fontWeight: 600, color: '#8A6A2A', lineHeight: 1.1 }}>3</span>
-            </span>
-            <span aria-hidden="true" style={{ width: 110, height: 110 }} />
-            <span style={{ fontSize: 64, fontWeight: 600, color: '#B8737B', lineHeight: 1 }}>Quiz</span>
-          </Link>
-          <button
-            ref={helpBtn}
-            type="button"
-            className="hm-tap hm-breathe"
-            aria-label="What is Quiz? Show how to play"
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => setHelp(true)}
-            style={{ position: 'absolute', left: 255, top: 318, width: 130, height: 130, padding: 0, border: 'none', borderRadius: 65, background: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="#B8737B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" fill="#F8DCDF" /><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3" /><path d="M12 17h.01" /></svg>
-          </button>
-          </div>
-
-          <div style={{ ...card(1), border: '14px solid #A9C6DE' }}>
-            <div style={{ display: 'flex', gap: 18 }}>
-              {['#9CC3A4', '#EED79A'].map((c) => (
-                <span key={c} style={{ width: 160, height: 160, borderRadius: 28, background: '#DCE8F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg aria-hidden="true" width="100" height="100" viewBox="0 0 100 100"><circle cx="34" cy="40" r="18" fill="#E59AA1" /><path d="M64 70 L 84 70 L 74 48 Z" fill={c} /><rect x="20" y="66" width="22" height="22" rx="4" fill="#8FB3D1" /></svg>
-                </span>
-              ))}
-            </div>
-            <svg aria-hidden="true" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="#5F86A8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="10.5" cy="10.5" r="7" /><path d="M21 21l-5.2-5.2" /></svg>
-            <span style={{ fontSize: 52, fontWeight: 600, color: '#5F86A8', lineHeight: 1.05, textAlign: 'center' }}>Spot the<br />Differences</span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 22px', borderRadius: 999, background: '#EEF3F7', fontFamily: 'Nunito, sans-serif', fontWeight: 700, fontSize: 24, color: '#5F7488' }}>
-              <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
-              Coming in Phase 2
-            </span>
-          </div>
-
-          <div style={{ ...card(2), border: '10px dashed #E3D5C4', background: '#FFFDF9', boxShadow: 'none' }}>
-            <svg aria-hidden="true" width="150" height="100" viewBox="0 0 60 40" fill="#F1E7DA"><ellipse cx="22" cy="24" rx="18" ry="12" /><ellipse cx="38" cy="20" rx="16" ry="14" /></svg>
-            <span style={{ fontSize: 48, fontWeight: 600, color: '#B0A094', lineHeight: 1.05, textAlign: 'center' }}>More games<br />soon</span>
-          </div>
+          {GAMES.map((g, i) => {
+            const frame = { ...card(i), transform: 'none', opacity: 1, transition: 'none', border: `14px solid ${BORDER[g.id]}` };
+            return (
+              <div key={g.id} style={{ position: 'relative', flex: 'none', width: 640, height: 640, transform: `scale(${i === idx ? 1 : 0.86})`, opacity: i === idx ? 1 : 0.7, transition: trans }}>
+                {g.ready ? (
+                  <Link href={g.href} draggable={false} aria-label={`Play ${TITLE[g.id]}`} onClick={(e) => { if (moved.current) e.preventDefault(); }} style={frame}>
+                    <GameArt id={g.id} />
+                  </Link>
+                ) : (
+                  <div role="img" aria-label={`${TITLE[g.id]}, coming soon`} style={frame}>
+                    <GameArt id={g.id} />
+                  </div>
+                )}
+                {(g.id === 'quiz' || g.id === 'memory') && (
+                  <span
+                    data-game-icon={g.id}
+                    aria-hidden="true"
+                    style={{ position: 'absolute', left: 255, top: 318, width: 130, height: 130, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}
+                  >
+                    <GameIcon id={g.id} />
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -125,7 +108,7 @@ export default function Games() {
       </button>
 
       <div role="group" aria-label="Pick a game" style={{ position: 'absolute', left: 0, right: 0, top: 847, display: 'flex', justifyContent: 'center' }}>
-        {[0, 1, 2].map((i) => (
+        {GAMES.map((_, i) => (
           <button key={i} type="button" className="hm-tap" aria-label={`Go to game ${i + 1}`} aria-current={i === idx} onClick={() => { setIdx(i); setDx(0); setDragging(false); }} style={{ width: 120, height: 120, padding: 0, border: 'none', background: 'none', borderRadius: 60, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ display: 'block', height: 22, borderRadius: 11, transition: 'width .5s ease', width: i === idx ? 56 : 22, background: i === idx ? '#E59AA1' : '#E3D5C4' }} />
           </button>
@@ -137,7 +120,6 @@ export default function Games() {
         <AvatarSay avatar={avatar} initials={initials} />
       </div>
       <MusicButton />
-      {help && <QuizHelp onClose={() => { setHelp(false); setTimeout(() => helpBtn.current?.focus(), 0); }} />}
     </Stage>
   );
 }

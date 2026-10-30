@@ -85,13 +85,13 @@ Next.js + TS app, scripts (dev, build, lint, typecheck, test, e2e script placeho
 - AC: only "Quiz" is listed, from the registry.
 - AC: Left/Right keys, click-and-hold drag, arrow buttons and dots all move it; a drag never triggers the card click; Enter/click opens the game.
 - AC: the carousel dots are real buttons (large hit area, visible focus ring, `aria-current` on the active one): clicking or pressing Enter on a dot moves the carousel to that game; the dot visuals are unchanged.
-- AC: the "?" on the Quiz card is a real button (not part of the card link, so it never starts the game; large hit area, gentle pulse, visible focus ring). It opens a "How to play Quiz" popup (`components/QuizHelp.tsx`) with a backdrop: a short description plus a 4-step carousel (What is Quiz? / Listen first / Pick an answer / Fill the dots) with small pictures, Previous/Next buttons, clickable step dots, Left/Right keys, a "Play" button on the last step that opens the Quiz, and a Close button. All its buttons are large.
-- AC: Esc, the Back key, the Close button and a click on the backdrop close the popup and return focus to the "?"; while it is open Esc never leaves the page and the arrow keys never move the games carousel.
+- AC (replaced by the PO decision in feedback 3 F4: the tutorial is opened inside the game from the "? Quiz" badge; the game list card shows a decorative round "?" icon only, `aria-hidden`, not a button, clicks go to the card link) ~~the "?" on the Quiz card is a real button (not part of the card link, so it never starts the game; large hit area, gentle pulse, visible focus ring). It opens a "How to play Quiz" popup (`components/QuizHelp.tsx`) with a backdrop: a short description plus a 4-step carousel (What is Quiz? / Listen first / Pick an answer / Fill the dots) with small pictures, Previous/Next buttons, clickable step dots, Left/Right keys, a "Play" button on the last step that opens the Quiz, and a Close button. All its buttons are large.~~
+- AC (the popup is now opened from the "? Quiz" badge on set selection, see T9): Esc, the Back key, the Close button and a click on the backdrop close the popup and return focus to the badge; while it is open Esc never leaves the page.
 - AC: on the game list the child's avatar is large (150 px) in the top-right corner; tapping it pops a light-pink cloud speech bubble with "Let's play with me!" (one constant, `AVATAR_SAY` in `components/AvatarSay.tsx`) that goes away by itself after about 4.5 s; tapping again shows it again; no audio is played; with `prefers-reduced-motion` the pop-in animation is off.
 
 ### T9 Set selection (C3, C11)
 - AC: published sets show cover, heading-colored name, optional sub-title, question-count pill, and a star when finished; selectable by click, or by keyboard: the first set is focused on arrival, Left/Right arrows move between sets, Enter or Space opens the focused one (laptop keyboard support stays after ADR-028).
-- AC: the "? Quiz" badge at the top right of the set selection screen is a real button (large, press animation, visible focus ring). It opens the same "How to play Quiz" popup as the "?" on the game list; there its last button says "Play" and just closes the popup, since the child is already choosing a set. Esc / Back / Close / backdrop close it without leaving the screen.
+- AC: the "? Quiz" badge at the top right of the set selection screen is a real button (large, press animation, visible focus ring). It opens the "How to play Quiz" popup (the only place that opens it since F4); its last button says "Play" and just closes the popup, since the child is already choosing a set. Esc / Back / Close / backdrop close it without leaving the screen.
 - AC: the sets form a carousel like the game list: hold the mouse and drag (120 px threshold; a drag never opens a set), Left/Right arrows (focus moves and the focused set is centered), Previous/Next buttons and clickable dots; tapping a side set centers it, tapping the centered set opens it; with one set there are no arrows or dots.
 - AC: with no published sets, a friendly picture screen shows, not an error.
 - Tests: `tests/QuizSets.test.tsx` (TC1-TC15: card content, published/complete filtering, star, focusable links, blocked storage, empty state, help popup open/close/Play, Esc and back button, arrows + Space/Enter).
@@ -176,15 +176,21 @@ Ticket status: T0-T16 built and deployed; Trello board updated the same day. The
 Parked (not blocking the close; pick up only when the PO asks):
 - **T14 Setup README** (DoD 3): `README.md` is still empty. Needed before a second child's deployment.
 - **Preload and 3 s start** (was part of T13): images of the next question are not preloaded.
-- **Playwright e2e**: `npm run e2e` exists in `package.json` but Playwright is not installed or configured.
+- **Playwright e2e**: done in Phase 2 (Memory Match Task 0); `npm run e2e` runs Chromium against a stand-in Supabase (`e2e/support/`).
 - **CI**: `.github/workflows/deploy.yml` runs typecheck and tests on pushes to `main` only (not on `develop` or PRs). Its `deploy` job was removed on 2026-10-29: it always failed for lack of Vercel secrets, and Vercel's Git integration already deploys.
 - **Voice depends on the device (known gap, accepted 2026-10-29)**: the built-in kid voice uses the browser's speech synthesis (`lib/sfx.ts`), which we set to English (`lang = 'en-US'`, page `lang="en"`) but cannot guarantee. It speaks only if the device has an English voice: Windows, macOS, iPhone/iPad and most Android phones usually do; Brave on Linux (e.g. Ubuntu) has none until `speech-dispatcher` and `espeak-ng` are installed, and Android phones without Google services may have none. Workarounds today: install a voice, or upload a recorded voice per question in the admin. A reliable fix would be pre-generated audio (cloud text-to-speech stored in Supabase Storage); that needs a provider, an API key and a server step, so it is a PO decision, not built.
 - DoD 1 (child plays a full set unaided) and DoD 2 (5-question set in under 10 minutes) were never timed or recorded.
 
 Removed from scope by the PO: TV and LG webOS testing, Magic Remote, a 120 px TV hit-area rule, and TV-specific performance work (ADR-028).
 
-## 5. Phase 2: other games (redefined 2026-10-28)
-Phase 2 is now building further mini-games on top of the game registry (ADR-014); Spot the Differences with Phaser is the first candidate (ADR-002, ADR-005). The earlier Phase 2 items are parked: play-time limit and rest screen (ADR-003, ADR-010), PIN (ADR-004, ADR-011). Write `spec-phase2.md` and `plan-phase2.md` before any code.
+## 5. Phase 2: only more games (redefined 2026-10-29)
+Phase 2 only adds games on top of the game registry (ADR-014). The play-time limit, rest screen and PIN are dropped (ADR-029). New games use HTML/CSS first; Phaser only as a last resort (ADR-030).
+- Game 1, Memory Match: spec `docs/superpowers/specs/2026-10-29-memory-match-design.md`, plan `docs/superpowers/plans/2026-10-29-memory-match.md`. Built on branch `claude/phase2/memory-match` (task branches `claude/phase2/mm-t<N>-*`) with Playwright E2E.
+- Left to do:
+  - Apply `supabase/migrations/20261029100000_memory_cards.sql` to the real Supabase project after the PO's OK.
+  - PO play-test of the flip, sounds and voice in a real browser.
+  - Merging `claude/phase2/memory-match` into `develop` is the PO's decision.
+  - Spot the Differences needs its own spec first (a Phaser game must justify itself there, ADR-030).
 
 ## 6. Risks
 - Browser autoplay policy: audio only after "tap to enter" (T7).
