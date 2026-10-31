@@ -93,7 +93,7 @@ export function CropDialog({ file, start, onCancel, onSave }: {
         role="dialog"
         aria-modal="true"
         aria-label="Crop picture"
-        onKeyDown={(e) => { if (e.key === 'Escape') onCancel(); }}
+        onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); onCancel(); } }}
         style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 640, boxSizing: 'border-box', padding: '24px 28px', boxShadow: '0 20px 60px rgba(74,56,48,0.3)', display: 'flex', flexDirection: 'column', gap: 16, fontFamily: 'Nunito, sans-serif', color: '#4A3830' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
