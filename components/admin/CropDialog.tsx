@@ -108,6 +108,7 @@ export function CropDialog({ file, start, onCancel, onSave }: {
           style={{ position: 'relative', alignSelf: 'center', display: 'inline-block', maxWidth: '100%', overflow: 'hidden', lineHeight: 0, touchAction: 'none' }}
         >
           {url && (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               ref={imgRef}
               src={url}
