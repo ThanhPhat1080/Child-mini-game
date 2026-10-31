@@ -3,7 +3,13 @@ import { expect, test, type Page } from '@playwright/test';
 import { getState, makeCards, reset, signInAsAdmin, STANDIN } from './support/fixtures';
 
 const SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><circle cx="4" cy="4" r="3" fill="#E59AA1"/></svg>';
-const svgFile = (name = 'x.svg') => ({ name, mimeType: 'image/svg+xml', buffer: Buffer.from(SVG) });
+/** Pastes SVG code into one card's "Or paste SVG code" box and uses it (the picture becomes a local preview until Save). */
+async function pasteCardSvg(page: Page, n: number, svg = SVG) {
+  const card = page.getByRole('article', { name: `Card ${n}`, exact: true });
+  await card.locator('summary').click();
+  await card.getByLabel(`SVG code for card ${n}`, { exact: true }).fill(svg);
+  await card.getByRole('button', { name: `Use SVG for card ${n}`, exact: true }).click();
+}
 
 type CardRow = { id: string; word: string; image_path: string | null; active: boolean };
 const cardsOf = async () => (await getState()).memory_cards as CardRow[];
@@ -41,7 +47,7 @@ test('add a card with a picture and a word: nothing is uploaded until Save, then
   await openCards(page);
   await page.getByRole('button', { name: 'Add card' }).click();
   await expect(save(page)).toBeDisabled(); // the new card has no picture or word yet
-  await page.getByLabel('Picture file for card 13', { exact: true }).setInputFiles(svgFile());
+  await pasteCardSvg(page, 13);
   await page.getByLabel('Word for card 13', { exact: true }).fill('lion');
   await expect(page.getByRole('img', { name: 'Card 13 picture' })).toHaveAttribute('src', /^blob:/);
   await expect(save(page)).toBeEnabled();
@@ -138,9 +144,9 @@ test('importing the shipped template: blank pictures keep Save disabled until pi
   await expect(save(page)).toBeDisabled();
   expect(await cardsOf()).toEqual([]); // unsaved
 
-  await page.getByLabel('Picture file for card 1', { exact: true }).setInputFiles(svgFile('a.svg'));
+  await pasteCardSvg(page, 1);
   await expect(save(page)).toBeDisabled();
-  await page.getByLabel('Picture file for card 2', { exact: true }).setInputFiles(svgFile('b.svg'));
+  await pasteCardSvg(page, 2);
   await expect(save(page)).toBeEnabled();
   await save(page).click();
   await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible();

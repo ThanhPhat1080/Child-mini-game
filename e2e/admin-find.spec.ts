@@ -1,7 +1,16 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { getState, makeCards, reset, signInAsAdmin, type FindLevelRow } from './support/fixtures';
 
 const PICTURE = 'public/seed/spot/garden-a.svg';
+
+/** Pastes the picture's SVG code into one level's "Or paste SVG code" box and uses it (a local preview until Save). */
+async function pasteFindPicture(page: Page, n: number) {
+  const level = page.getByRole('article', { name: `Level ${n}`, exact: true });
+  await level.locator('summary').first().click();
+  await level.getByLabel(`SVG code for level ${n}`, { exact: true }).fill(readFileSync(PICTURE, 'utf8'));
+  await level.getByRole('button', { name: `Use SVG for level ${n}`, exact: true }).click();
+}
 
 type ObjectRow = { x: number; y: number; r: number; word: string; audio_path: string | null };
 type LevelRow = FindLevelRow & { objects: ObjectRow[] };
@@ -49,7 +58,7 @@ test('(b) build a level: nothing is stored before Save, then the objects keep cl
   await openFind(page);
   await page.getByRole('button', { name: 'Add level' }).click();
   await expect(save(page)).toBeDisabled();
-  await page.getByLabel('Picture file for level 1', { exact: true }).setInputFiles(PICTURE);
+  await pasteFindPicture(page, 1);
   await expect(picture(page, 1)).toBeVisible();
 
   await clickPicture(page, 1, 0.25, 0.3);
@@ -87,7 +96,7 @@ test('(c) a picture shared by two levels survives deleting one, and is removed w
   await openFind(page);
   // level 1: upload the picture and one object
   await page.getByRole('button', { name: 'Add level' }).click();
-  await page.getByLabel('Picture file for level 1', { exact: true }).setInputFiles(PICTURE);
+  await pasteFindPicture(page, 1);
   await clickPicture(page, 1, 0.3, 0.4);
   await clickPicture(page, 1, 0.6, 0.5);
   await page.getByLabel('Word for object 1', { exact: true }).fill('apple');
@@ -100,8 +109,9 @@ test('(c) a picture shared by two levels survives deleting one, and is removed w
 
   // level 2: choose the same picture from the library
   await page.getByRole('button', { name: 'Add level' }).click();
-  await article(page, 2).getByRole('button', { name: 'Choose from library', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Choose from library' }).getByRole('button', { name: `Choose ${basename(shared)}` }).click();
+  await article(page, 2).getByRole('button', { name: '+ Choose images', exact: true }).click();
+  await page.getByRole('dialog', { name: 'Image Library' }).getByRole('button', { name: `Choose ${basename(shared)}` }).click();
+  await page.getByRole('dialog', { name: 'Image Library' }).getByRole('button', { name: 'OK', exact: true }).click();
   await expect(picture(page, 2)).toBeVisible();
   await clickPicture(page, 2, 0.6, 0.5);
   await clickPicture(page, 2, 0.4, 0.7);
@@ -139,14 +149,15 @@ test('(d) choosing a sound from the library stores its path on that object', asy
   await reset({ find_levels: [], memory_cards: [{ ...makeCards(1)[0], audio_path: 'audio/x.mp3' }] });
   await openFind(page);
   await page.getByRole('button', { name: 'Add level' }).click();
-  await page.getByLabel('Picture file for level 1', { exact: true }).setInputFiles(PICTURE);
+  await pasteFindPicture(page, 1);
   await clickPicture(page, 1, 0.4, 0.4);
   await clickPicture(page, 1, 0.7, 0.6);
   await page.getByLabel('Word for object 1', { exact: true }).fill('cat');
   await page.getByLabel('Word for object 2', { exact: true }).fill('duck');
   await page.getByRole('button', { name: 'Choose sound for object 1', exact: true }).click();
-  await page.getByRole('dialog', { name: 'Choose from library' }).getByRole('button', { name: 'Choose x.mp3' }).click();
-  await expect(page.getByRole('dialog', { name: 'Choose from library' })).toHaveCount(0);
+  await page.getByRole('dialog', { name: 'Sound Library' }).getByRole('button', { name: 'Choose x.mp3' }).click();
+  await page.getByRole('dialog', { name: 'Sound Library' }).getByRole('button', { name: 'OK', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Sound Library' })).toHaveCount(0);
   await expect(page.getByText('x.mp3', { exact: true })).toBeVisible();
   await save(page).click();
   await expect(saved(page)).toBeVisible();
@@ -157,7 +168,7 @@ test('(d) choosing a sound from the library stores its path on that object', asy
 test('(e) the child plays the objects in the admin numbering after a move', async ({ page }) => {
   await openFind(page);
   await page.getByRole('button', { name: 'Add level' }).click();
-  await page.getByLabel('Picture file for level 1', { exact: true }).setInputFiles(PICTURE);
+  await pasteFindPicture(page, 1);
   await clickPicture(page, 1, 0.2, 0.3);
   await clickPicture(page, 1, 0.5, 0.5);
   await clickPicture(page, 1, 0.8, 0.7);
