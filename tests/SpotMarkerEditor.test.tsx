@@ -84,11 +84,13 @@ describe('SpotMarkerEditor (A15)', () => {
     expect(screen.getByRole('button', { name: 'Spot 2' })).toBeTruthy();
   });
 
-  it('clicking picture B does not add markers', () => {
+  it('clicking picture B adds a marker at the same spot as the click', () => {
     const { onChange } = setup();
     fireEvent.click(screen.getByRole('button', { name: 'Show picture B' }));
-    fireEvent.click(screen.getByRole('img', { name: 'Picture B' }), { clientX: 10, clientY: 10 });
-    expect(onChange).not.toHaveBeenCalled();
+    const imgB = screen.getByRole('img', { name: 'Picture B' });
+    imgB.getBoundingClientRect = () => ({ left: 100, top: 50, width: 400, height: 300, right: 500, bottom: 350, x: 100, y: 50, toJSON: () => ({}) });
+    fireEvent.click(imgB, { clientX: 100 + 0.25 * 400, clientY: 50 + 0.75 * 300 });
+    expect(onChange).toHaveBeenCalledWith([{ x: 0.25, y: 0.75, r: 0.06 }]);
   });
 
   it('uses the current bounding rect at click time', () => {

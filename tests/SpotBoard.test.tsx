@@ -22,9 +22,9 @@ describe('SpotBoard', () => {
     rect(area('a'), { left: 100, top: 50, width: 400, height: 300 });
     rect(area('b'), { left: 700, top: 50, width: 400, height: 300 });
     fireEvent.click(pic('a'), { clientX: 200, clientY: 200 });
-    expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 4 / 3);
+    expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 1);
     fireEvent.click(pic('b'), { clientX: 800, clientY: 200 });
-    expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 4 / 3);
+    expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 1);
   });
 
   it('measures the inner area, not the framed outer box (S3)', () => {
@@ -33,7 +33,7 @@ describe('SpotBoard', () => {
     rect(pic('a'), { left: 92, top: 42, width: 416, height: 316 }); // outer border box incl. 8px frame
     rect(area('a'), { left: 100, top: 50, width: 400, height: 300 });
     fireEvent.click(pic('a'), { clientX: 200, clientY: 200 });
-    expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 4 / 3);
+    expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 1);
   });
 
   it('a click on the frame (outside the inner area) is not a tap', () => {
@@ -55,10 +55,10 @@ describe('SpotBoard', () => {
     render(<SpotBoard level={level} urlA="/a.svg" urlB="/b.svg" found={[]} onTap={onTap} />);
     rect(area('a'), { left: 0, top: 0, width: 400, height: 300 });
     fireEvent.click(pic('a'), { clientX: 100, clientY: 150 });
-    expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 4 / 3);
+    expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 1);
     rect(area('a'), { left: 0, top: 0, width: 200, height: 150 });
     fireEvent.click(pic('a'), { clientX: 100, clientY: 75 });
-    expect(onTap).toHaveBeenLastCalledWith({ x: 0.5, y: 0.5 }, 4 / 3);
+    expect(onTap).toHaveBeenLastCalledWith({ x: 0.5, y: 0.5 }, 1);
   });
 
   it('draws a ring on both pictures for each found difference, with no text', () => {
@@ -87,6 +87,12 @@ describe('SpotBoard', () => {
     render(<SpotBoard level={level} urlA="/a.svg" urlB="/b.svg" found={[]} onTap={() => {}} />);
     fireEvent.error(pic('b').querySelector('img')!);
     expect(pic('b').querySelector('[data-placeholder]')).not.toBeNull();
+  });
+
+  it('shows a picture as a 860x860 square before it loads, since pictures are square now (ADR-032)', () => {
+    render(<SpotBoard level={level} urlA="/a.svg" urlB="/b.svg" found={[]} onTap={() => {}} />);
+    expect(pic('a').style.width).toBe('860px');
+    expect(pic('a').style.height).toBe('860px');
   });
 
   it('shows a portrait picture 860 tall (aspect 0.73) and a 4:3 picture 880x660', () => {

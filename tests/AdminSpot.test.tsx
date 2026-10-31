@@ -82,19 +82,33 @@ describe('Admin Spot page (A14-A16)', () => {
     expect(screen.getByRole('img', { name: 'Level 1 picture A thumbnail' }).getAttribute('src')).toBe('/media/spot/1a.png');
   });
 
+  it('Add level sits in the header beside Revert and Save, in blue, and a new level goes on top', async () => {
+    await renderWith([level(1)]);
+    const add = screen.getByRole('button', { name: 'Add level' });
+    expect(screen.getAllByRole('button', { name: 'Add level' })).toHaveLength(1);
+    expect(add.compareDocumentPosition(revertBtn()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(add.style.backgroundColor).toBe('rgb(63, 115, 181)');
+    fireEvent.click(add);
+    const articles = screen.getAllByRole('article');
+    expect(articles[0].getAttribute('aria-label')).toBe('Level 1');
+    expect(within(articles[0]).getByRole('button', { name: 'Choose from library for level 1 picture A' })).toBeTruthy();
+    expect(articles[1].getAttribute('aria-label')).toBe('Level 2');
+    expect(screen.getByRole('img', { name: 'Level 2 picture A thumbnail' }).getAttribute('src')).toBe('/media/spot/1a.png');
+  });
+
   it('Save is disabled until both pictures and 3 differences exist', async () => {
     await renderWith([level(1)]);
     expect(saveBtn().disabled).toBe(true); // nothing changed
     fireEvent.click(screen.getByRole('button', { name: 'Add level' }));
     expect(saveBtn().disabled).toBe(true);
     lib.listLibrary.mockResolvedValue(['spot/a.png', 'spot/b.png']);
-    await pickPictureFromLibrary(2, 'A', 'a.png');
-    await pickPictureFromLibrary(2, 'B', 'b.png');
+    await pickPictureFromLibrary(1, 'A', 'a.png');
+    await pickPictureFromLibrary(1, 'B', 'b.png');
     expect(saveBtn().disabled).toBe(true); // no spots yet
-    clickPictureA(2, 0.2, 0.2);
-    clickPictureA(2, 0.5, 0.5);
+    clickPictureA(1, 0.2, 0.2);
+    clickPictureA(1, 0.5, 0.5);
     expect(saveBtn().disabled).toBe(true); // 2 spots
-    clickPictureA(2, 0.8, 0.8);
+    clickPictureA(1, 0.8, 0.8);
     expect(saveBtn().disabled).toBe(false);
   });
 
@@ -115,23 +129,15 @@ describe('Admin Spot page (A14-A16)', () => {
     expect(saveBtn().disabled).toBe(false);
   });
 
-  it('always shows the tip about landscape pictures and big differences', async () => {
+  it('no longer shows the landscape tip: every picture is a square now (ADR-032)', async () => {
     await renderWith([level(1)]);
-    expect(screen.getByText('Tip: use landscape pictures (4:3 or 3:2) and make every difference big and clear, so a young child can see it from the chair.')).toBeTruthy();
+    expect(screen.queryByText(/landscape pictures/i)).toBeNull();
   });
 
-  it('a tall picture warns once per level, does not block Save; 4:3 does not warn', async () => {
+  it('a tall picture no longer warns, because new pictures are cropped to a square (ADR-032)', async () => {
     h.naturalSize.mockImplementation(async () => ({ w: 300, h: 400 }));
     await renderWith([level(1)]);
-    const msg = 'This picture is tall, so it will be shown smaller. A landscape picture (4:3 or 3:2) works best.';
-    expect(await screen.findAllByText(msg)).toHaveLength(1);
-    fireEvent.click(screen.getByLabelText('Level 1 on'));
-    expect(saveBtn().disabled).toBe(false);
-    cleanup();
-    h.naturalSize.mockReset();
-    h.naturalSize.mockResolvedValue({ w: 400, h: 300 });
-    await renderWith([level(1)]);
-    await waitFor(() => expect(h.naturalSize).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(h.naturalSize).toHaveBeenCalled());
     await Promise.resolve();
     expect(screen.queryByText(/picture is tall/i)).toBeNull();
   });

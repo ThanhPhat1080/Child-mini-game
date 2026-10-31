@@ -21,7 +21,7 @@ describe('FindBoard (F2-F9)', () => {
     render(<FindBoard url="/a.svg" objects={objects} found={[]} onTap={onTap} />);
     rect(area(), { left: 100, top: 50, width: 400, height: 300 });
     fireEvent.click(area(), { clientX: 200, clientY: 200 });
-    expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 4 / 3);
+    expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 1);
   });
 
   it('a click on the frame (outside the inner area) is not a tap', () => {
@@ -39,10 +39,10 @@ describe('FindBoard (F2-F9)', () => {
     render(<FindBoard url="/a.svg" objects={objects} found={[]} onTap={onTap} />);
     rect(area(), { left: 0, top: 0, width: 400, height: 300 });
     fireEvent.click(area(), { clientX: 100, clientY: 150 });
-    expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 4 / 3);
+    expect(onTap).toHaveBeenLastCalledWith({ x: 0.25, y: 0.5 }, 1);
     rect(area(), { left: 0, top: 0, width: 200, height: 150 });
     fireEvent.click(area(), { clientX: 100, clientY: 75 });
-    expect(onTap).toHaveBeenLastCalledWith({ x: 0.5, y: 0.5 }, 4 / 3);
+    expect(onTap).toHaveBeenLastCalledWith({ x: 0.5, y: 0.5 }, 1);
   });
 
   it('a zero-size rect is ignored', () => {
@@ -77,6 +77,12 @@ describe('FindBoard (F2-F9)', () => {
     render(<FindBoard url="/a.svg" objects={objects} found={[]} onTap={() => {}} />);
     fireEvent.error(area().querySelector('img')!);
     expect(area().querySelector('[data-placeholder]')).not.toBeNull();
+  });
+
+  it('a picture is a 900x900 square before it loads, since pictures are square now (ADR-032)', () => {
+    render(<FindBoard url="/a.svg" objects={objects} found={[]} onTap={() => {}} />);
+    expect(pic().style.width).toBe('900px');
+    expect(pic().style.height).toBe('900px');
   });
 
   it('a 2:1 picture fills 1280 px wide, a tall one fills 900 px high', () => {

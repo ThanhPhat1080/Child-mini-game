@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isLevelComplete, loadLevels, moveLevel, newLevel, saveLevels, type ELevel } from '@/lib/spot/adminLevels';
 import { aspectsClose } from '@/lib/spot/validate';
+import type { Crop } from '@/lib/crop/geometry';
 import { naturalSize } from '@/lib/spot/imageSize';
 import { clearPending, mediaUrl, svgToPending } from '@/lib/media';
 import { forgetUploads } from '@/lib/media/uploads';
@@ -18,6 +19,8 @@ export default function SpotPage() {
   const [draft, setDraft] = useState<ELevel[] | null>(null);
   const [msgs, setMsgs] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState<number | null>(null);
+  /** Picture A's crop per level, kept while editing: picture B starts from it (A25). Cleared on Save and Revert. */
+  const [aCrops, setACrops] = useState<Record<string, Crop>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
@@ -85,10 +88,11 @@ export default function SpotPage() {
     edit(id, { [side]: svgToPending(r.svg) });
   }
 
-  function add() { touch(); setDraft([...draft!, newLevel()]); }
+  function add() { touch(); setDraft([newLevel(), ...draft!]); }
 
   function revert() {
     clearPending(); forgetUploads(); // nothing was uploaded, so there is nothing to delete
+    setACrops({});
     setDraft(saved); setMsgs({}); touch();
   }
 
@@ -98,7 +102,7 @@ export default function SpotPage() {
     const r = await saveLevels(saved, draft);
     if (r.error) { setError(r.error); setBusy(false); return; }
     if (r.warning) setWarning(r.warning);
-    if (await load()) { clearPending(); forgetUploads(); setMsgs({}); setNotice('Saved'); }
+    if (await load()) { clearPending(); forgetUploads(); setACrops({}); setMsgs({}); setNotice('Saved'); }
     setBusy(false);
   }
 
@@ -107,8 +111,6 @@ export default function SpotPage() {
     const b = l.b ? ratios[l.b] : null;
     return !!a && !!b && !aspectsClose(a, b);
   };
-
-  const tallOff = (l: ELevel) => [l.a, l.b].some((p) => { const r = p ? ratios[p] : null; return !!r && r < 1; });
 
   const doomed = confirm !== null ? draft[confirm] : null;
   let status = 'All changes saved.';
@@ -125,7 +127,7 @@ export default function SpotPage() {
           <p style={{ margin: '6px 0 0', color: '#7A6458', fontSize: 15 }}>Two pictures and 3 to 10 spots per level. Turn a level off to keep it as a draft; you can still preview it as the child.</p>
         </div>
         <div style={{ flex: '0 0 auto', maxWidth: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-          <CardsHeaderActions dirty={dirty} busy={busy} canSave={canSave} onRevert={revert} onSave={doSave} />
+          <CardsHeaderActions dirty={dirty} busy={busy} canSave={canSave} onAdd={add} onRevert={revert} onSave={doSave} />
           <span role="status" style={{ fontSize: 13, color: '#7A6458', maxWidth: 420, textAlign: 'right' }}>{status}</span>
         </div>
       </div>
@@ -136,7 +138,9 @@ export default function SpotPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {draft.map((l, i) => (
           <SpotLevelPanel
-            key={l.id} l={l} n={i + 1} count={draft.length} message={msgs[l.id] ?? null} shapeWarning={shapeOff(l)} tallWarning={tallOff(l)}
+            key={l.id} l={l} n={i + 1} count={draft.length} message={msgs[l.id] ?? null} shapeWarning={shapeOff(l)}
+            startCrop={aCrops[l.id]}
+            onCropped={(side, c) => { if (side === 'a') setACrops((m) => ({ ...m, [l.id]: c })); }}
             onEdit={(patch) => edit(l.id, patch)}
             onChooseLibrary={(side, path) => chooseLibrary(l.id, side, path)}
             onSvg={(side, code) => applySvg(l.id, side, code)}
@@ -144,10 +148,6 @@ export default function SpotPage() {
             onAskDelete={() => setConfirm(i)}
           />
         ))}
-        <button type="button" onClick={add} className={`${s.btn} ${s.dash}`} style={{ minHeight: 96, borderRadius: 18, border: '2px dashed #D9C6B2', background: 'transparent', color: '#5A4038', fontSize: 16, fontWeight: 700, fontFamily: 'Nunito, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-          Add level
-        </button>
       </div>
 
       {doomed && (
