@@ -9,10 +9,10 @@ const small = { ...ghostBtn, height: 34, padding: '0 12px', fontSize: 13 } as co
 
 /**
  * "Choose from library" next to an upload button (A24). `label` names the field for screen readers, e.g. "card 3 picture".
- * `onChoose` gets the bucket path after OK; `onUploadFile` is the page's own upload handler, used by "Upload new" in the dialog.
+ * `onChoose` gets the bucket path after OK.
  */
-export function LibraryButton({ kind, label, onChoose, onUploadFile }: {
-  kind: 'image' | 'audio'; label: string; onChoose: (path: string) => void; onUploadFile?: (file: File) => void;
+export function LibraryButton({ kind, label, onChoose }: {
+  kind: 'image' | 'audio'; label: string; onChoose: (path: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -20,7 +20,7 @@ export function LibraryButton({ kind, label, onChoose, onUploadFile }: {
       <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Choose from library for ${label}`} style={small} onClick={() => setOpen(true)}>
         Choose from library
       </button>
-      {open && <MediaLibraryDialog kind={kind} onChoose={onChoose} onUploadFile={onUploadFile} onClose={() => setOpen(false)} />}
+      {open && <MediaLibraryDialog kind={kind} onChoose={onChoose} onClose={() => setOpen(false)} />}
     </>
   );
 }

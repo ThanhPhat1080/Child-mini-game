@@ -1,9 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { mediaUrl } from '@/lib/media';
+import { MAX_SOUND_BYTES, cardAudioType } from './CardPanel';
+import { mediaUrl, uploadToLibrary, MAX_IMAGE_BYTES } from '@/lib/media';
 import { listLibrary } from '@/lib/media/library';
 import { useSoundPreview } from './useSoundPreview';
+
+/** Picture types the library accepts (the same as the Cards and Spot pictures). */
+const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
 
 const btn = {
   border: '1.5px solid #E3D5C4',
@@ -24,14 +28,17 @@ const picked = { border: '3px solid #3F6B48', background: '#EAF3FA' } as const;
 
 /**
  * "Choose from library" modal (A23, A24). Clicking an item only highlights it; OK (bottom right) applies it.
- * Applying is a preview: the page keeps it until Save, and Revert drops it. "Upload new" picks a file from the computer instead.
+ * Applying is a preview: the page keeps it until Save, and Revert drops it.
+ * "Upload new" uploads the file at once, stays open with a loading state, and lists the new file to choose from.
  */
-export function MediaLibraryDialog({ kind, onChoose, onClose, onUploadFile }: {
-  kind: 'image' | 'audio'; onChoose: (path: string) => void; onClose: () => void; onUploadFile?: (file: File) => void;
+export function MediaLibraryDialog({ kind, onChoose, onClose }: {
+  kind: 'image' | 'audio'; onChoose: (path: string) => void; onClose: () => void;
 }) {
   const [paths, setPaths] = useState<string[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const preview = useSoundPreview();
   const fileInput = useRef<HTMLInputElement | null>(null);
 
@@ -58,11 +65,29 @@ export function MediaLibraryDialog({ kind, onChoose, onClose, onUploadFile }: {
     onClose();
   }
 
-  function uploaded(file: File | undefined) {
-    if (!file || !onUploadFile) return;
-    preview.stop();
-    onUploadFile(file);
-    onClose();
+  /** Checks the file like the page uploads do, uploads it, and lists it without choosing it. */
+  async function upload(picked: File) {
+    setUploadError(null);
+    let file = picked;
+    if (kind === 'image') {
+      if (!IMAGE_TYPES.includes(file.type)) return setUploadError('Use a PNG, JPG, WebP or SVG picture.');
+      if (file.size > MAX_IMAGE_BYTES) return setUploadError('Image must be 2 MB or smaller.');
+    } else {
+      const type = cardAudioType(file.type);
+      if (!type) return setUploadError('Use an MP3, M4A or WAV sound.');
+      if (file.size > MAX_SOUND_BYTES) return setUploadError('Sound must be 10 MB or smaller.');
+      // the bucket only knows the standard names (e.g. Chrome calls .m4a "audio/x-m4a")
+      if (type !== file.type) file = new File([file], file.name, { type });
+    }
+    setUploading(true);
+    try {
+      const path = await uploadToLibrary(kind, file);
+      setPaths((list) => [...new Set([...(list ?? []), path])].sort());
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
   }
 
   let body: React.ReactNode;
@@ -103,16 +128,16 @@ export function MediaLibraryDialog({ kind, onChoose, onClose, onUploadFile }: {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
           <h2 style={{ margin: 0, fontSize: 21, fontWeight: 700 }}>Choose from library</h2>
           <div style={{ display: 'flex', gap: 8 }}>
-            {onUploadFile && (
-              <>
-                <input ref={fileInput} type="file" hidden accept={kind === 'image' ? 'image/*' : 'audio/*'} aria-label={`Upload new ${kind === 'image' ? 'picture' : 'sound'}`}
-                  onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; uploaded(f); }} />
-                <button type="button" onClick={() => fileInput.current?.click()} style={{ ...btn, height: 44, padding: '0 16px' }}>Upload new</button>
-              </>
-            )}
+            <input ref={fileInput} type="file" hidden accept={kind === 'image' ? 'image/*' : 'audio/*'} aria-label={`Upload new ${kind === 'image' ? 'picture' : 'sound'}`}
+              onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void upload(f); }} />
+            <button type="button" disabled={uploading || paths === null} onClick={() => fileInput.current?.click()} style={{ ...btn, height: 44, padding: '0 16px', opacity: uploading || paths === null ? 0.6 : 1 }}>
+              {uploading ? 'Uploading...' : 'Upload new'}
+            </button>
             <button type="button" autoFocus onClick={onClose} style={{ ...btn, height: 44, padding: '0 20px' }}>Close</button>
           </div>
         </div>
+        {uploadError && <p role="alert" style={{ margin: 0, color: '#A8484F', fontWeight: 700 }}>{uploadError}</p>}
+        {uploading && <p role="status" style={{ margin: 0, color: '#6E5A4E', fontWeight: 700 }}>Uploading your file. It will appear in the list when it is done.</p>}
         {body}
         {paths !== null && paths.length > 0 && (
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

@@ -5,6 +5,7 @@ import { isLevelComplete, loadLevels, moveLevel, newLevel, saveLevels, type ELev
 import { aspectsClose } from '@/lib/spot/validate';
 import { naturalSize } from '@/lib/spot/imageSize';
 import { MAX_IMAGE_BYTES, addPending, clearPending, mediaUrl, svgToPending } from '@/lib/media';
+import { forgetUploads } from '@/lib/media/uploads';
 import { checkSvg } from '@/lib/quizImport';
 import { CardsHeaderActions } from '@/components/admin/CardsHeaderActions';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
@@ -96,7 +97,7 @@ export default function SpotPage() {
   function add() { touch(); setDraft([...draft!, newLevel()]); }
 
   function revert() {
-    clearPending(); // nothing was uploaded, so there is nothing to delete
+    clearPending(); forgetUploads(); // nothing was uploaded, so there is nothing to delete
     setDraft(saved); setMsgs({}); touch();
   }
 
@@ -106,7 +107,7 @@ export default function SpotPage() {
     const r = await saveLevels(saved, draft);
     if (r.error) { setError(r.error); setBusy(false); return; }
     if (r.warning) setWarning(r.warning);
-    if (await load()) { clearPending(); setMsgs({}); setNotice('Saved'); }
+    if (await load()) { clearPending(); forgetUploads(); setMsgs({}); setNotice('Saved'); }
     setBusy(false);
   }
 

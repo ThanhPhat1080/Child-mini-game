@@ -75,7 +75,7 @@ export function CardPanel({ c, n, duplicate, message, autoFocus, groups, weakGro
         <input id={imgId} type="file" hidden aria-label={`Picture file for card ${n}`} accept={CARD_IMG_TYPES.join(',')}
           onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onPickImage(f); }} />
         <button type="button" className={`${s.btn} ${s.ghost}`} style={small} onClick={() => document.getElementById(imgId)?.click()}>{c.image ? 'Change picture' : 'Upload picture'}</button>
-        <LibraryButton kind="image" label={`card ${n} picture`} onChoose={(path) => onChooseLibrary('image', path)} onUploadFile={(f) => onPickImage(f)} />
+        <LibraryButton kind="image" label={`card ${n} picture`} onChoose={(path) => onChooseLibrary('image', path)} />
         {c.image && <span style={{ ...hint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{fileName(c.image)}</span>}
       </div>
       <details>
@@ -96,7 +96,7 @@ export function CardPanel({ c, n, duplicate, message, autoFocus, groups, weakGro
         <input id={audId} type="file" hidden aria-label={`Sound file for card ${n}`} accept={AUDIO_ACCEPT}
           onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onPickAudio(f); }} />
         <button type="button" className={`${s.btn} ${s.ghost}`} style={small} onClick={() => document.getElementById(audId)?.click()}>{c.audio ? 'Change sound' : 'Upload sound'}</button>
-        <LibraryButton kind="audio" label={`card ${n} sound`} onChoose={(path) => onChooseLibrary('audio', path)} onUploadFile={(f) => onPickAudio(f)} />
+        <LibraryButton kind="audio" label={`card ${n} sound`} onChoose={(path) => onChooseLibrary('audio', path)} />
         {c.audio && <button type="button" className={`${s.btn} ${s.ghost}`} style={small} onClick={() => onEdit({ audio: null })}>Remove sound</button>}
         <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Play card ${n}`} style={small} disabled={!len && !c.audio} onClick={onPlay}>▶ Play</button>
       </div>

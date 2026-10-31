@@ -6,6 +6,7 @@ import { addPending, clearPending, isPending, mediaUrl, removeMedia, uploadPendi
 import { applause, ohOh, speakKid, yay, type SoundHandle } from '@/lib/sfx';
 import styles from '../../admin.module.css';
 import { LibraryButton } from '@/components/admin/LibraryButton';
+import { forgetUploads } from '@/lib/media/uploads';
 
 type Row = { child_name: string; greeting_path: string | null; music_path: string | null; music_volume: number; avatar_path: string | null; hooray_path: string | null; ohoh_path: string | null; complete_path: string | null };
 type AudioKind = 'greeting' | 'music' | 'hooray' | 'ohoh' | 'complete';
@@ -109,6 +110,7 @@ export default function SettingsPage() {
     setAvatarLibrary(null);
     setSoundDraft({});
     clearPending();
+    forgetUploads();
     stopPreview();
     const failed = await removeMedia(replaced);
     say(failed ? 'Saved, but an old file could not be removed from storage.' : 'Saved.', !!failed);
@@ -123,6 +125,7 @@ export default function SettingsPage() {
     setAvatarLibrary(null);
     setSoundDraft({});
     clearPending();
+    forgetUploads();
     stopPreview();
     say('Changes reverted.');
   }
@@ -246,7 +249,7 @@ export default function SettingsPage() {
         <input ref={(el) => { soundInputs.current[kind] = el; }} className={styles.hidden} type="file" accept="audio/*" aria-label={`Sound file for ${label}`}
           onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) pickSoundFile(kind, f); }} />
         <button type="button" className={styles.ghost} onClick={() => soundInputs.current[kind]?.click()}>{saved || shown(kind) ? 'Replace' : 'Upload'}</button>
-        <LibraryButton kind="audio" label={label} onChoose={(path) => chooseSound(kind, path)} onUploadFile={(f) => pickSoundFile(kind, f)} />
+        <LibraryButton kind="audio" label={label} onChoose={(path) => chooseSound(kind, path)} />
         {builtInOption && shown(kind) && <button type="button" className={styles.ghost} onClick={() => removeSound(kind)}>Use built-in</button>}
       </>
     );
@@ -283,7 +286,7 @@ export default function SettingsPage() {
             <input ref={avatarInput} className={styles.hidden} type="file" accept={ACCEPT_AVATAR} aria-label="Avatar file"
               onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) pickAvatar(f); }} />
             <button type="button" className={styles.ghost} onClick={() => avatarInput.current?.click()}>{row?.avatar_path || avatarPick || avatarLibrary ? 'Replace avatar' : 'Upload avatar'}</button>
-            <LibraryButton kind="image" label="avatar" onChoose={chooseAvatar} onUploadFile={pickAvatar} />
+            <LibraryButton kind="image" label="avatar" onChoose={chooseAvatar} />
             <span className={styles.note}>SVG, PNG, JPG or WebP, square, up to 2 MB. Applied when you press Save changes.</span>
           </div>
         </div>

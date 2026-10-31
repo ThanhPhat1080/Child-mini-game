@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { addPending, clearPending, commitPendingMedia, materializeSvg, mediaUrl, removeMedia, svgToPending } from '@/lib/media';
+import { forgetUploads } from '@/lib/media/uploads';
 import { pathsToDelete, setMediaPaths } from '@/lib/mediaPaths';
 import { SetCard } from '@/components/SetCard';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
@@ -107,6 +108,7 @@ export function SetEditor({ setId }: { setId: string }) {
       if (fresh) {
         setD(fresh); setSaved(fresh); setHexText(null);
         clearPending();
+        forgetUploads();
         // the database now decides what is still used; free everything else (T15)
         const stale = pathsToDelete(setMediaPaths(saved), setMediaPaths(fresh), uploaded);
         cleanupFailed = !!(await removeMedia(stale));
@@ -119,7 +121,7 @@ export function SetEditor({ setId }: { setId: string }) {
 
   function revert() {
     if (!saved) return;
-    clearPending(); // nothing was uploaded, so there is nothing to delete
+    clearPending(); forgetUploads(); // nothing was uploaded, so there is nothing to delete
     setD(saved); setHexText(null); setNameError(false);
     setCur(saved.qs.length ? Math.min(Math.max(cur, 0), saved.qs.length - 1) : -1);
   }
@@ -305,7 +307,7 @@ export function SetEditor({ setId }: { setId: string }) {
                     <span style={{ fontSize: 15, fontWeight: 700 }}>{d.cover ? fileName(d.cover) : 'No picture yet'}</span>
                     <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <button type="button" className={s.ghost} onClick={() => pickFile({ kind: 'cover' })} style={ghostBtn}>Upload picture</button>
-                      <LibraryButton kind="image" label="set cover picture" onChoose={(path) => applyTarget({ kind: 'cover' }, path)} onUploadFile={(f) => pickedFile({ kind: 'cover' }, f)} />
+                      <LibraryButton kind="image" label="set cover picture" onChoose={(path) => applyTarget({ kind: 'cover' }, path)} />
                       <div style={{ flexBasis: '100%' }}><SvgPaste label="set cover picture" onUse={(code) => applySvg({ kind: 'cover' }, code)} /></div>
                       {d.cover && <button type="button" className={s.ghost} onClick={() => edit({ cover: null })} style={ghostBtn}>Remove</button>}
                     </span>
@@ -342,7 +344,7 @@ export function SetEditor({ setId }: { setId: string }) {
             onAskDelete={() => setConfirm({ type: 'q', i: cur })}
             onPick={(kind) => pickFile(kind)}
             onChooseLibrary={(kind, path) => applyTarget(kind, path)}
-            onUploadFile={(kind, f) => pickedFile(kind, f)}
+           
             onSvg={(kind, code) => applySvg(kind, code)}
             onPlay={playVoice}
           />

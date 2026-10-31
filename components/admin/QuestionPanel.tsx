@@ -16,14 +16,12 @@ const arrowBtn = { width: 26, height: 20, border: 'none', background: 'transpare
 type Pick = { kind: 'qimg' } | { kind: 'voice' } | { kind: 'answer'; i: number };
 
 /** Question list (left) + question editor (right). Matches the AdminEditor board. */
-export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAskDelete, onPick, onChooseLibrary, onUploadFile, onSvg, onPlay }: {
+export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAskDelete, onPick, onChooseLibrary, onSvg, onPlay }: {
   d: ESet; cur: number; q: EQuestion | null;
   onSelect: (i: number) => void; onAdd: () => void; onMove: (i: number, dir: -1 | 1) => void;
   onEdit: (patch: Partial<EQuestion>) => void; onAskDelete: () => void; onPick: (t: Pick) => void;
   /** A picture or sound already in the library: the bucket path, nothing uploaded (A24). */
   onChooseLibrary: (t: Pick, path: string) => void;
-  /** "Upload new" in the library: the same handler as the Upload buttons. */
-  onUploadFile: (t: Pick, f: File) => void;
   /** SVG code pasted for a picture: the page checks it and stores it as a file (A11 rules). */
   onSvg: (t: Pick, code: string) => void; onPlay: (path: string) => void;
 }) {
@@ -108,7 +106,7 @@ export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAs
                   <span style={{ fontWeight: 700, fontSize: 15 }}>{q.qimg ? fileName(q.qimg) : 'No image yet. You can skip it.'}</span>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
                     <button type="button" className={s.ghost} onClick={() => onPick({ kind: 'qimg' })} style={ghostBtn}>Upload image</button>
-                    <LibraryButton kind="image" label="question image" onChoose={(p) => onChooseLibrary({ kind: 'qimg' }, p)} onUploadFile={(f) => onUploadFile({ kind: 'qimg' }, f)} />
+                    <LibraryButton kind="image" label="question image" onChoose={(p) => onChooseLibrary({ kind: 'qimg' }, p)} />
                     <div style={{ flexBasis: '100%' }}><SvgPaste label="question image" onUse={(code) => onSvg({ kind: 'qimg' }, code)} /></div>
                     {q.qimg && <button type="button" className={s.ghost} onClick={() => onEdit({ qimg: null })} style={ghostBtn}>Remove</button>}
                   </div>
@@ -127,14 +125,14 @@ export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAs
                     </button>
                     <span style={{ flex: '1 1 180px', fontWeight: 700, fontSize: 15, overflowWrap: 'anywhere' }}>{fileName(q.voice)}</span>
                     <button type="button" className={s.ghost} onClick={() => onPick({ kind: 'voice' })} style={ghostBtn}>Upload</button>
-                    <LibraryButton kind="audio" label="question voice" onChoose={(p) => onChooseLibrary({ kind: 'voice' }, p)} onUploadFile={(f) => onUploadFile({ kind: 'voice' }, f)} />
+                    <LibraryButton kind="audio" label="question voice" onChoose={(p) => onChooseLibrary({ kind: 'voice' }, p)} />
                     <button type="button" className={s.ghost} onClick={() => onEdit({ voice: null })} style={ghostBtn}>Remove</button>
                   </>
                 ) : (
                   <>
                     <span style={{ flex: '1 1 200px', fontSize: 14, color: '#6E5A4E' }}>No voice yet. The child will only see the pictures.</span>
                     <button type="button" className={s.ghost} onClick={() => onPick({ kind: 'voice' })} style={ghostBtn}>Upload</button>
-                    <LibraryButton kind="audio" label="question voice" onChoose={(p) => onChooseLibrary({ kind: 'voice' }, p)} onUploadFile={(f) => onUploadFile({ kind: 'voice' }, f)} />
+                    <LibraryButton kind="audio" label="question voice" onChoose={(p) => onChooseLibrary({ kind: 'voice' }, p)} />
                   </>
                 )}
               </div>
@@ -171,7 +169,7 @@ export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAs
                         )}
                       </div>
                       <button type="button" className={s.ghost} onClick={() => onPick({ kind: 'answer', i })} style={{ ...ghostBtn, fontSize: 13 }}>Upload image</button>
-                      <LibraryButton kind="image" label={`answer ${i + 1} image`} onChoose={(p) => onChooseLibrary({ kind: 'answer', i }, p)} onUploadFile={(f) => onUploadFile({ kind: 'answer', i }, f)} />
+                      <LibraryButton kind="image" label={`answer ${i + 1} image`} onChoose={(p) => onChooseLibrary({ kind: 'answer', i }, p)} />
                       <SvgPaste label={`answer ${i + 1} image`} onUse={(code) => onSvg({ kind: 'answer', i }, code)} />
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         <label htmlFor={`at${i}`} style={{ fontSize: 13, fontWeight: 700 }}>Answer text <span style={{ fontWeight: 600, color: '#7A6458' }}>(read aloud when picked)</span></label>

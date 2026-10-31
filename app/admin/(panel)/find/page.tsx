@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isLevelComplete, loadFindLevels, moveFindLevel, newFindLevel, saveFindLevels, setObjectAudio, type ELevel } from '@/lib/find/adminLevels';
 import { MAX_IMAGE_BYTES, addPending, clearPending, svgToPending } from '@/lib/media';
+import { forgetUploads } from '@/lib/media/uploads';
 import { checkSvg } from '@/lib/quizImport';
 import { CardsHeaderActions } from '@/components/admin/CardsHeaderActions';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
@@ -88,7 +89,7 @@ export default function FindPage() {
   function add() { touch(); setDraft([...draft!, newFindLevel()]); }
 
   function revert() {
-    clearPending(); // nothing was uploaded, so there is nothing to delete
+    clearPending(); forgetUploads(); // nothing was uploaded, so there is nothing to delete
     setDraft(saved); setMsgs({}); touch();
   }
 
@@ -98,7 +99,7 @@ export default function FindPage() {
     const r = await saveFindLevels(saved, draft);
     if (r.error) { setError(r.error); setBusy(false); return; }
     if (r.warning) setWarning(r.warning);
-    if (await load()) { clearPending(); setMsgs({}); setNotice('Saved'); }
+    if (await load()) { clearPending(); forgetUploads(); setMsgs({}); setNotice('Saved'); }
     setBusy(false);
   }
 

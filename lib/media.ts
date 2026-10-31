@@ -1,6 +1,7 @@
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { PENDING_PREFIX, isBucketPath, mapSetMedia, type SetPaths } from '@/lib/mediaPaths';
 import { referencedPaths } from '@/lib/media/refs';
+import { rememberUpload } from '@/lib/media/uploads';
 
 export const MEDIA_BUCKET = 'media';
 export const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
@@ -91,6 +92,13 @@ export async function removeMedia(paths: (string | null | undefined)[]): Promise
   if (!unused.length) return null;
   const { error } = await createSupabaseBrowserClient().storage.from(MEDIA_BUCKET).remove(unused);
   return error ? error.message : null;
+}
+
+/** Uploads a file picked in the library dialog now, so it can be chosen before Save. Listed until the page saves or reverts (A24). */
+export async function uploadToLibrary(kind: 'image' | 'audio', file: File): Promise<string> {
+  const path = await uploadMedia('library', file);
+  rememberUpload(path, kind);
+  return path;
 }
 
 /** Uploads one picked file now (called on Save) and returns its bucket path. */

@@ -34,7 +34,7 @@ function PicturePicker({ side, n, path, onPick, onLibrary, onSvg }: { side: Side
         <input id={id} type="file" hidden aria-label={`Picture ${label} file for level ${n}`} accept={SPOT_IMG_TYPES.join(',')}
           onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onPick(f); }} />
         <button type="button" className={`${s.btn} ${s.ghost}`} style={small} onClick={() => document.getElementById(id)?.click()}>{path ? `Change picture ${label}` : `Upload picture ${label}`}</button>
-        <LibraryButton kind="image" label={`level ${n} picture ${label}`} onChoose={onLibrary} onUploadFile={onPick} />
+        <LibraryButton kind="image" label={`level ${n} picture ${label}`} onChoose={onLibrary} />
         {path && <span style={{ ...hint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>{fileName(path)}</span>}
       </div>
       <details>

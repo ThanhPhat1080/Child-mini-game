@@ -9,6 +9,7 @@ import { sortHealth, weakGroups } from '@/lib/sort/groups';
 import { LEVELS, pairsOf } from '@/lib/memory/deck';
 import { sayWord } from '@/lib/memory/cards';
 import { MAX_IMAGE_BYTES, addPending, clearPending, svgToPending } from '@/lib/media';
+import { forgetUploads } from '@/lib/media/uploads';
 import { checkSvg } from '@/lib/quizImport';
 import { CardImportDialog } from '@/components/admin/CardImportDialog';
 import { CardsHeaderActions } from '@/components/admin/CardsHeaderActions';
@@ -157,7 +158,7 @@ export default function CardsPage() {
   }
 
   function revert() {
-    clearPending(); // nothing was uploaded, so there is nothing to delete
+    clearPending(); forgetUploads(); // nothing was uploaded, so there is nothing to delete
     setDraft(saved); setDraftGroups(savedGroups); setMsgs({}); touch();
   }
 
@@ -175,12 +176,12 @@ export default function CardsPage() {
       const d = await deleteGroups(gone);
       if (d.error) {
         // the cards are saved (their files uploaded): take them as saved, keep the group edits so Save can retry the delete
-        if (await load(true)) { clearPending(); setMsgs({}); }
+        if (await load(true)) { clearPending(); forgetUploads(); setMsgs({}); }
         setError(d.error); setBusy(false); return;
       }
     }
     if (r.warning) setWarning(r.warning);
-    if (await load()) { clearPending(); setMsgs({}); setNotice('Saved'); }
+    if (await load()) { clearPending(); forgetUploads(); setMsgs({}); setNotice('Saved'); }
     setBusy(false);
   }
 
