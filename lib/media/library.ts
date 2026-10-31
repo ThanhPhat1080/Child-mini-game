@@ -1,6 +1,7 @@
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { isBucketPath } from '@/lib/mediaPaths';
 import { MEDIA_SOURCES, objectAudioPaths } from '@/lib/media/refs';
+import { unsavedUploads } from '@/lib/media/uploads';
 
 /**
  * Every bucket file of one kind that a record still uses, distinct and sorted (A23).
@@ -19,5 +20,6 @@ export async function listLibrary(kind: 'image' | 'audio'): Promise<string[]> {
       for (const p of paths) if (typeof p === 'string' && isBucketPath(p)) found.add(p);
     }
   }
+  for (const p of unsavedUploads(kind)) found.add(p); // uploaded in a dialog, not saved yet (A24)
   return [...found].sort();
 }

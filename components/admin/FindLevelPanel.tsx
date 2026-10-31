@@ -16,9 +16,8 @@ export const FIND_IMG_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/s
 const small = { ...ghostBtn, height: 34, padding: '0 12px', fontSize: 13 } as const;
 const hint = { fontSize: 12, color: '#7A6458' } as const;
 
-function PicturePicker({ n, path, onPick, onSvg, onLibrary }: { n: number; path: string | null; onPick: (f: File) => void; onSvg: (code: string) => void; onLibrary: () => void }) {
+function PicturePicker({ n, path, onSvg, onLibrary }: { n: number; path: string | null; onSvg: (code: string) => void; onLibrary: () => void }) {
   const [svg, setSvg] = useState('');
-  const id = `find-pic-${n}`;
   const url = mediaUrl(path);
   return (
     <div style={{ flex: '1 1 240px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -28,10 +27,7 @@ function PicturePicker({ n, path, onPick, onSvg, onLibrary }: { n: number; path:
         {url ? <img src={url} alt={`Level ${n} picture`} draggable={false} style={{ maxWidth: '100%', maxHeight: 130, objectFit: 'contain' }} /> : <PicIcon size={30} />}
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input id={id} type="file" hidden aria-label={`Picture file for level ${n}`} accept={FIND_IMG_TYPES.join(',')}
-          onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onPick(f); }} />
-        <button type="button" className={`${s.btn} ${s.ghost}`} style={small} onClick={() => document.getElementById(id)?.click()}>{path ? 'Change picture' : 'Upload picture'}</button>
-        <button type="button" className={`${s.btn} ${s.ghost}`} style={small} onClick={onLibrary}>Choose from library</button>
+        <button type="button" className={`${s.btn} ${s.ghost}`} style={small} onClick={onLibrary}>+ Choose images</button>
         {path && <span style={{ ...hint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>{fileName(path)}</span>}
       </div>
       <details>
@@ -47,11 +43,10 @@ function PicturePicker({ n, path, onPick, onSvg, onLibrary }: { n: number; path:
 }
 
 /** One level: its picture, the objects, on/off, order, preview and delete. Edits go up through `onEdit`. */
-export function FindLevelPanel({ l, n, count, message, onEdit, onPickPicture, onSvg, onPickSound, onMove, onAskDelete }: {
+export function FindLevelPanel({ l, n, count, message, onEdit, onSvg, onMove, onAskDelete }: {
   l: ELevel; n: number; count: number; message: string | null;
   onEdit: (patch: Partial<ELevel>) => void;
-  onPickPicture: (f: File) => void; onSvg: (code: string) => void;
-  onPickSound: (i: number, f: File) => void;
+  onSvg: (code: string) => void;
   onMove: (dir: -1 | 1) => void; onAskDelete: () => void;
 }) {
   // which library dialog is open: the picture (true) or the sound of one object (its index)
@@ -78,7 +73,7 @@ export function FindLevelPanel({ l, n, count, message, onEdit, onPickPicture, on
 
       <PicturePicker
         n={n} path={l.image}
-        onPick={onPickPicture} onSvg={onSvg}
+        onSvg={onSvg}
         onLibrary={() => setLibrary('picture')}
       />
 
@@ -87,7 +82,6 @@ export function FindLevelPanel({ l, n, count, message, onEdit, onPickPicture, on
       <FindMarkerEditor
         src={mediaUrl(l.image)} objects={l.objects}
         onChange={(objects) => onEdit({ objects })}
-        onPickSound={onPickSound}
         onLibrarySound={(i) => setLibrary(i)}
       />
 
@@ -95,6 +89,7 @@ export function FindLevelPanel({ l, n, count, message, onEdit, onPickPicture, on
         <MediaLibraryDialog
           kind={library === 'picture' ? 'image' : 'audio'}
           onClose={() => setLibrary(null)}
+         
           onChoose={(path) => {
             if (library === 'picture') onEdit({ image: path });
             else onEdit({ objects: setObjectAudio(l.objects, library, path) });

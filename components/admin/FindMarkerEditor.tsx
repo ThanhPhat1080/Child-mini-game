@@ -1,33 +1,34 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import { addObject, moveObject, removeObject, setObjectAudio, setObjectRadius, setObjectWord, type EObject } from '@/lib/find/adminLevels';
 import { MAX_OBJECTS, MAX_WORD, SMALL_R } from '@/lib/find/validate';
-import { playOnce } from '@/lib/audio';
 import { mediaUrl } from '@/lib/media';
-import { AUDIO_ACCEPT } from './CardPanel';
+import { useSoundPreview } from './useSoundPreview';
 import s from './admin-ui.module.css';
 import { PicIcon, dangerBtn, fileName, ghostBtn, inputStyle } from './editor-parts';
+import { PlayButton } from './PlayButton';
 
 const EDGE = 0.01;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const round3 = (v: number) => Math.round(v * 1000) / 1000;
 const small = { ...ghostBtn, height: 34, padding: '0 12px', fontSize: 13 } as const;
+/** Play-state key of one object's sound: per row, because two objects may share one file. */
+const rowKey = (i: number, path: string | null) => `${i}:${path ?? ''}`;
 
 type Props = {
   src: string | null;
   objects: EObject[];
   onChange: (next: EObject[]) => void;
-  onPickSound: (i: number, f: File) => void;
   onLibrarySound: (i: number) => void;
 };
 
 /** Places and names the objects of one level (A21). Click the picture to add an object; the row list holds its word and sound. */
-export function FindMarkerEditor({ src, objects, onChange, onPickSound, onLibrarySound }: Props) {
-  const uid = useId();
+export function FindMarkerEditor({ src, objects, onChange, onLibrarySound }: Props) {
   const [selected, setSelected] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [imgEl, setImgEl] = useState<HTMLImageElement | null>(null);
+  const preview = useSoundPreview();
 
   const sel = selected !== null && selected < objects.length ? selected : null;
   const smallCount = objects.filter((o) => o.r < SMALL_R).length;
@@ -68,7 +69,7 @@ export function FindMarkerEditor({ src, objects, onChange, onPickSound, onLibrar
       <span style={{ fontSize: 13, color: '#7A6458' }}>
         {src
           ? `Click the picture to add an object (${objects.length}/${MAX_OBJECTS}).`
-          : 'Upload or choose a picture first.'}
+          : 'Choose a picture first.'}
       </span>
 
       {src ? (
@@ -122,7 +123,6 @@ export function FindMarkerEditor({ src, objects, onChange, onPickSound, onLibrar
         {objects.map((o, i) => {
           const n = i + 1;
           const on = sel === i;
-          const fileId = `${uid}-snd-${i}`;
           return (
             <li
               key={i} aria-label={`Object ${n} row`} data-selected={on ? 'true' : 'false'}
@@ -139,11 +139,8 @@ export function FindMarkerEditor({ src, objects, onChange, onPickSound, onLibrar
                 <span style={{ fontSize: 12, color: '#7A6458', minWidth: 70, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {o.audio_path ? fileName(o.audio_path) : 'No sound'}
                 </span>
-                <input id={fileId} type="file" hidden aria-label={`Sound file for object ${n}`} accept={AUDIO_ACCEPT}
-                  onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onPickSound(i, f); }} />
-                <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Upload sound for object ${n}`} style={small} onClick={(e) => { e.stopPropagation(); document.getElementById(fileId)?.click(); }}>Upload sound</button>
-                <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Choose sound for object ${n}`} style={small} onClick={(e) => { e.stopPropagation(); onLibrarySound(i); }}>Choose sound</button>
-                <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Play sound for object ${n}`} style={small} disabled={!o.audio_path} onClick={(e) => { e.stopPropagation(); playOnce(mediaUrl(o.audio_path)); }}>Play sound</button>
+                <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Choose sound for object ${n}`} style={small} onClick={(e) => { e.stopPropagation(); onLibrarySound(i); }}>+ Choose sounds</button>
+                <PlayButton size={34} playing={preview.isPlaying(rowKey(i, o.audio_path))} label={`${preview.isPlaying(rowKey(i, o.audio_path)) ? 'Pause' : 'Play'} sound for object ${n}`} disabled={!o.audio_path} onClick={() => { if (o.audio_path) preview.toggle(rowKey(i, o.audio_path), mediaUrl(o.audio_path)); }} />
                 <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Clear sound for object ${n}`} style={small} disabled={!o.audio_path}
                   onClick={(e) => { e.stopPropagation(); onChange(setObjectAudio(objects, i, null)); }}>Clear sound</button>
               </div>

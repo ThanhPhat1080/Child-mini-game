@@ -60,6 +60,8 @@ Schema changes go through `supabase/migrations/*.sql` only (see `CLAUDE.md`).
 2. New migrations are applied to Supabase before merging.
 3. PR base `main`, head `develop`; merge; confirm the Production deployment is Ready.
 
+**How the PO wants releases run (applies to every release):** when the PO says "release", open the PR and merge it once. If GitHub refuses because the Vercel check is pending, wait for it to finish and try again; do not poll or loop in a background process to save tokens. Report only if the release fails (the PR is not merged, or the Production deployment is not Ready). Do not send a "done" message.
+
 ## Phase 2 integration branch
 Phase 2 work (Memory Match) goes through the integration branch `claude/phase2/memory-match`, with task branches named `claude/phase2/mm-t<N>-*`. Claude merges each task branch into the integration branch after typecheck, lint, test, build and e2e are green. The PO decides when to merge the integration branch into `develop`.
 Phase 2 work for Listen & Pick goes through the integration branch `claude/phase2/listen-pick`, with task branches named `claude/phase2/lp-t<N>-<topic>` (for example `claude/phase2/lp-t7-docs`). Same rules: Claude merges each task branch into the integration branch after typecheck, lint, test, build and e2e are green; the PO decides when to merge it into `develop` (after a play-test).

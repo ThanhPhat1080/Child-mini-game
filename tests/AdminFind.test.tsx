@@ -42,7 +42,6 @@ const level = (n: number, o: Partial<ELevel> = {}): ELevel => ({
 
 const saveBtn = () => screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement;
 const revertBtn = () => screen.getByRole('button', { name: 'Revert' }) as HTMLButtonElement;
-const file = (name: string, type = 'image/png', size = 10) => new File([new Uint8Array(size)], name, { type });
 
 async function renderWith(list: ELevel[]) {
   h.loadFindLevels.mockResolvedValue(list);
@@ -81,7 +80,10 @@ describe('Admin Find page (A20-A22)', () => {
     expect(saveBtn().disabled).toBe(true); // nothing changed
     fireEvent.click(screen.getByRole('button', { name: 'Add level' }));
     expect(saveBtn().disabled).toBe(true);
-    fireEvent.change(screen.getByLabelText('Picture file for level 2'), { target: { files: [file('a.png')] } });
+    h.listLibrary.mockResolvedValue(['find/a.png']);
+    fireEvent.click(within(screen.getByRole('article', { name: 'Level 2' })).getByRole('button', { name: '+ Choose images' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Choose a.png' }));
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     expect(saveBtn().disabled).toBe(true); // no objects yet
     clickPicture(2, 0.2, 0.2);
     expect(saveBtn().disabled).toBe(true); // 1 object
@@ -97,8 +99,9 @@ describe('Admin Find page (A20-A22)', () => {
   it('a picture from the library sets the shared path and no copy is made', async () => {
     h.listLibrary.mockResolvedValue(['find/shared.png']);
     await renderWith([level(1, { image: null, objects: [] })]);
-    fireEvent.click(screen.getByRole('button', { name: 'Choose from library' }));
+    fireEvent.click(within(screen.getByRole('article', { name: 'Level 1' })).getByRole('button', { name: '+ Choose images' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Choose shared.png' }));
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     expect(h.listLibrary).toHaveBeenCalledWith('image');
     expect(within(screen.getByRole('article', { name: 'Level 1' })).getByRole('img', { name: 'Level 1 picture' }).getAttribute('src')).toBe('/media/find/shared.png');
     expect(h.addPending).not.toHaveBeenCalled();
@@ -110,24 +113,13 @@ describe('Admin Find page (A20-A22)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Choose sound for object 2' }));
     expect(h.listLibrary).toHaveBeenCalledWith('audio');
     fireEvent.click(await screen.findByRole('button', { name: 'Choose cat.mp3' }));
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     const row2 = screen.getByLabelText('Object 2 row');
     expect(row2.textContent).toContain('cat.mp3');
     expect(screen.getByLabelText('Object 1 row').textContent).toContain('No sound');
     expect(saveBtn().disabled).toBe(false);
   });
 
-  it('rejects a wrong sound type and an oversized sound; accepts a good one as pending', async () => {
-    await renderWith([level(1)]);
-    fireEvent.change(screen.getByLabelText('Sound file for object 1'), { target: { files: [file('x.gif', 'image/gif')] } });
-    expect(screen.getByRole('alert').textContent).toMatch(/MP3, M4A or WAV/);
-    fireEvent.change(screen.getByLabelText('Sound file for object 1'), { target: { files: [file('x.mp3', 'audio/mpeg', 11 * 1024 * 1024)] } });
-    expect(screen.getByRole('alert').textContent).toMatch(/10 MB/);
-    expect(h.addPending).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByLabelText('Sound file for object 1'), { target: { files: [file('x.mp3', 'audio/mpeg')] } });
-    expect(h.addPending).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole('alert')).toBeNull();
-    expect(saveBtn().disabled).toBe(false);
-  });
 
   it('shows the incomplete count in the status line', async () => {
     await renderWith([level(1, { objects: [obj('cat')] }), level(2)]);

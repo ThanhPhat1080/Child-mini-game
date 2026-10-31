@@ -30,6 +30,8 @@ vi.mock('@/lib/memory/adminCards', async (orig) => ({
   deleteGroups: h.deleteGroups,
 }));
 vi.mock('@/lib/memory/cards', () => ({ sayWord: h.sayWord }));
+const lib = vi.hoisted(() => ({ listLibrary: vi.fn() }));
+vi.mock('@/lib/media/library', () => ({ listLibrary: lib.listLibrary }));
 vi.mock('@/lib/media', async (orig) => ({
   ...(await orig<typeof import('@/lib/media')>()),
   addPending: h.addPending,
@@ -54,7 +56,13 @@ const revertBtn = () => screen.getByRole('button', { name: 'Revert' }) as HTMLBu
 const word = (n: number) => screen.getByLabelText(`Word for card ${n}`) as HTMLInputElement;
 const toggle = (n: number) => screen.getByRole('switch', { name: `Card ${n} on` }) as HTMLInputElement;
 const health = () => screen.getByTestId('pool-health').textContent ?? '';
-const file = (name: string, type: string, size = 10) => new File([new Uint8Array(size)], name, { type });
+
+/** Picks a file from the library for one field, then the file, then OK. */
+async function chooseFromLibrary(label: string, name: string) {
+  fireEvent.click(screen.getByRole('button', { name: `Choose from library for ${label}` }));
+  fireEvent.click(await screen.findByRole('button', { name: `Choose ${name}` }));
+  fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+}
 
 async function renderWith(list: ECard[], groups: EGroup[] = []) {
   h.loadCards.mockResolvedValue(list);
@@ -73,6 +81,7 @@ beforeEach(() => {
   let n = 0;
   h.addPending.mockImplementation(() => `pending:${++n}`);
   h.svgToPending.mockImplementation(() => 'pending:svg');
+  lib.listLibrary.mockResolvedValue(['cards/lion.png', 'cards/robin.png']);
 });
 afterEach(cleanup);
 
@@ -101,7 +110,7 @@ describe('Admin cards page (A11, A13)', () => {
     expect(saveBtn().disabled).toBe(true); // new card has no word and no picture
     fireEvent.change(word(2), { target: { value: 'lion' } });
     expect(saveBtn().disabled).toBe(true); // still no picture
-    fireEvent.change(screen.getByLabelText('Picture file for card 2'), { target: { files: [file('lion.png', 'image/png')] } });
+    await chooseFromLibrary('card 2 picture', 'lion.png');
     expect(saveBtn().disabled).toBe(false);
   });
 
@@ -155,38 +164,8 @@ describe('Admin cards page (A11, A13)', () => {
     expect(saveBtn().disabled).toBe(false);
   });
 
-  it('picking a picture only keeps it in memory (addPending) and previews it; nothing is uploaded', async () => {
-    await renderWith([card(1)]);
-    const f = file('lion.png', 'image/png');
-    fireEvent.change(screen.getByLabelText('Picture file for card 1'), { target: { files: [f] } });
-    expect(h.addPending).toHaveBeenCalledWith(f);
-    expect(screen.getByRole('img', { name: 'Card 1 picture' }).getAttribute('src')).toBe('blob:pending:1');
-    expect(h.upload).not.toHaveBeenCalled();
-  });
 
-  it('a picture over 2 MB or of the wrong type shows a message at once and is not added', async () => {
-    await renderWith([card(1)]);
-    const input = screen.getByLabelText('Picture file for card 1');
-    fireEvent.change(input, { target: { files: [file('big.png', 'image/png', 2 * 1024 * 1024 + 1)] } });
-    expect(screen.getByText('Image must be 2 MB or smaller.')).toBeTruthy();
-    fireEvent.change(input, { target: { files: [file('a.gif', 'image/gif')] } });
-    expect(screen.getByText('Use a PNG, JPG, WebP or SVG picture.')).toBeTruthy();
-    expect(h.addPending).not.toHaveBeenCalled();
-    expect(screen.getByRole('img', { name: 'Card 1 picture' }).getAttribute('src')).toBe('/media/cards/1.png');
-  });
 
-  it('a sound file is kept in memory; a wrong sound type shows a message', async () => {
-    await renderWith([card(1)]);
-    const input = screen.getByLabelText('Sound file for card 1');
-    fireEvent.change(input, { target: { files: [file('a.txt', 'text/plain')] } });
-    expect(screen.getByText('Use an MP3, M4A or WAV sound.')).toBeTruthy();
-    expect(h.addPending).not.toHaveBeenCalled();
-    const f = file('cat.mp3', 'audio/mpeg');
-    fireEvent.change(input, { target: { files: [f] } });
-    expect(h.addPending).toHaveBeenCalledWith(f);
-    fireEvent.click(screen.getByRole('button', { name: 'Play card 1' }));
-    expect(h.sayWord).toHaveBeenCalledWith({ word: 'word1', audio_path: 'pending:1' });
-  });
 
   it('SVG code becomes a picture through svgToPending', async () => {
     await renderWith([card(1)]);
@@ -230,21 +209,7 @@ describe('Admin cards page (A11, A13)', () => {
     expect(screen.getByRole('img', { name: 'Card 2 picture' }).getAttribute('src')).toBe('blob:pending:svg1');
   });
 
-  it('sound types are stored under the names the bucket allows (x-m4a -> mp4, x-wav -> wav)', async () => {
-    await renderWith([card(1), card(2)]);
-    fireEvent.change(screen.getByLabelText('Sound file for card 1'), { target: { files: [file('cat.m4a', 'audio/x-m4a')] } });
-    fireEvent.change(screen.getByLabelText('Sound file for card 2'), { target: { files: [file('dog.wav', 'audio/x-wav')] } });
-    const [m4a, wav] = h.addPending.mock.calls.map((c) => c[0] as File);
-    expect([m4a.name, m4a.type]).toEqual(['cat.m4a', 'audio/mp4']);
-    expect([wav.name, wav.type]).toEqual(['dog.wav', 'audio/wav']);
-  });
 
-  it('a sound over 10 MB shows a message at once and is not added', async () => {
-    await renderWith([card(1)]);
-    fireEvent.change(screen.getByLabelText('Sound file for card 1'), { target: { files: [file('long.mp3', 'audio/mpeg', 10 * 1024 * 1024 + 1)] } });
-    expect(screen.getByText('Sound must be 10 MB or smaller.')).toBeTruthy();
-    expect(h.addPending).not.toHaveBeenCalled();
-  });
 
   it('two cards with the same word show a warning that does not block Save', async () => {
     await renderWith([card(1), card(2)]);
@@ -438,7 +403,7 @@ describe('CardPanel group picker (A18)', () => {
     const noop = () => {};
     render(
       <CardPanel c={c} n={3} duplicate={false} message={null} autoFocus={false} groups={GROUPS} weakGroup={weakGroup}
-        onEdit={onEdit} onPickImage={noop} onPickAudio={noop} onSvg={noop} onPlay={noop} onAskDelete={noop} />,
+        onEdit={onEdit} onChooseLibrary={noop} onSvg={noop} onPlay={noop} onAskDelete={noop} />,
     );
     return { onEdit, select: screen.getByRole('combobox', { name: 'Group for card 3' }) as HTMLSelectElement };
   }
@@ -671,7 +636,7 @@ describe('Admin cards page: groups (A17, A18)', () => {
     fireEvent.change(picker(2), { target: { value: picker(2).options[1].value } });
     expect(saveBtn().disabled).toBe(true); // a group never completes a card
     fireEvent.change(word(2), { target: { value: 'robin' } });
-    fireEvent.change(screen.getByLabelText('Picture file for card 2'), { target: { files: [file('robin.png', 'image/png')] } });
+    await chooseFromLibrary('card 2 picture', 'robin.png');
     expect(saveBtn().disabled).toBe(false);
   });
 
