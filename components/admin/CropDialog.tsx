@@ -25,7 +25,9 @@ export function CropDialog({ file, start, onCancel, onSave }: {
   const [size, setSize] = useState<{ W: number; H: number } | null>(null);
   const [crop, setCrop] = useState<Crop | null>(null);
   const [focused, setFocused] = useState(false);
+  const [broken, setBroken] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
+  const areaRef = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
 
   useEffect(() => {
@@ -33,6 +35,13 @@ export function CropDialog({ file, start, onCancel, onSave }: {
     setUrl(u);
     return () => URL.revokeObjectURL(u);
   }, [file]);
+
+  const ready = !!size && !!crop;
+
+  // Focus the square once it exists, so the keys work and Esc is handled here, not by the library behind.
+  useEffect(() => {
+    if (ready) areaRef.current?.focus();
+  }, [ready]);
 
   function onLoad(e: { currentTarget: HTMLImageElement }) {
     const W = e.currentTarget.naturalWidth;
@@ -80,7 +89,6 @@ export function CropDialog({ file, start, onCancel, onSave }: {
     setCrop(e.shiftKey ? resizeCrop(crop, step * (d[0] + d[1]), W, H) : moveCrop(crop, step * d[0], step * d[1], W, H));
   }
 
-  const ready = !!size && !!crop;
   const W = size?.W ?? 1;
   const H = size?.H ?? 1;
   const boxStyle: CSSProperties = crop
@@ -94,7 +102,7 @@ export function CropDialog({ file, start, onCancel, onSave }: {
         aria-modal="true"
         aria-label="Crop picture"
         onKeyDown={(e) => { if (e.key === 'Escape') { e.preventDefault(); onCancel(); } }}
-        style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 640, boxSizing: 'border-box', padding: '24px 28px', boxShadow: '0 20px 60px rgba(74,56,48,0.3)', display: 'flex', flexDirection: 'column', gap: 16, fontFamily: 'Nunito, sans-serif', color: '#4A3830' }}
+        style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 640, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', boxSizing: 'border-box', padding: '24px 28px', boxShadow: '0 20px 60px rgba(74,56,48,0.3)', display: 'flex', flexDirection: 'column', gap: 16, fontFamily: 'Nunito, sans-serif', color: '#4A3830' }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h2 style={{ margin: 0, fontSize: 21, fontWeight: 700 }}>Crop picture</h2>
@@ -115,11 +123,13 @@ export function CropDialog({ file, start, onCancel, onSave }: {
               alt=""
               draggable={false}
               onLoad={onLoad}
+              onError={() => setBroken(true)}
               style={{ display: 'block', maxWidth: '100%', maxHeight: '52vh', userSelect: 'none', imageOrientation: 'from-image' } as CSSProperties}
             />
           )}
           {ready && (
             <div
+              ref={areaRef}
               role="group"
               aria-label="Crop area"
               tabIndex={0}
@@ -146,6 +156,8 @@ export function CropDialog({ file, start, onCancel, onSave }: {
             </div>
           )}
         </div>
+
+        {broken && <p role="alert" style={{ margin: 0, color: '#A8484F', fontWeight: 700 }}>Could not read this picture</p>}
 
         {ready && crop && url && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>

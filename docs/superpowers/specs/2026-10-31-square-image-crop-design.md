@@ -49,7 +49,7 @@ As built (2026-10-31): `MediaLibraryDialog` is the one bitmap upload path (`uplo
 - **Quiz answers:** already square-friendly (460x400 card, picture about 260 px). The square picture is centered in the card. No size change.
 - **Set cover, cards, Sort It:** already square-framed. Only the upload changes.
 - **Spot the Differences:** two squares side by side, up to 860 px each, fit the 1920x1080 stage. Adjust the board size in `components/spot/SpotBoard.tsx` from 4:3 to 1:1. The hit test already takes `aspect`, so with aspect 1 it still works. Existing levels keep their pictures and get a letterbox, which is the same as now.
-- **Find It:** picture shown at most 800x800 (the stage is 1500x800). Its tap mapping uses `aspect`, so no logic changes.
+- **Find It:** picture shown at most 900x900 (the board bound `MAX_H = 900` in `components/find/FindBoard.tsx`, from develop, where the word list takes the left column). Its tap mapping uses `aspect`, so no logic changes. This replaces the earlier 800x800 figure, which predates the word list.
 
 ## 6. Rules that change
 - **ADR-032 (new):** supersedes ADR-024. Every admin bitmap picture is cropped to a square on upload. The question frame is 300x300. Old pictures are shown fitted, not re-cropped.

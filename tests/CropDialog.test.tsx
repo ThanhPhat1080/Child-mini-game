@@ -62,6 +62,25 @@ describe('CropDialog', () => {
     expect(crop.w * 1200).toBeCloseTo(crop.h * 800);
   });
 
+  it('a picture the browser cannot decode shows a message and Save stays disabled', () => {
+    const { container } = render(<CropDialog file={file} onSave={vi.fn()} onCancel={vi.fn()} />);
+    fireEvent.error(container.querySelector('img') as HTMLImageElement);
+    expect(screen.getByRole('alert').textContent).toBe('Could not read this picture');
+    expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('the crop area has keyboard focus once the picture is loaded', () => {
+    renderLoaded();
+    expect(document.activeElement).toBe(screen.getByRole('group', { name: 'Crop area' }));
+  });
+
+  it('the dialog fits a small screen: its height is capped and it scrolls', () => {
+    renderLoaded();
+    const dialog = screen.getByRole('dialog', { name: 'Crop picture' });
+    expect(dialog.style.maxHeight).toBe('calc(100vh - 32px)');
+    expect(dialog.style.overflowY).toBe('auto');
+  });
+
   it('Esc calls onCancel and does not save', () => {
     const { onSave, onCancel } = renderLoaded();
     fireEvent.keyDown(screen.getByRole('dialog', { name: 'Crop picture' }), { key: 'Escape' });

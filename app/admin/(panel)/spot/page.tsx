@@ -20,7 +20,7 @@ export default function SpotPage() {
   const [msgs, setMsgs] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState<number | null>(null);
   /** Picture A's crop per level, kept while editing: picture B starts from it (A25). Cleared on Save and Revert. */
-  const aCrops = useRef<Record<string, Crop>>({});
+  const [aCrops, setACrops] = useState<Record<string, Crop>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
@@ -92,7 +92,7 @@ export default function SpotPage() {
 
   function revert() {
     clearPending(); forgetUploads(); // nothing was uploaded, so there is nothing to delete
-    aCrops.current = {};
+    setACrops({});
     setDraft(saved); setMsgs({}); touch();
   }
 
@@ -102,7 +102,7 @@ export default function SpotPage() {
     const r = await saveLevels(saved, draft);
     if (r.error) { setError(r.error); setBusy(false); return; }
     if (r.warning) setWarning(r.warning);
-    if (await load()) { clearPending(); forgetUploads(); aCrops.current = {}; setMsgs({}); setNotice('Saved'); }
+    if (await load()) { clearPending(); forgetUploads(); setACrops({}); setMsgs({}); setNotice('Saved'); }
     setBusy(false);
   }
 
@@ -139,8 +139,8 @@ export default function SpotPage() {
         {draft.map((l, i) => (
           <SpotLevelPanel
             key={l.id} l={l} n={i + 1} count={draft.length} message={msgs[l.id] ?? null} shapeWarning={shapeOff(l)}
-            startCrop={aCrops.current[l.id]}
-            onCropped={(side, c) => { if (side === 'a') aCrops.current[l.id] = c; }}
+            startCrop={aCrops[l.id]}
+            onCropped={(side, c) => { if (side === 'a') setACrops((m) => ({ ...m, [l.id]: c })); }}
             onEdit={(patch) => edit(l.id, patch)}
             onChooseLibrary={(side, path) => chooseLibrary(l.id, side, path)}
             onSvg={(side, code) => applySvg(l.id, side, code)}
