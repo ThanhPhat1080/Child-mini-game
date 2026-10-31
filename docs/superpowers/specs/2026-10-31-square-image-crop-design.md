@@ -29,17 +29,17 @@ Out of scope:
 | Unit | Responsibility | Depends on |
 |---|---|---|
 | `lib/crop/geometry.ts` | Pure functions: fit a square into the picture bounds, move it, resize it from a corner (keeps it square), convert it to pixels. | nothing |
-| `lib/crop/render.ts` | Draws the chosen square from an image onto a canvas and returns a PNG `File`, at most 1024 px per side. | browser canvas |
+| `lib/crop/render.ts` | Draws the chosen square from an image onto a canvas and returns a WebP `File`, at most 1024 px per side. | browser canvas |
 | `components/admin/CropDialog.tsx` | Modal. Shows the picture, the square with four corner handles, a drag-to-move area, Cancel and Save, a preview. Takes a picked `File` and an optional starting box. Resolves to a cropped `File`, or `null` on Cancel. | geometry, render |
-| `lib/media.ts` | No change to its contract. Each admin upload calls the dialog first, then `addPending` with the cropped file. | — |
+| `lib/media.ts` | No change to its contract. | — |
 
-Each upload site gets the same flow through one helper, `pickSquare(file, startBox?)`, so the eight sites do not repeat the dialog logic. The helper returns the cropped file and the box used, so Spot can pass A's box to B.
+As built (2026-10-31): `MediaLibraryDialog` is the one bitmap upload path (`upload()` opens `CropDialog` before `uploadToLibrary`). `LibraryButton` passes `startCrop` and `onCropped` through, so Spot can pass A's crop to B. There is no separate `pickSquare` helper.
 
 ## 4. Behaviour
 - **Opening the dialog:** the square starts centered, as large as the shorter side. The picture is shown fitted in the window.
 - **Moving and resizing:** the square is always 1:1 and stays inside the picture. Dragging a corner keeps it square; a minimum size of 10% of the shorter side keeps it easy to adjust.
 - **Keyboard (admin):** arrows move the square, Shift+arrows resize, Enter saves, Esc cancels. The focus ring stays visible.
-- **Output:** PNG, square, at most 1024 px per side. Well under the 2 MB limit. The check on the input file (2 MB) stays as it is.
+- **Output:** WebP at quality 0.9, square, at most 1024 px per side. Changed from PNG during planning: a 1024 px photo saved as PNG can exceed the 2 MB limit, while WebP keeps transparency and stays well under it. The check on the input file (2 MB) stays as it is.
 - **Cancel:** no pending file is created, and the upload field stays as it was.
 - **Spot picture B:** the dialog opens with A's box as a fraction of A's width and height, applied to B's size. If B's aspect differs from A's by more than 2%, the square is recomputed from B's center, and the existing A15 aspect warning is shown.
 - **Errors:** a picture that cannot be decoded shows a plain message and leaves the field unchanged.
