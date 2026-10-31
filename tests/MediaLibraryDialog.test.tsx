@@ -69,12 +69,12 @@ describe('MediaLibraryDialog', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('the Close button closes it', async () => {
+  it('the Cancel button closes it', async () => {
     lib.listLibrary.mockResolvedValue([]);
     const onClose = vi.fn();
     render(<MediaLibraryDialog kind="image" onChoose={() => undefined} onClose={onClose} />);
     await screen.findByText('Nothing in the library yet.');
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 

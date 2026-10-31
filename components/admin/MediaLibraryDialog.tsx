@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { MAX_SOUND_BYTES, cardAudioType } from './CardPanel';
+import { ghostBtn } from './editor-parts';
 import { mediaUrl, uploadToLibrary, MAX_IMAGE_BYTES } from '@/lib/media';
 import { listLibrary } from '@/lib/media/library';
 import { useSoundPreview } from './useSoundPreview';
@@ -9,27 +10,23 @@ import { useSoundPreview } from './useSoundPreview';
 /** Picture types the library accepts (the same as the Cards and Spot pictures). */
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
 
-const btn = {
-  border: '1.5px solid #E3D5C4',
-  background: '#fff',
-  borderRadius: 12,
-  color: '#4A3830',
-  fontWeight: 700,
-  fontFamily: 'Nunito, sans-serif',
-  fontSize: 14,
-  cursor: 'pointer',
-  padding: 8,
-} as const;
-
 const fileName = (path: string): string => path.split('/').pop() ?? path;
 
-/** The highlight of the picked item (A24). */
-const picked = { border: '3px solid #3F6B48', background: '#EAF3FA' } as const;
+/** Admin buttons: the dark primary of "Save changes", the blue of "Quick import", and the ghost used across the editors. */
+const primaryBtn = { height: 46, padding: '0 26px', borderRadius: 12, border: 'none', background: '#5A4038', color: '#fff', fontWeight: 700, fontFamily: 'Nunito, sans-serif', fontSize: 15, cursor: 'pointer' } as const;
+const uploadBtn = { height: 42, padding: '0 16px', borderRadius: 10, border: 'none', background: '#3F73B5', color: '#fff', fontWeight: 700, fontFamily: 'Nunito, sans-serif', fontSize: 14, cursor: 'pointer' } as const;
+const cancelBtn = { ...ghostBtn, height: 46, padding: '0 22px', fontSize: 15 } as const;
+
+/** Play / pause icons, the same as the Settings sound rows. */
+const PlayIcon = ({ playing }: { playing: boolean }) => (playing ? (
+  <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+) : (
+  <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M8 5.5v13l10.5-6.5z" /></svg>
+));
 
 /**
- * "Choose from library" modal (A23, A24). Clicking an item only highlights it; OK (bottom right) applies it.
- * Applying is a preview: the page keeps it until Save, and Revert drops it.
- * "Upload new" uploads the file at once, stays open with a loading state, and lists the new file to choose from.
+ * "Choose from library" modal (A23, A24). Clicking an item only highlights it; OK applies it (a preview until the page saves).
+ * Cancel, Escape or a click outside leave everything as it was. "Upload new" uploads the file at once and lists it.
  */
 export function MediaLibraryDialog({ kind, onChoose, onClose }: {
   kind: 'image' | 'audio'; onChoose: (path: string) => void; onClose: () => void;
@@ -90,32 +87,44 @@ export function MediaLibraryDialog({ kind, onChoose, onClose }: {
     }
   }
 
+  const busy = uploading || paths === null;
   let body: React.ReactNode;
   if (failed) body = <p role="alert" style={{ margin: 0, color: '#A8484F' }}>Could not load the library.</p>;
   else if (paths === null) body = <p style={{ margin: 0, color: '#6E5A4E' }}>Loading...</p>;
   else if (paths.length === 0) body = <p style={{ margin: 0, color: '#6E5A4E' }}>Nothing in the library yet.</p>;
-  else body = (
+  else if (kind === 'image') body = (
     <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10 }}>
       {paths.map((p) => {
         const name = fileName(p);
         const url = mediaUrl(p);
         const on = selected === p;
-        if (kind === 'image') {
-          return (
-            <li key={p}>
-              <button type="button" aria-label={`Choose ${name}`} aria-pressed={on} data-selected={on ? 'true' : 'false'} onClick={() => setSelected(p)}
-                style={{ ...btn, width: '100%', height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', ...(on ? picked : {}) }}>
-                {url && <img src={url} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />}
-              </button>
-            </li>
-          );
-        }
+        return (
+          <li key={p}>
+            <button type="button" aria-label={`Choose ${name}`} aria-pressed={on} data-selected={on ? 'true' : 'false'} onClick={() => setSelected(p)}
+              style={{ width: '100%', height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 12, background: '#fff', cursor: 'pointer', border: on ? '3px solid #5A4038' : '1.5px solid #E3D5C4', padding: 0 }}>
+              {url && <img src={url} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+  else body = (
+    <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {paths.map((p) => {
+        const name = fileName(p);
+        const on = selected === p;
         const playing = preview.isPlaying(p);
         return (
-          <li key={p} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <button type="button" aria-label={`Choose ${name}`} aria-pressed={on} data-selected={on ? 'true' : 'false'} onClick={() => setSelected(p)}
-              style={{ ...btn, height: 56, wordBreak: 'break-all', ...(on ? picked : {}) }}>{name}</button>
-            <button type="button" aria-label={`${playing ? 'Pause' : 'Play'} ${name}`} onClick={() => preview.toggle(p, url)} style={{ ...btn, height: 40 }}>{playing ? 'Pause' : 'Play'}</button>
+          <li key={p} data-selected={on ? 'true' : 'false'} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 14, background: on ? '#F6EADC' : '#FBF4E9', border: on ? '2px solid #5A4038' : '1.5px solid transparent', boxSizing: 'border-box' }}>
+            <button type="button" aria-label={`${playing ? 'Pause' : 'Play'} ${name}`} onClick={() => preview.toggle(p, mediaUrl(p))}
+              style={{ width: 44, height: 44, flex: 'none', borderRadius: 22, border: 'none', background: '#EBB7BC', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <PlayIcon playing={playing} />
+            </button>
+            <button type="button" aria-label={`Choose ${name}`} aria-pressed={on} onClick={() => setSelected(p)}
+              style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontWeight: 700, fontSize: 15, color: '#4A3830', fontFamily: 'Nunito, sans-serif', overflowWrap: 'anywhere' }}>
+              {name}
+            </button>
           </li>
         );
       })}
@@ -127,24 +136,19 @@ export function MediaLibraryDialog({ kind, onChoose, onClose }: {
       <div role="dialog" aria-modal="true" aria-label="Choose from library" style={{ background: '#fff', borderRadius: 20, padding: 28, maxWidth: 640, width: '100%', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', boxSizing: 'border-box', boxShadow: '0 20px 60px rgba(74,56,48,0.3)', display: 'flex', flexDirection: 'column', gap: 16, fontFamily: 'Nunito, sans-serif', color: '#4A3830' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
           <h2 style={{ margin: 0, fontSize: 21, fontWeight: 700 }}>Choose from library</h2>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input ref={fileInput} type="file" hidden accept={kind === 'image' ? 'image/*' : 'audio/*'} aria-label={`Upload new ${kind === 'image' ? 'picture' : 'sound'}`}
-              onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void upload(f); }} />
-            <button type="button" disabled={uploading || paths === null} onClick={() => fileInput.current?.click()} style={{ ...btn, height: 44, padding: '0 16px', opacity: uploading || paths === null ? 0.6 : 1 }}>
-              {uploading ? 'Uploading...' : 'Upload new'}
-            </button>
-            <button type="button" autoFocus onClick={onClose} style={{ ...btn, height: 44, padding: '0 20px' }}>Close</button>
-          </div>
+          <input ref={fileInput} type="file" hidden accept={kind === 'image' ? 'image/*' : 'audio/*'} aria-label={`Upload new ${kind === 'image' ? 'picture' : 'sound'}`}
+            onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void upload(f); }} />
+          <button type="button" disabled={busy} onClick={() => fileInput.current?.click()} style={{ ...uploadBtn, opacity: busy ? 0.6 : 1, cursor: busy ? 'default' : 'pointer' }}>
+            {uploading ? 'Uploading...' : 'Upload new'}
+          </button>
         </div>
         {uploadError && <p role="alert" style={{ margin: 0, color: '#A8484F', fontWeight: 700 }}>{uploadError}</p>}
         {uploading && <p role="status" style={{ margin: 0, color: '#6E5A4E', fontWeight: 700 }}>Uploading your file. It will appear in the list when it is done.</p>}
         {body}
-        {paths !== null && paths.length > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button type="button" aria-label="OK" onClick={ok} disabled={!selected}
-              style={{ ...btn, height: 46, padding: '0 28px', background: selected ? '#3F6B48' : '#E3D5C4', borderColor: 'transparent', color: '#fff', opacity: selected ? 1 : 0.7, cursor: selected ? 'pointer' : 'default' }}>OK</button>
-          </div>
-        )}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
+          <button type="button" autoFocus onClick={onClose} style={cancelBtn}>Cancel</button>
+          <button type="button" aria-label="OK" onClick={ok} disabled={!selected} style={{ ...primaryBtn, opacity: selected ? 1 : 0.5, cursor: selected ? 'pointer' : 'default' }}>OK</button>
+        </div>
       </div>
     </div>
   );
