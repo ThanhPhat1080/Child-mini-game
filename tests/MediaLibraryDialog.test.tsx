@@ -32,6 +32,8 @@ describe('MediaLibraryDialog', () => {
     const onClose = vi.fn();
     render(<MediaLibraryDialog kind="image" onChoose={onChoose} onClose={onClose} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Choose c1.png' }));
+    expect(onChoose).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     expect(onChoose).toHaveBeenCalledWith('cards/c1.png');
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(onChoose.mock.invocationCallOrder[0]).toBeLessThan(onClose.mock.invocationCallOrder[0]);
@@ -52,6 +54,7 @@ describe('MediaLibraryDialog', () => {
     expect(pause).toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Play c1.mp3' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Choose c1.mp3' }));
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     expect(onChoose).toHaveBeenCalledWith('cards/c1.mp3');
     unmount();
     vi.restoreAllMocks();

@@ -95,6 +95,7 @@ export function FindLevelPanel({ l, n, count, message, onEdit, onPickPicture, on
         <MediaLibraryDialog
           kind={library === 'picture' ? 'image' : 'audio'}
           onClose={() => setLibrary(null)}
+          onUploadFile={(f) => { if (library === 'picture') onPickPicture(f); else onPickSound(library, f); }}
           onChoose={(path) => {
             if (library === 'picture') onEdit({ image: path });
             else onEdit({ objects: setObjectAudio(l.objects, library, path) });

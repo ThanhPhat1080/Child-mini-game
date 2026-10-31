@@ -18,6 +18,7 @@ describe('LibraryButton (A24)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Choose from library for card 3 picture' }));
     expect(lib.listLibrary).toHaveBeenCalledWith('image');
     fireEvent.click(await screen.findByRole('button', { name: 'Choose c1.png' }));
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     expect(onChoose).toHaveBeenCalledWith('cards/c1.png');
     expect(screen.queryByRole('dialog')).toBeNull();
   });

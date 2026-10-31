@@ -133,10 +133,14 @@ export function SetEditor({ setId }: { setId: string }) {
     }
   }
 
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    const t = target.current;
-    if (!file || !t || !d) return;
+    if (file && target.current) pickedFile(target.current, file);
+  }
+
+  /** A file picked with an Upload button or "Upload new" in the library: checked, then kept as a preview until Save. */
+  function pickedFile(t: Target, file: File) {
+    if (!d) return;
     const okTypes = t.kind === 'voice' ? AUDIO_TYPES : IMG_TYPES;
     if (!okTypes.includes(file.type)) { say(t.kind === 'voice' ? 'Use an MP3, M4A, WAV or OGG audio file.' : 'Use an SVG, PNG, JPG or WebP image.', true); return; }
     try {
@@ -301,7 +305,7 @@ export function SetEditor({ setId }: { setId: string }) {
                     <span style={{ fontSize: 15, fontWeight: 700 }}>{d.cover ? fileName(d.cover) : 'No picture yet'}</span>
                     <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <button type="button" className={s.ghost} onClick={() => pickFile({ kind: 'cover' })} style={ghostBtn}>Upload picture</button>
-                      <LibraryButton kind="image" label="set cover picture" onChoose={(path) => applyTarget({ kind: 'cover' }, path)} />
+                      <LibraryButton kind="image" label="set cover picture" onChoose={(path) => applyTarget({ kind: 'cover' }, path)} onUploadFile={(f) => pickedFile({ kind: 'cover' }, f)} />
                       <div style={{ flexBasis: '100%' }}><SvgPaste label="set cover picture" onUse={(code) => applySvg({ kind: 'cover' }, code)} /></div>
                       {d.cover && <button type="button" className={s.ghost} onClick={() => edit({ cover: null })} style={ghostBtn}>Remove</button>}
                     </span>
@@ -338,6 +342,7 @@ export function SetEditor({ setId }: { setId: string }) {
             onAskDelete={() => setConfirm({ type: 'q', i: cur })}
             onPick={(kind) => pickFile(kind)}
             onChooseLibrary={(kind, path) => applyTarget(kind, path)}
+            onUploadFile={(kind, f) => pickedFile(kind, f)}
             onSvg={(kind, code) => applySvg(kind, code)}
             onPlay={playVoice}
           />

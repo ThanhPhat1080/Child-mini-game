@@ -99,6 +99,7 @@ describe('Admin Find page (A20-A22)', () => {
     await renderWith([level(1, { image: null, objects: [] })]);
     fireEvent.click(screen.getByRole('button', { name: 'Choose from library' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Choose shared.png' }));
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     expect(h.listLibrary).toHaveBeenCalledWith('image');
     expect(within(screen.getByRole('article', { name: 'Level 1' })).getByRole('img', { name: 'Level 1 picture' }).getAttribute('src')).toBe('/media/find/shared.png');
     expect(h.addPending).not.toHaveBeenCalled();
@@ -110,6 +111,7 @@ describe('Admin Find page (A20-A22)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Choose sound for object 2' }));
     expect(h.listLibrary).toHaveBeenCalledWith('audio');
     fireEvent.click(await screen.findByRole('button', { name: 'Choose cat.mp3' }));
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     const row2 = screen.getByLabelText('Object 2 row');
     expect(row2.textContent).toContain('cat.mp3');
     expect(screen.getByLabelText('Object 1 row').textContent).toContain('No sound');

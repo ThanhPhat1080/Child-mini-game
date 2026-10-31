@@ -13,6 +13,8 @@ const EDGE = 0.01;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const round3 = (v: number) => Math.round(v * 1000) / 1000;
 const small = { ...ghostBtn, height: 34, padding: '0 12px', fontSize: 13 } as const;
+/** Play-state key of one object's sound: per row, because two objects may share one file. */
+const rowKey = (i: number, path: string | null) => `${i}:${path ?? ''}`;
 
 type Props = {
   src: string | null;
@@ -144,7 +146,7 @@ export function FindMarkerEditor({ src, objects, onChange, onPickSound, onLibrar
                   onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onPickSound(i, f); }} />
                 <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Upload sound for object ${n}`} style={small} onClick={(e) => { e.stopPropagation(); document.getElementById(fileId)?.click(); }}>Upload sound</button>
                 <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Choose sound for object ${n}`} style={small} onClick={(e) => { e.stopPropagation(); onLibrarySound(i); }}>Choose sound</button>
-                <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`${preview.isPlaying(o.audio_path) ? 'Pause' : 'Play'} sound for object ${n}`} style={small} disabled={!o.audio_path} onClick={(e) => { e.stopPropagation(); if (o.audio_path) preview.toggle(o.audio_path, mediaUrl(o.audio_path)); }}>{preview.isPlaying(o.audio_path) ? 'Pause sound' : 'Play sound'}</button>
+                <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`${preview.isPlaying(rowKey(i, o.audio_path)) ? 'Pause' : 'Play'} sound for object ${n}`} style={small} disabled={!o.audio_path} onClick={(e) => { e.stopPropagation(); if (o.audio_path) preview.toggle(rowKey(i, o.audio_path), mediaUrl(o.audio_path)); }}>{preview.isPlaying(rowKey(i, o.audio_path)) ? 'Pause sound' : 'Play sound'}</button>
                 <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Clear sound for object ${n}`} style={small} disabled={!o.audio_path}
                   onClick={(e) => { e.stopPropagation(); onChange(setObjectAudio(objects, i, null)); }}>Clear sound</button>
               </div>
