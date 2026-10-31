@@ -1,3 +1,4 @@
+import { randomId } from '@/lib/randomId';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { removeMedia } from '@/lib/media';
 import { setMediaPaths } from '@/lib/mediaPaths';
@@ -60,10 +61,10 @@ export function isQuestionComplete(q: { text: string; voice: string | null; imgs
 }
 
 export function newQuestion(): EQuestion {
-  return { id: crypto.randomUUID(), text: '', voice: null, qimg: null, imgs: [null, null, null], texts: ['', '', ''], readAnswers: true, hideAnswerText: false, correct: null, count: 3 };
+  return { id: randomId(), text: '', voice: null, qimg: null, imgs: [null, null, null], texts: ['', '', ''], readAnswers: true, hideAnswerText: false, correct: null, count: 3 };
 }
 export function blankSet(): ESet {
-  return { id: crypto.randomUUID(), isNew: true, name: '', subtitle: '', color: PRESETS.rose.text, cover: null, published: false, qs: [] };
+  return { id: randomId(), isNew: true, name: '', subtitle: '', color: PRESETS.rose.text, cover: null, published: false, qs: [] };
 }
 
 type Row = {

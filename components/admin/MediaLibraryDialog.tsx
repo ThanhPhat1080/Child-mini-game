@@ -5,11 +5,18 @@ import { MAX_SOUND_BYTES, cardAudioType } from './CardPanel';
 import { ghostBtn } from './editor-parts';
 import { mediaUrl, uploadToLibrary, MAX_IMAGE_BYTES } from '@/lib/media';
 import { listLibrary } from '@/lib/media/library';
+import { cropToSquare } from '@/lib/crop/render';
+import type { Crop } from '@/lib/crop/geometry';
 import { useSoundPreview } from './useSoundPreview';
 import { PlayButton } from './PlayButton';
+import { CropDialog } from './CropDialog';
 
 /** Picture types the library accepts (the same as the Cards and Spot pictures). */
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+/** Bitmap pictures are cropped to a square before upload (A24). SVG is stored as it is. */
+const CROP_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+/** A phone photo is often over 2 MB before the crop; the 2 MB limit applies to the cropped result (A24). */
+const MAX_CROP_INPUT_BYTES = 20 * 1024 * 1024;
 
 const fileName = (path: string): string => path.split('/').pop() ?? path;
 
@@ -31,14 +38,20 @@ const TitleIcon = ({ kind }: { kind: 'image' | 'audio' }) => (kind === 'image' ?
  * "Choose from library" modal (A23, A24). Clicking an item only highlights it; OK applies it (a preview until the page saves).
  * Cancel, Escape or a click outside leave everything as it was. "Upload new" uploads the file at once and lists it.
  */
-export function MediaLibraryDialog({ kind, onChoose, onClose }: {
+export function MediaLibraryDialog({ kind, onChoose, onClose, startCrop, onCropped }: {
   kind: 'image' | 'audio'; onChoose: (path: string) => void; onClose: () => void;
+  /** The crop to start from when a picture is cropped (Spot's picture B starts from picture A's crop). */
+  startCrop?: Crop;
+  /** Called after a cropped picture is uploaded, with the crop that was used. */
+  onCropped?: (crop: Crop) => void;
 }) {
   const [paths, setPaths] = useState<string[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  /** A picked bitmap waiting in the crop window; nothing is uploaded until Save. */
+  const [cropping, setCropping] = useState<File | null>(null);
   const preview = useSoundPreview();
   const fileInput = useRef<HTMLInputElement | null>(null);
 
@@ -59,7 +72,8 @@ export function MediaLibraryDialog({ kind, onChoose, onClose }: {
   }, []);
 
   useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    // A key the crop window already handled (Esc cancels the crop) must not close the library too.
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape' && !e.defaultPrevented) onClose(); };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, [onClose]);
@@ -72,12 +86,36 @@ export function MediaLibraryDialog({ kind, onChoose, onClose }: {
     onClose();
   }
 
+  /** Save in the crop window: crops the picked file to the chosen square, uploads it and lists it. */
+  async function saveCrop(crop: Crop) {
+    const picked = cropping;
+    if (!picked) return;
+    setCropping(null);
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const square = await cropToSquare(picked, crop);
+      if (square.size > MAX_IMAGE_BYTES) throw new Error('Image must be 2 MB or smaller.');
+      const path = await uploadToLibrary(kind, square);
+      setPaths((list) => [...new Set([...(list ?? []), path])].sort());
+      onCropped?.(crop);
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   /** Checks the file like the page uploads do, uploads it, and lists it without choosing it. */
   async function upload(picked: File) {
     setUploadError(null);
     let file = picked;
     if (kind === 'image') {
       if (!IMAGE_TYPES.includes(file.type)) return setUploadError('Use a PNG, JPG, WebP or SVG picture.');
+      if (CROP_TYPES.includes(file.type)) {
+        if (file.size > MAX_CROP_INPUT_BYTES) return setUploadError('Picture must be 20 MB or smaller.');
+        return setCropping(file);
+      }
       if (file.size > MAX_IMAGE_BYTES) return setUploadError('Image must be 2 MB or smaller.');
     } else {
       const type = cardAudioType(file.type);
@@ -168,6 +206,7 @@ export function MediaLibraryDialog({ kind, onChoose, onClose }: {
           <button type="button" aria-label="OK" onClick={ok} disabled={!selected} style={{ ...primaryBtn, opacity: selected ? 1 : 0.5, cursor: selected ? 'pointer' : 'default' }}>OK</button>
         </div>
       </div>
+      {cropping && <CropDialog file={cropping} start={startCrop} onCancel={() => setCropping(null)} onSave={saveCrop} />}
     </div>
   );
 }

@@ -52,7 +52,7 @@
 - **ADR-007, ADR-018:** the keys 1/2/3, Left/Right arrows, Enter, Space and Esc are the child's laptop keyboard controls (arrows move between choices; Enter or Space picks). They are a supported requirement, no longer "TV remote" keys. Shared helper: `lib/keynav.ts`.
 - **ADR-012:** superseded by ADR-028. No webOS or TV testing.
 - **ADR-014, 015, 016:** accepted (built and in use in Phase 1).
-- **ADR-024, ADR-025:** the question image frame is 600x300 (2:1), and the answer images fill the card width (`object-fit: contain`). The older 4:3 and 400x300 figures are obsolete.
+- **ADR-025:** the answer images fill the card width (`object-fit: contain`). The question image frame is a 300x300 square (ADR-032); the older 600x300, 4:3 and 400x300 figures are obsolete.
 - **ADR-002:** Phaser stays the plan for the next games. **ADR-003, 004, 010, 011** (play limit, rest screen, PIN) are dropped, see ADR-029.
 
 ### ADR-028: Computer browser is the target platform
@@ -166,7 +166,7 @@
 
 ### ADR-024: Question image with size limits
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-032 (2026-10-31). The 600x300 frame and "recommended 600x300 px" are obsolete.
 - **Decision:** A question may have a prompt image, shown in a small fixed 600x300 frame beside the question text, fitted (never cropped or stretched). Admin upload accepts PNG, JPG or WebP up to 2 MB; recommended 600x300 px. The image is optional and does not block completeness; it appears in the checklist.
 - **Consequences:** Validate type and size on upload (client and Storage policy). Resize or compress large images before storing. `questions.prompt_image_path` is used.
 
@@ -209,3 +209,10 @@
 - **Context:** Pictures and sounds can be reused from the `media` bucket (Find It object sounds and pictures, Memory Match cards, Spot pictures, quiz answers), so one file may be used by several records. Deleting a file that another record still points to would break that record.
 - **Decision:** `removeMedia` checks every media column that can point to a file (cards, spot levels, find levels, quiz answers and question images, settings) before deleting. A path that is still referenced is kept. If the check itself fails, every file is kept and the save does not fail.
 - **Consequences:** The check needs the `find_levels` table, so migration `20261030120000_find_levels.sql` must be applied before the Find It admin or game is released. Every new media column or table must be added to the check.
+
+### ADR-032: Every admin picture is a square
+
+- **Status:** Accepted (2026-10-31, PO decision). Supersedes ADR-024.
+- **Context:** Pictures appear in many frames (question, answers, cards, covers, avatar, Spot and Find boards, level thumbnails). Mixed shapes broke the layout, and Spot and Find pictures were required to be landscape.
+- **Decision:** Every bitmap picture (PNG, JPG, WebP) uploaded in the admin is cropped to a square in a crop window before it is stored (A24). The original may be up to 20 MB (phone photos often exceed 2 MB); the crop is saved as WebP at most 1024 px per side at quality 0.8, and the cropped result must be 2 MB or smaller. Spot picture B uses picture A's crop (A25). Pictures uploaded before this change are not re-cropped; they are shown fitted in the square frame (A26). SVG files are not cropped. The Quiz question frame is 300x300. Spot and Find boards and the level thumbnails are square.
+- **Consequences:** Landscape and tall-picture warnings in the Spot editor are removed for new uploads; the 2% A/B aspect warning stays. `MediaLibraryDialog` is the one upload path that crops. Spot and Find pictures that were uploaded before this change keep their shape and are shown inside the square frame.

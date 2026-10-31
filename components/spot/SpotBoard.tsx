@@ -8,7 +8,8 @@ export type SpotRipple = { side: 'a' | 'b'; x: number; y: number; key: number };
 const MAX_W = 880;
 const MAX_H = 860;
 const GAP = 48;
-const DEFAULT_ASPECT = 4 / 3;
+/** Pictures are cropped to a square in the admin (ADR-032); the board sizes from the real picture once it loads. */
+const DEFAULT_ASPECT = 1;
 
 type Props = {
   level: SpotLevel;

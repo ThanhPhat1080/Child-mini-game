@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { checkDifferences } from '@/lib/spot/validate';
 import type { ELevel } from '@/lib/spot/adminLevels';
+import type { Crop } from '@/lib/crop/geometry';
 import { mediaUrl } from '@/lib/media';
 import s from './admin-ui.module.css';
 import { LibraryButton } from './LibraryButton';
@@ -18,7 +19,10 @@ const hint = { fontSize: 12, color: '#7A6458' } as const;
 
 type Side = 'a' | 'b';
 
-function PicturePicker({ side, n, path, onLibrary, onSvg }: { side: Side; n: number; path: string | null; onLibrary: (path: string) => void; onSvg: (code: string) => void }) {
+function PicturePicker({ side, n, path, onLibrary, onSvg, startCrop, onCropped }: {
+  side: Side; n: number; path: string | null; onLibrary: (path: string) => void; onSvg: (code: string) => void;
+  startCrop?: Crop; onCropped: (crop: Crop) => void;
+}) {
   const [svg, setSvg] = useState('');
   const label = side === 'a' ? 'A' : 'B';
   const url = mediaUrl(path);
@@ -30,7 +34,7 @@ function PicturePicker({ side, n, path, onLibrary, onSvg }: { side: Side; n: num
         {url ? <img src={url} alt={`Level ${n} picture ${label} thumbnail`} draggable={false} style={{ maxWidth: '100%', maxHeight: 110, objectFit: 'contain' }} /> : <PicIcon size={30} />}
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-        <LibraryButton kind="image" label={`level ${n} picture ${label}`} onChoose={onLibrary} />
+        <LibraryButton kind="image" label={`level ${n} picture ${label}`} onChoose={onLibrary} startCrop={startCrop} onCropped={onCropped} />
         {path && <span style={{ ...hint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>{fileName(path)}</span>}
       </div>
       <details>
@@ -46,8 +50,12 @@ function PicturePicker({ side, n, path, onLibrary, onSvg }: { side: Side; n: num
 }
 
 /** One level: both pictures, the spots, on/off, order, preview and delete. Edits go up through `onEdit`. */
-export function SpotLevelPanel({ l, n, count, message, shapeWarning, tallWarning, onEdit, onChooseLibrary, onSvg, onMove, onAskDelete }: {
-  l: ELevel; n: number; count: number; message: string | null; shapeWarning: boolean; tallWarning: boolean;
+export function SpotLevelPanel({ l, n, count, message, shapeWarning, startCrop, onCropped, onEdit, onChooseLibrary, onSvg, onMove, onAskDelete }: {
+  l: ELevel; n: number; count: number; message: string | null; shapeWarning: boolean;
+  /** Picture A's crop: picture B starts from the same square (A25). */
+  startCrop?: Crop;
+  /** Called after a picture is cropped and uploaded, with its side and the crop used. */
+  onCropped: (side: Side, crop: Crop) => void;
   onEdit: (patch: Partial<ELevel>) => void; onChooseLibrary: (side: Side, path: string) => void; onSvg: (side: Side, code: string) => void;
   onMove: (dir: -1 | 1) => void; onAskDelete: () => void;
 }) {
@@ -72,13 +80,9 @@ export function SpotLevelPanel({ l, n, count, message, shapeWarning, tallWarning
       </div>
 
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <PicturePicker side="a" n={n} path={l.a} onLibrary={(p) => onChooseLibrary('a', p)} onSvg={(c) => onSvg('a', c)} />
-        <PicturePicker side="b" n={n} path={l.b} onLibrary={(p) => onChooseLibrary('b', p)} onSvg={(c) => onSvg('b', c)} />
+        <PicturePicker side="a" n={n} path={l.a} onLibrary={(p) => onChooseLibrary('a', p)} onSvg={(c) => onSvg('a', c)} onCropped={(c) => onCropped('a', c)} />
+        <PicturePicker side="b" n={n} path={l.b} onLibrary={(p) => onChooseLibrary('b', p)} onSvg={(c) => onSvg('b', c)} startCrop={startCrop} onCropped={(c) => onCropped('b', c)} />
       </div>
-
-      <span style={hint}>Tip: use landscape pictures (4:3 or 3:2) and make every difference big and clear, so a young child can see it from the chair.</span>
-
-      {tallWarning && <span role="status" style={{ fontSize: 13, fontWeight: 700, color: '#7A5410' }}>This picture is tall, so it will be shown smaller. A landscape picture (4:3 or 3:2) works best.</span>}
 
       {shapeWarning && <span role="status" style={{ fontSize: 13, fontWeight: 700, color: '#7A5410' }}>The two pictures have different shapes. The spots may not line up on picture B, so use pictures of the same size.</span>}
 

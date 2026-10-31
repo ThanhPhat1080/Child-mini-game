@@ -10,7 +10,7 @@ const EDGE = 0.01;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 const round3 = (v: number) => Math.round(v * 1000) / 1000;
 
-/** Places and sizes the spots of one level (A15). Click picture A to add a spot; click a spot to select it. */
+/** Places and sizes the spots of one level (A15). Click picture A or B to add a spot; click a spot to select it. */
 export function SpotMarkerEditor({ srcA, srcB, differences, onChange }: { srcA: string | null; srcB: string | null; differences: Difference[]; onChange: (next: Difference[]) => void }) {
   const [showB, setShowB] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
@@ -22,7 +22,7 @@ export function SpotMarkerEditor({ srcA, srcB, differences, onChange }: { srcA: 
   const sel = selected !== null && selected < differences.length ? selected : null;
 
   function place(e: React.MouseEvent) {
-    if (viewB || !imgEl) return; // pictures A and B can differ in shape, so spots are only placed on A
+    if (!imgEl) return;
     const rect = imgEl.getBoundingClientRect(); // measured now: the picture may have been resized
     if (!(rect.width > 0) || !(rect.height > 0)) return;
     if (differences.length >= MAX_DIFFS) { setNotice(`You can add at most ${MAX_DIFFS} spots.`); return; }
@@ -55,13 +55,13 @@ export function SpotMarkerEditor({ srcA, srcB, differences, onChange }: { srcA: 
         <button type="button" className={`${s.btn} ${s.ghost}`} style={tab(!viewB)} aria-pressed={!viewB} aria-label="Show picture A" onClick={() => setShowB(false)}>Picture A</button>
         <button type="button" className={`${s.btn} ${s.ghost}`} style={tab(viewB)} aria-pressed={viewB} aria-label="Show picture B" disabled={!srcB} onClick={() => setShowB(true)}>Picture B</button>
         <span style={{ fontSize: 13, color: '#7A6458' }}>
-          {viewB ? 'Preview only. Switch to picture A to add spots.' : `Click the picture to mark a difference (${differences.length}/${MAX_DIFFS}).`}
+          {`Click picture A or B to mark a difference (${differences.length}/${MAX_DIFFS}).`}
         </span>
       </div>
 
       {src ? (
         <div style={{ background: '#FBF4E9', borderRadius: 14, padding: 8, display: 'flex', justifyContent: 'center' }}>
-          <div onClick={place} style={{ position: 'relative', width: '100%', maxWidth: 640, lineHeight: 0, cursor: viewB ? 'default' : 'crosshair' }}>
+          <div onClick={place} style={{ position: 'relative', width: '100%', maxWidth: 640, lineHeight: 0, cursor: 'crosshair' }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img ref={setImgEl} src={src} alt={viewB ? 'Picture B' : 'Picture A'} draggable={false} style={{ display: 'block', width: '100%', height: 'auto', borderRadius: 8 }} />
             {differences.map((d, i) => (

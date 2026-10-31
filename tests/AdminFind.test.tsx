@@ -75,21 +75,35 @@ describe('Admin Find page (A20-A22)', () => {
     expect(within(screen.getByRole('article', { name: 'Level 1' })).getByRole('img', { name: 'Level 1 picture' }).getAttribute('src')).toBe('/media/find/1.png');
   });
 
+  it('Add level sits in the header beside Revert and Save, in blue, and a new level goes on top', async () => {
+    await renderWith([level(1)]);
+    const add = screen.getByRole('button', { name: 'Add level' });
+    expect(screen.getAllByRole('button', { name: 'Add level' })).toHaveLength(1);
+    expect(add.compareDocumentPosition(revertBtn()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(add.style.backgroundColor).toBe('rgb(63, 115, 181)');
+    fireEvent.click(add);
+    const articles = screen.getAllByRole('article');
+    expect(articles[0].getAttribute('aria-label')).toBe('Level 1');
+    expect(within(articles[0]).getByRole('button', { name: '+ Choose images' })).toBeTruthy();
+    expect(articles[1].getAttribute('aria-label')).toBe('Level 2');
+    expect(within(articles[1]).getByRole('img', { name: 'Level 2 picture' }).getAttribute('src')).toBe('/media/find/1.png');
+  });
+
   it('Save stays disabled until a picture, 2 objects and a word for each exist', async () => {
     await renderWith([level(1)]);
     expect(saveBtn().disabled).toBe(true); // nothing changed
     fireEvent.click(screen.getByRole('button', { name: 'Add level' }));
     expect(saveBtn().disabled).toBe(true);
     h.listLibrary.mockResolvedValue(['find/a.png']);
-    fireEvent.click(within(screen.getByRole('article', { name: 'Level 2' })).getByRole('button', { name: '+ Choose images' }));
+    fireEvent.click(within(screen.getByRole('article', { name: 'Level 1' })).getByRole('button', { name: '+ Choose images' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Choose a.png' }));
     fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     expect(saveBtn().disabled).toBe(true); // no objects yet
-    clickPicture(2, 0.2, 0.2);
+    clickPicture(1, 0.2, 0.2);
     expect(saveBtn().disabled).toBe(true); // 1 object
-    clickPicture(2, 0.5, 0.5);
+    clickPicture(1, 0.5, 0.5);
     expect(saveBtn().disabled).toBe(true); // 2 objects, no words
-    const art2 = within(screen.getByRole('article', { name: 'Level 2' }));
+    const art2 = within(screen.getByRole('article', { name: 'Level 1' }));
     fireEvent.change(art2.getByLabelText('Word for object 1'), { target: { value: 'cat' } });
     expect(saveBtn().disabled).toBe(true); // second word missing
     fireEvent.change(art2.getByLabelText('Word for object 2'), { target: { value: 'dog' } });

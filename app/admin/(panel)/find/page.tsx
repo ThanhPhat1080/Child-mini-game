@@ -64,7 +64,7 @@ export default function FindPage() {
   }
 
 
-  function add() { touch(); setDraft([...draft!, newFindLevel()]); }
+  function add() { touch(); setDraft([newFindLevel(), ...draft!]); }
 
   function revert() {
     clearPending(); forgetUploads(); // nothing was uploaded, so there is nothing to delete
@@ -96,7 +96,7 @@ export default function FindPage() {
           <p style={{ margin: '6px 0 0', color: '#7A6458', fontSize: 15 }}>One picture and 2 to 12 objects per level. Turn a level off to keep it as a draft; you can still preview it as the child.</p>
         </div>
         <div style={{ flex: '0 0 auto', maxWidth: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
-          <CardsHeaderActions dirty={dirty} busy={busy} canSave={canSave} onRevert={revert} onSave={doSave} />
+          <CardsHeaderActions dirty={dirty} busy={busy} canSave={canSave} onAdd={add} onRevert={revert} onSave={doSave} />
           <span role="status" style={{ fontSize: 13, color: '#7A6458', maxWidth: 420, textAlign: 'right' }}>{status}</span>
         </div>
       </div>
@@ -114,10 +114,6 @@ export default function FindPage() {
             onAskDelete={() => setConfirm(i)}
           />
         ))}
-        <button type="button" onClick={add} style={{ minHeight: 96, borderRadius: 18, border: '2px dashed #D9C6B2', background: 'transparent', color: '#5A4038', fontSize: 16, fontWeight: 700, fontFamily: 'Nunito, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-          Add level
-        </button>
       </div>
 
       {doomed && (
