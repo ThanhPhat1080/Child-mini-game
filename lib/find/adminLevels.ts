@@ -1,3 +1,4 @@
+import { randomId } from '@/lib/randomId';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { commitPendingMap, isPending, removeMedia } from '@/lib/media';
 import { isBucketPath, pathsToDelete } from '@/lib/mediaPaths';
@@ -10,7 +11,7 @@ export type ELevel = { id: string; isNew: boolean; image: string | null; objects
 
 type Row = { id: string; image_path: string; objects: EObject[]; active: boolean };
 
-export const newFindLevel = (): ELevel => ({ id: crypto.randomUUID(), isNew: true, image: null, objects: [], active: true });
+export const newFindLevel = (): ELevel => ({ id: randomId(), isNew: true, image: null, objects: [], active: true });
 
 /* Pure object operations. Each returns a new array and never changes its input. */
 

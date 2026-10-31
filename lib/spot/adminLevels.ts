@@ -1,3 +1,4 @@
+import { randomId } from '@/lib/randomId';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { commitPendingMap, isPending, removeMedia } from '@/lib/media';
 import { isBucketPath, pathsToDelete } from '@/lib/mediaPaths';
@@ -8,7 +9,7 @@ export type ELevel = { id: string; isNew: boolean; a: string | null; b: string |
 
 type Row = { id: string; image_a_path: string; image_b_path: string; differences: Difference[]; active: boolean };
 
-export const newLevel = (): ELevel => ({ id: crypto.randomUUID(), isNew: true, a: null, b: null, differences: [], active: true });
+export const newLevel = (): ELevel => ({ id: randomId(), isNew: true, a: null, b: null, differences: [], active: true });
 
 export function isLevelComplete(l: ELevel): boolean {
   return !!l.a && !!l.b && checkDifferences(l.differences) === null;

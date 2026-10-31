@@ -1,3 +1,4 @@
+import { randomId } from '@/lib/randomId';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { PENDING_PREFIX, isBucketPath, mapSetMedia, type SetPaths } from '@/lib/mediaPaths';
 import { referencedPaths } from '@/lib/media/refs';
@@ -14,7 +15,7 @@ export const isPending = (path: string | null | undefined): boolean => !!path &&
 /** Keeps a picked file in memory and returns a placeholder path for it. Nothing is sent to the bucket. */
 export function addPending(file: File): string {
   if (file.type.startsWith('image/') && file.size > MAX_IMAGE_BYTES) throw new Error('Image must be 2 MB or smaller.');
-  const token = PENDING_PREFIX + crypto.randomUUID();
+  const token = PENDING_PREFIX + randomId();
   pending.set(token, { file, url: URL.createObjectURL(file) });
   return token;
 }
@@ -66,7 +67,7 @@ export async function uploadMedia(folder: string, file: File): Promise<string> {
   const supabase = createSupabaseBrowserClient();
   const dot = file.name.lastIndexOf('.');
   const ext = dot >= 0 ? file.name.slice(dot + 1).toLowerCase() : 'bin';
-  const path = `${folder}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+  const path = `${folder}/${Date.now()}-${randomId().slice(0, 8)}.${ext}`;
   const { error } = await supabase.storage
     .from(MEDIA_BUCKET)
     .upload(path, file, { contentType: file.type, upsert: false });

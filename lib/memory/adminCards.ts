@@ -1,3 +1,4 @@
+import { randomId } from '@/lib/randomId';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { commitPendingMap, isPending, removeMedia } from '@/lib/media';
 import { isBucketPath, pathsToDelete } from '@/lib/mediaPaths';
@@ -6,7 +7,7 @@ export type ECard = { id: string; isNew: boolean; word: string; image: string | 
 
 type Row = { id: string; word: string; image_path: string | null; audio_path: string | null; active: boolean; group_id: string | null };
 
-export const newCard = (): ECard => ({ id: crypto.randomUUID(), isNew: true, word: '', image: null, audio: null, active: true, groupId: null });
+export const newCard = (): ECard => ({ id: randomId(), isNew: true, word: '', image: null, audio: null, active: true, groupId: null });
 
 export function isCardComplete(c: ECard): boolean {
   const n = c.word.trim().length;
@@ -88,7 +89,7 @@ export type EGroup = { id: string; isNew: boolean; name: string };
 
 export const GROUP_NAME_MAX = 40;
 
-export const newGroup = (name: string): EGroup => ({ id: crypto.randomUUID(), isNew: true, name });
+export const newGroup = (name: string): EGroup => ({ id: randomId(), isNew: true, name });
 
 const normName = (n: string) => n.trim().toLowerCase();
 
