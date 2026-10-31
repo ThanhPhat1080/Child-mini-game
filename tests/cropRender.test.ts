@@ -60,3 +60,13 @@ describe('cropToSquare', () => {
     ).rejects.toThrow('Could not read this picture');
   });
 });
+
+describe('cropToSquare quality', () => {
+  it('encodes WebP at quality 0.8 so a cropped picture stays well under 2 MB', async () => {
+    const toBlob = vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(function (cb: BlobCallback) {
+      cb(new Blob(['x'], { type: 'image/webp' }));
+    });
+    await cropToSquare(new File(['x'], 'photo.jpg', { type: 'image/jpeg' }), defaultCrop(1200, 800));
+    expect(toBlob).toHaveBeenCalledWith(expect.any(Function), 'image/webp', 0.8);
+  });
+});

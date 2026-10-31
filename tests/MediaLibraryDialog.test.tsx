@@ -194,3 +194,52 @@ describe('MediaLibraryDialog crop before upload (A24)', () => {
     expect(lib.cropToSquare).not.toHaveBeenCalled();
   });
 });
+
+describe('MediaLibraryDialog size limits for cropped pictures', () => {
+  const sized = (size: number) => {
+    const f = new File(['x'], 'phone.jpg', { type: 'image/jpeg' });
+    Object.defineProperty(f, 'size', { value: size });
+    return f;
+  };
+
+  beforeEach(() => {
+    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:photo'), revokeObjectURL: vi.fn() }));
+    lib.listLibrary.mockResolvedValue([]);
+    lib.uploadToLibrary.mockReset().mockResolvedValue('library/x.webp');
+    lib.cropToSquare.mockReset();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('a 5 MB phone photo opens the crop window: the 2 MB limit applies to the cropped result', async () => {
+    render(<MediaLibraryDialog kind="image" onChoose={() => undefined} onClose={() => undefined} />);
+    await screen.findByText('Nothing in the library yet.');
+    fireEvent.change(screen.getByLabelText('Upload new picture'), { target: { files: [sized(5 * 1024 * 1024)] } });
+    expect(await screen.findByRole('dialog', { name: 'Crop picture' })).toBeTruthy();
+    expect(screen.queryByText('Image must be 2 MB or smaller.')).toBeNull();
+  });
+
+  it('a picture over 20 MB is refused before the crop window opens', async () => {
+    render(<MediaLibraryDialog kind="image" onChoose={() => undefined} onClose={() => undefined} />);
+    await screen.findByText('Nothing in the library yet.');
+    fireEvent.change(screen.getByLabelText('Upload new picture'), { target: { files: [sized(25 * 1024 * 1024)] } });
+    expect(await screen.findByText('Picture must be 20 MB or smaller.')).toBeTruthy();
+    expect(screen.queryByRole('dialog', { name: 'Crop picture' })).toBeNull();
+  });
+
+  it('a cropped result still over 2 MB is refused and nothing is uploaded', async () => {
+    lib.cropToSquare.mockResolvedValue(sized(3 * 1024 * 1024));
+    render(<MediaLibraryDialog kind="image" onChoose={() => undefined} onClose={() => undefined} />);
+    await screen.findByText('Nothing in the library yet.');
+    fireEvent.change(screen.getByLabelText('Upload new picture'), { target: { files: [sized(5 * 1024 * 1024)] } });
+    const crop = await screen.findByRole('dialog', { name: 'Crop picture' });
+    const img = crop.querySelector('img') as HTMLImageElement;
+    Object.defineProperty(img, 'naturalWidth', { value: 1200 });
+    Object.defineProperty(img, 'naturalHeight', { value: 800 });
+    fireEvent.load(img);
+    fireEvent.click(within(crop).getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('Image must be 2 MB or smaller.')).toBeTruthy();
+    expect(lib.uploadToLibrary).not.toHaveBeenCalled();
+  });
+});

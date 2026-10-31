@@ -25,7 +25,7 @@ export async function cropToSquare(file: File, crop: Crop): Promise<File> {
   if (!ctx) throw new Error('Could not read this picture');
   ctx.drawImage(bitmap, x, y, size, size, 0, 0, out, out);
   bitmap.close();
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', 0.9));
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', 0.8));
   if (!blob) throw new Error('Could not save this picture');
   const base = file.name.replace(/\.[^.]+$/, '');
   return new File([blob], `${base}-square.webp`, { type: 'image/webp' });

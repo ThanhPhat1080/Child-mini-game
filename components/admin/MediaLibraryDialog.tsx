@@ -15,6 +15,8 @@ import { CropDialog } from './CropDialog';
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
 /** Bitmap pictures are cropped to a square before upload (A24). SVG is stored as it is. */
 const CROP_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+/** A phone photo is often over 2 MB before the crop; the 2 MB limit applies to the cropped result (A24). */
+const MAX_CROP_INPUT_BYTES = 20 * 1024 * 1024;
 
 const fileName = (path: string): string => path.split('/').pop() ?? path;
 
@@ -93,6 +95,7 @@ export function MediaLibraryDialog({ kind, onChoose, onClose, startCrop, onCropp
     setUploading(true);
     try {
       const square = await cropToSquare(picked, crop);
+      if (square.size > MAX_IMAGE_BYTES) throw new Error('Image must be 2 MB or smaller.');
       const path = await uploadToLibrary(kind, square);
       setPaths((list) => [...new Set([...(list ?? []), path])].sort());
       onCropped?.(crop);
@@ -109,8 +112,11 @@ export function MediaLibraryDialog({ kind, onChoose, onClose, startCrop, onCropp
     let file = picked;
     if (kind === 'image') {
       if (!IMAGE_TYPES.includes(file.type)) return setUploadError('Use a PNG, JPG, WebP or SVG picture.');
+      if (CROP_TYPES.includes(file.type)) {
+        if (file.size > MAX_CROP_INPUT_BYTES) return setUploadError('Picture must be 20 MB or smaller.');
+        return setCropping(file);
+      }
       if (file.size > MAX_IMAGE_BYTES) return setUploadError('Image must be 2 MB or smaller.');
-      if (CROP_TYPES.includes(file.type)) return setCropping(file);
     } else {
       const type = cardAudioType(file.type);
       if (!type) return setUploadError('Use an MP3, M4A or WAV sound.');
