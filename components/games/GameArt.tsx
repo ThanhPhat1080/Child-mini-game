@@ -12,6 +12,9 @@ export const LISTEN_PURPLE = '#7B6BAE';
 /** The Sort It gold: card title text and the game-list icon ring. */
 export const SORT_GOLD = '#A8842F';
 
+/** The Find It peach: card title text and the game-list icon ring. */
+export const FIND_PEACH = '#B5703A';
+
 const num = (bg: string, h: number, n: number, color = '#fff') => (
   <span style={{ width: 120, height: h, borderRadius: 24, background: bg, padding: 12, boxSizing: 'border-box', fontSize: 36, fontWeight: 600, color, lineHeight: 1.1 }}>{n}</span>
 );
@@ -99,6 +102,24 @@ export function GameArt({ id }: { id: Game['id'] }) {
       </>
     );
   }
+  if (id === 'find') {
+    return (
+      <>
+        <span aria-hidden="true" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 190 }}>
+          <svg width="200" height="160" viewBox="0 0 120 96">
+            <rect x="4" y="4" width="112" height="88" rx="14" fill="#F6E6D8" stroke={FIND_PEACH} strokeWidth="4" />
+            <path d="M10 80V62q16-12 32-4t30-2 38-6v30z" fill="#BFDCC4" />
+            <circle cx="30" cy="24" r="8" fill="#EED79A" />
+            <circle cx="88" cy="36" r="6" fill="#E5555F" />
+            <circle cx="64" cy="58" r="5" fill="#A9C6DE" />
+            <circle cx="50" cy="34" r="16" fill="none" stroke={FIND_PEACH} strokeWidth="3.5" />
+          </svg>
+        </span>
+        <span aria-hidden="true" style={{ width: 110, height: 110 }} />
+        <span style={{ fontSize: 64, fontWeight: 600, color: FIND_PEACH, lineHeight: 1, textAlign: 'center' }}>Find It</span>
+      </>
+    );
+  }
   return (
     <>
       <span aria-hidden="true" style={{ display: 'flex', gap: 18, alignItems: 'center', height: 190 }}>
@@ -174,6 +195,18 @@ export function GameIcon({ id }: { id: Game['id'] }) {
             <path d={`M${x + 0.6} 12.6h3.6`} stroke={SORT_GOLD} strokeWidth="0.6" />
           </g>
         ))}
+      </svg>
+    );
+  }
+  if (id === 'find') {
+    return (
+      <svg aria-hidden="true" width="110" height="110" viewBox="0 0 24 24" fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" fill="#FCEFE2" stroke={FIND_PEACH} strokeWidth="2" />
+        <rect x="5.6" y="6.6" width="9.6" height="8" rx="1.4" fill="#F5E0C9" stroke={FIND_PEACH} strokeWidth="0.9" />
+        <circle cx="9.4" cy="9.6" r="0.9" fill="#E5555F" />
+        <circle cx="13.2" cy="12.2" r="0.6" fill={FIND_PEACH} />
+        <circle cx="13.6" cy="10.6" r="2.4" fill="#FCEFE2" stroke={FIND_PEACH} strokeWidth="1.1" />
+        <path d="M15.4 12.4l2.6 2.6" stroke={FIND_PEACH} strokeWidth="1.5" />
       </svg>
     );
   }

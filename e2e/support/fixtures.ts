@@ -23,12 +23,22 @@ export type SpotLevelRow = {
   created_at: string;
 };
 
+export type FindLevelRow = {
+  id: string;
+  image_path: string;
+  objects: { x: number; y: number; r: number; word: string; audio_path: string | null }[];
+  active: boolean;
+  sort_order: number;
+  created_at: string;
+};
+
 export type Row = Record<string, unknown>;
 
 export type StandinState = {
   memory_cards: Row[];
   card_groups: Row[];
   spot_levels: Row[];
+  find_levels: Row[];
   settings: Row[];
   quiz_sets: Row[];
   questions: Row[];
@@ -100,6 +110,25 @@ export function makeSpotLevels(n: number, active = true): SpotLevelRow[] {
       { x: 0.5, y: 0.6, r: 0.06 },
       { x: 0.75, y: 0.4, r: 0.06 },
     ],
+    active,
+    sort_order: i + 1,
+    created_at: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),
+  }));
+}
+
+/** n Find It levels (apple art, 3 objects each with distinct words), ids ...b000-00000000000N. */
+export function makeFindLevels(n: number, objectsPer = 3, active = true): FindLevelRow[] {
+  const words = ['apple', 'ball', 'cat', 'duck', 'fish', 'star', 'sun', 'tree', 'house', 'moon', 'book', 'car'];
+  return Array.from({ length: n }, (_, i) => ({
+    id: `00000000-0000-4000-b000-${String(i + 1).padStart(12, '0')}`,
+    image_path: 'seed/apple.svg',
+    objects: Array.from({ length: objectsPer }, (_, k) => ({
+      x: 0.2 + 0.3 * k,
+      y: 0.3 + 0.2 * ((k + i) % 3),
+      r: 0.08,
+      word: words[(i * objectsPer + k) % words.length],
+      audio_path: null,
+    })),
     active,
     sort_order: i + 1,
     created_at: new Date(Date.UTC(2026, 0, 1, 0, 0, i)).toISOString(),

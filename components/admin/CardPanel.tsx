@@ -20,7 +20,7 @@ const AUDIO_ALIASES: Record<string, string> = {
 export const cardAudioType = (type: string): string | null => AUDIO_ALIASES[type] ?? null;
 /** The media bucket's file size limit (supabase/migrations/20261026000000_init_schema.sql). */
 export const MAX_SOUND_BYTES = 10 * 1024 * 1024;
-const AUDIO_ACCEPT = ['.mp3', '.m4a', '.wav', ...Object.keys(AUDIO_ALIASES)].join(',');
+export const AUDIO_ACCEPT = ['.mp3', '.m4a', '.wav', ...Object.keys(AUDIO_ALIASES)].join(',');
 
 const list = (xs: string[]) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 

@@ -16,7 +16,7 @@ vi.mock('@/lib/media', () => ({ mediaUrl: (p: string | null) => (p ? `/media/${p
 vi.mock('@/components/MusicButton', () => ({ MusicButton: () => null }));
 
 import Games from '@/app/games/page';
-import { LISTEN_PURPLE, MEMORY_GREEN, MEMORY_ICON, SORT_GOLD, SPOT_BLUE } from '@/components/games/GameArt';
+import { FIND_PEACH, LISTEN_PURPLE, MEMORY_GREEN, MEMORY_ICON, SORT_GOLD, SPOT_BLUE } from '@/components/games/GameArt';
 
 const icon = (id: string) => document.querySelector(`[data-game-icon="${id}"]`) as HTMLElement;
 const frame = (name: string) => screen.getByRole('link', { name }) as HTMLElement;
@@ -33,9 +33,9 @@ describe('games list decorative icons', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('every game card (Quiz, Memory, Listen, Sort, Spot) has a decorative 130 px icon at the same spot', () => {
+  it('every game card (Quiz, Memory, Listen, Sort, Spot, Find) has a decorative 130 px icon at the same spot', () => {
     render(<Games />);
-    for (const id of ['quiz', 'memory', 'listen', 'sort', 'spot']) {
+    for (const id of ['quiz', 'memory', 'listen', 'sort', 'spot', 'find']) {
       const el = icon(id);
       expect(el).toBeTruthy();
       expect(el.getAttribute('aria-hidden')).toBe('true');
@@ -54,7 +54,9 @@ describe('games list decorative icons', () => {
     expect(icon('sort').style.top).toBe(icon('quiz').style.top);
     expect(icon('spot').style.left).toBe(icon('quiz').style.left);
     expect(icon('spot').style.top).toBe(icon('quiz').style.top);
-    expect(document.querySelectorAll('[data-game-icon]')).toHaveLength(5);
+    expect(icon('find').style.left).toBe(icon('quiz').style.left);
+    expect(icon('find').style.top).toBe(icon('quiz').style.top);
+    expect(document.querySelectorAll('[data-game-icon]')).toHaveLength(6);
   });
 
   it('the Memory icon is two flower cards, different from the Quiz question mark', () => {
@@ -175,6 +177,27 @@ describe('games list decorative icons', () => {
     expect(circle.getAttribute('stroke')).toBe(SPOT_BLUE);
     expect((link.lastElementChild as HTMLElement).style.color).toBe('rgb(95, 134, 168)');
     expect(link.style.border).toContain('rgb(169, 198, 222)');
+  });
+
+  it('Find It has a peach border and title, a peach magnifier icon with a cream circle; distinct from the others', () => {
+    render(<Games />);
+    expect(FIND_PEACH).toBe('#B5703A');
+    const find = frame('Play Find It');
+    expect(find.getAttribute('href')).toBe('/games/find');
+    expect(find.style.border).toContain('rgb(242, 201, 168)');
+    const title = find.lastElementChild as HTMLElement;
+    expect(title.textContent).toBe('Find It');
+    expect(title.style.color).toBe('rgb(181, 112, 58)');
+    for (const other of ['Play Quiz', 'Play Memory Match', 'Play Listen & Pick', 'Play Sort It', 'Play Spot the Differences']) {
+      expect(find.style.borderColor).not.toBe(frame(other).style.borderColor);
+      expect(title.style.color).not.toBe((frame(other).lastElementChild as HTMLElement).style.color);
+    }
+    const svg = icon('find').querySelector('svg')!;
+    expect(svg.getAttribute('aria-hidden')).toBe('true');
+    expect(svg.querySelectorAll('a, button, [tabindex]')).toHaveLength(0);
+    const circle = svg.querySelector('circle')!;
+    expect(circle.getAttribute('fill')).toBe('#FCEFE2');
+    expect(circle.getAttribute('stroke')).toBe(FIND_PEACH);
   });
 
   it('Enter on the focused carousel opens a ready game', () => {
