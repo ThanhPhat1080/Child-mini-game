@@ -3,6 +3,7 @@
 import { isQuestionComplete, type EQuestion, type ESet } from '@/lib/sets';
 import s from './admin-ui.module.css';
 import { LibraryButton } from './LibraryButton';
+import { SvgPaste } from './SvgPaste';
 import { CheckOption, Img, PicIcon, dangerBtn, fileName, ghostBtn, inputStyle, panel } from './editor-parts';
 
 const SLOTS = [
@@ -15,12 +16,14 @@ const arrowBtn = { width: 26, height: 20, border: 'none', background: 'transpare
 type Pick = { kind: 'qimg' } | { kind: 'voice' } | { kind: 'answer'; i: number };
 
 /** Question list (left) + question editor (right). Matches the AdminEditor board. */
-export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAskDelete, onPick, onChooseLibrary, onPlay }: {
+export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAskDelete, onPick, onChooseLibrary, onSvg, onPlay }: {
   d: ESet; cur: number; q: EQuestion | null;
   onSelect: (i: number) => void; onAdd: () => void; onMove: (i: number, dir: -1 | 1) => void;
   onEdit: (patch: Partial<EQuestion>) => void; onAskDelete: () => void; onPick: (t: Pick) => void;
   /** A picture or sound already in the library: the bucket path, nothing uploaded (A24). */
-  onChooseLibrary: (t: Pick, path: string) => void; onPlay: (path: string) => void;
+  onChooseLibrary: (t: Pick, path: string) => void;
+  /** SVG code pasted for a picture: the page checks it and stores it as a file (A11 rules). */
+  onSvg: (t: Pick, code: string) => void; onPlay: (path: string) => void;
 }) {
   const incomplete = d.qs.filter((x) => !isQuestionComplete(x)).length;
   const checks = q ? [
@@ -104,6 +107,7 @@ export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAs
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
                     <button type="button" className={s.ghost} onClick={() => onPick({ kind: 'qimg' })} style={ghostBtn}>Upload image</button>
                     <LibraryButton kind="image" label="question image" onChoose={(p) => onChooseLibrary({ kind: 'qimg' }, p)} />
+                    <div style={{ flexBasis: '100%' }}><SvgPaste label="question image" onUse={(code) => onSvg({ kind: 'qimg' }, code)} /></div>
                     {q.qimg && <button type="button" className={s.ghost} onClick={() => onEdit({ qimg: null })} style={ghostBtn}>Remove</button>}
                   </div>
                   <span style={{ fontSize: 13, color: '#6E5A4E', lineHeight: 1.45 }}>SVG (best), PNG, JPG or WebP, up to 2 MB. Best at 600 × 300 px (2:1). Larger images are scaled down to fit the frame, never cropped or stretched.</span>
@@ -166,6 +170,7 @@ export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAs
                       </div>
                       <button type="button" className={s.ghost} onClick={() => onPick({ kind: 'answer', i })} style={{ ...ghostBtn, fontSize: 13 }}>Upload image</button>
                       <LibraryButton kind="image" label={`answer ${i + 1} image`} onChoose={(p) => onChooseLibrary({ kind: 'answer', i }, p)} />
+                      <SvgPaste label={`answer ${i + 1} image`} onUse={(code) => onSvg({ kind: 'answer', i }, code)} />
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         <label htmlFor={`at${i}`} style={{ fontSize: 13, fontWeight: 700 }}>Answer text <span style={{ fontWeight: 600, color: '#7A6458' }}>(read aloud when picked)</span></label>
                         <input id={`at${i}`} className={s.in} type="text" value={q.texts[i]} placeholder="e.g. Apple" onChange={(e) => onEdit({ texts: q.texts.map((t, k) => (k === i ? e.target.value : t)) })} style={{ ...inputStyle, height: 40, fontSize: 15 }} />

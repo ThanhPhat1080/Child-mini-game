@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { addPending, clearPending, commitPendingMedia, materializeSvg, mediaUrl, removeMedia } from '@/lib/media';
+import { addPending, clearPending, commitPendingMedia, materializeSvg, mediaUrl, removeMedia, svgToPending } from '@/lib/media';
 import { pathsToDelete, setMediaPaths } from '@/lib/mediaPaths';
 import { SetCard } from '@/components/SetCard';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
@@ -12,6 +12,8 @@ import { PRESETS, type PresetKey, blankSet, deleteSet, isQuestionComplete, loadS
 import s from './admin-ui.module.css';
 import { QuestionPanel } from './QuestionPanel';
 import { LibraryButton } from './LibraryButton';
+import { SvgPaste } from './SvgPaste';
+import { checkSvg } from '@/lib/quizImport';
 import { CheckOption, panel, inputStyle, ghostBtn, dangerBtn, fileName, Img, PicIcon, Eye, Shell, IMG_TYPES, AUDIO_TYPES } from './editor-parts';
 
 type Target = { kind: 'cover' } | { kind: 'qimg' } | { kind: 'voice' } | { kind: 'answer'; i: number };
@@ -149,6 +151,13 @@ export function SetEditor({ setId }: { setId: string }) {
     else if (t.kind === 'qimg') editQ(cur, { qimg: path });
     else if (t.kind === 'voice') editQ(cur, { voice: path });
     else { const imgs = d.qs[cur].imgs.slice(); imgs[t.i] = path; editQ(cur, { imgs }); }
+  }
+
+  /** Pasted SVG code: checked with the same rules as the Quiz import, then stored like an uploaded picture (A11). */
+  function applySvg(t: Target, code: string) {
+    const r = checkSvg(code);
+    if ('error' in r) return say(`${r.error}.`, true);
+    applyTarget(t, svgToPending(r.svg));
   }
 
   function playVoice(path: string) {
@@ -293,6 +302,7 @@ export function SetEditor({ setId }: { setId: string }) {
                     <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <button type="button" className={s.ghost} onClick={() => pickFile({ kind: 'cover' })} style={ghostBtn}>Upload picture</button>
                       <LibraryButton kind="image" label="set cover picture" onChoose={(path) => applyTarget({ kind: 'cover' }, path)} />
+                      <div style={{ flexBasis: '100%' }}><SvgPaste label="set cover picture" onUse={(code) => applySvg({ kind: 'cover' }, code)} /></div>
                       {d.cover && <button type="button" className={s.ghost} onClick={() => edit({ cover: null })} style={ghostBtn}>Remove</button>}
                     </span>
                   </div>
@@ -328,6 +338,7 @@ export function SetEditor({ setId }: { setId: string }) {
             onAskDelete={() => setConfirm({ type: 'q', i: cur })}
             onPick={(kind) => pickFile(kind)}
             onChooseLibrary={(kind, path) => applyTarget(kind, path)}
+            onSvg={(kind, code) => applySvg(kind, code)}
             onPlay={playVoice}
           />
         </>
