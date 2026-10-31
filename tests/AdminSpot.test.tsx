@@ -115,23 +115,15 @@ describe('Admin Spot page (A14-A16)', () => {
     expect(saveBtn().disabled).toBe(false);
   });
 
-  it('always shows the tip about landscape pictures and big differences', async () => {
+  it('no longer shows the landscape tip: every picture is a square now (ADR-032)', async () => {
     await renderWith([level(1)]);
-    expect(screen.getByText('Tip: use landscape pictures (4:3 or 3:2) and make every difference big and clear, so a young child can see it from the chair.')).toBeTruthy();
+    expect(screen.queryByText(/landscape pictures/i)).toBeNull();
   });
 
-  it('a tall picture warns once per level, does not block Save; 4:3 does not warn', async () => {
+  it('a tall picture no longer warns, because new pictures are cropped to a square (ADR-032)', async () => {
     h.naturalSize.mockImplementation(async () => ({ w: 300, h: 400 }));
     await renderWith([level(1)]);
-    const msg = 'This picture is tall, so it will be shown smaller. A landscape picture (4:3 or 3:2) works best.';
-    expect(await screen.findAllByText(msg)).toHaveLength(1);
-    fireEvent.click(screen.getByLabelText('Level 1 on'));
-    expect(saveBtn().disabled).toBe(false);
-    cleanup();
-    h.naturalSize.mockReset();
-    h.naturalSize.mockResolvedValue({ w: 400, h: 300 });
-    await renderWith([level(1)]);
-    await waitFor(() => expect(h.naturalSize).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(h.naturalSize).toHaveBeenCalled());
     await Promise.resolve();
     expect(screen.queryByText(/picture is tall/i)).toBeNull();
   });

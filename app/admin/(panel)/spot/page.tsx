@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isLevelComplete, loadLevels, moveLevel, newLevel, saveLevels, type ELevel } from '@/lib/spot/adminLevels';
 import { aspectsClose } from '@/lib/spot/validate';
+import type { Crop } from '@/lib/crop/geometry';
 import { naturalSize } from '@/lib/spot/imageSize';
 import { clearPending, mediaUrl, svgToPending } from '@/lib/media';
 import { forgetUploads } from '@/lib/media/uploads';
@@ -18,6 +19,8 @@ export default function SpotPage() {
   const [draft, setDraft] = useState<ELevel[] | null>(null);
   const [msgs, setMsgs] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState<number | null>(null);
+  /** Picture A's crop per level, kept while editing: picture B starts from it (A25). Cleared on Save and Revert. */
+  const aCrops = useRef<Record<string, Crop>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
@@ -89,6 +92,7 @@ export default function SpotPage() {
 
   function revert() {
     clearPending(); forgetUploads(); // nothing was uploaded, so there is nothing to delete
+    aCrops.current = {};
     setDraft(saved); setMsgs({}); touch();
   }
 
@@ -98,7 +102,7 @@ export default function SpotPage() {
     const r = await saveLevels(saved, draft);
     if (r.error) { setError(r.error); setBusy(false); return; }
     if (r.warning) setWarning(r.warning);
-    if (await load()) { clearPending(); forgetUploads(); setMsgs({}); setNotice('Saved'); }
+    if (await load()) { clearPending(); forgetUploads(); aCrops.current = {}; setMsgs({}); setNotice('Saved'); }
     setBusy(false);
   }
 
@@ -107,8 +111,6 @@ export default function SpotPage() {
     const b = l.b ? ratios[l.b] : null;
     return !!a && !!b && !aspectsClose(a, b);
   };
-
-  const tallOff = (l: ELevel) => [l.a, l.b].some((p) => { const r = p ? ratios[p] : null; return !!r && r < 1; });
 
   const doomed = confirm !== null ? draft[confirm] : null;
   let status = 'All changes saved.';
@@ -136,7 +138,9 @@ export default function SpotPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {draft.map((l, i) => (
           <SpotLevelPanel
-            key={l.id} l={l} n={i + 1} count={draft.length} message={msgs[l.id] ?? null} shapeWarning={shapeOff(l)} tallWarning={tallOff(l)}
+            key={l.id} l={l} n={i + 1} count={draft.length} message={msgs[l.id] ?? null} shapeWarning={shapeOff(l)}
+            startCrop={aCrops.current[l.id]}
+            onCropped={(side, c) => { if (side === 'a') aCrops.current[l.id] = c; }}
             onEdit={(patch) => edit(l.id, patch)}
             onChooseLibrary={(side, path) => chooseLibrary(l.id, side, path)}
             onSvg={(side, code) => applySvg(l.id, side, code)}
