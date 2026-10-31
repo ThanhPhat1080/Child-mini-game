@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { getState, makeSpotLevels, reset, signInAsAdmin } from './support/fixtures';
 
@@ -12,6 +13,14 @@ const save = (page: Page) => page.getByRole('button', { name: 'Save' });
 async function openSpot(page: Page): Promise<void> {
   await page.goto('/admin/spot');
   await expect(page.getByRole('button', { name: 'Add level' })).toBeVisible();
+}
+
+/** Pastes an SVG file into picture A or B of level `n` ("Or paste SVG code"), a local preview until Save. */
+async function pasteSpotPicture(page: Page, n: number, side: 'A' | 'B', file: string): Promise<void> {
+  const level = page.getByRole('article', { name: `Level ${n}`, exact: true });
+  await level.locator('summary').nth(side === 'A' ? 0 : 1).click();
+  await level.getByLabel(`SVG code for picture ${side} of level ${n}`, { exact: true }).fill(readFileSync(file, 'utf8'));
+  await level.getByRole('button', { name: `Use SVG for picture ${side} of level ${n}`, exact: true }).click();
 }
 
 /** Clicks picture A of the first level at fractions of its box. */
@@ -45,8 +54,8 @@ test('build a level, save it, play it, delete it', async ({ page }) => {
   await openSpot(page);
   await page.getByRole('button', { name: 'Add level' }).click();
   await expect(save(page)).toBeDisabled();
-  await page.getByLabel('Picture A file for level 1', { exact: true }).setInputFiles(A);
-  await page.getByLabel('Picture B file for level 1', { exact: true }).setInputFiles(B);
+  await pasteSpotPicture(page, 1, 'A', A);
+  await pasteSpotPicture(page, 1, 'B', B);
   await expect(page.getByText(/different shapes/i)).toHaveCount(0);
 
   await clickA(page, 0.25, 0.3);
