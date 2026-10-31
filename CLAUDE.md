@@ -21,4 +21,4 @@ Schema changes only via new `supabase/migrations/*.sql`, never by hand in the da
 Each ticket has acceptance criteria; do not mark it done until they pass. When Claude makes the same mistake twice, add the fix here. Keep this file under one page.
 
 ## Git
-`main` = production, `develop` = integration. Branch from latest `develop`, PR into `develop`, merge only after the user's OK; `develop` -> `main` only when asked. Never push or force-push to `main`/`develop`. Tell the user each new branch name (`git fetch origin && git checkout <branch>`). Production deploys and Vercel settings only when asked.
+`main` = production, `develop` = integration. Branch from latest `develop`, PR into `develop`, merge only after the user's OK; `develop` -> `main` only when asked. Never push or force-push to `main`/`develop`. Tell the user each new branch name (`git fetch origin && git checkout <branch>`). Production deploys and Vercel settings only when asked. On "release": merge once, do not poll the Vercel check, and report only a failure.
