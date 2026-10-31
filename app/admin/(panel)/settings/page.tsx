@@ -5,6 +5,7 @@ import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { addPending, clearPending, mediaUrl, removeMedia, uploadMedia, uploadPending } from '@/lib/media';
 import { applause, ohOh, speakKid, yay, type SoundHandle } from '@/lib/sfx';
 import styles from '../../admin.module.css';
+import { LibraryButton } from '@/components/admin/LibraryButton';
 
 type Row = { child_name: string; greeting_path: string | null; music_path: string | null; music_volume: number; avatar_path: string | null; hooray_path: string | null; ohoh_path: string | null; complete_path: string | null };
 
@@ -16,6 +17,8 @@ export default function SettingsPage() {
   const [volume, setVolume] = useState(30);
   /** Avatar picked but not saved yet: shown as a preview, uploaded on "Save changes". */
   const [avatarPick, setAvatarPick] = useState<string | null>(null);
+  /** A picture already in the library, chosen instead of uploading (A24). Saved with Save changes. */
+  const [avatarLibrary, setAvatarLibrary] = useState<string | null>(null);
   const [toast, setToast] = useState<{ text: string; error: boolean } | null>(null);
   const greetingInput = useRef<HTMLInputElement>(null);
   const musicInput = useRef<HTMLInputElement>(null);
@@ -47,18 +50,23 @@ export default function SettingsPage() {
   async function save() {
     const patch: Record<string, unknown> = { child_name: childName.trim(), music_volume: volume };
     let newAvatar: string | null = null;
+    let uploaded = false; // only a fresh upload is removed on failure; a library file is shared and stays
     if (avatarPick) {
       try { newAvatar = await uploadPending(avatarPick, 'avatar'); } catch (e) { return say(e instanceof Error ? e.message : 'Upload failed', true); }
-      patch.avatar_path = newAvatar;
+      uploaded = true;
+    } else if (avatarLibrary) {
+      newAvatar = avatarLibrary;
     }
+    if (newAvatar) patch.avatar_path = newAvatar;
     const { error } = await createSupabaseBrowserClient().from('settings').update(patch).eq('id', 1);
     if (error) {
-      if (newAvatar) void removeMedia([newAvatar]); // the save failed, so do not keep the upload
+      if (uploaded && newAvatar) void removeMedia([newAvatar]); // the save failed, so do not keep the upload
       return say(error.message, true);
     }
     const old = row?.avatar_path;
     setRow((r) => (r ? { ...r, child_name: childName.trim(), music_volume: volume, ...(newAvatar ? { avatar_path: newAvatar } : {}) } : r));
     setAvatarPick(null);
+    setAvatarLibrary(null);
     clearPending();
     const failed = newAvatar && old && old !== newAvatar ? await removeMedia([old]) : null;
     say(failed ? 'Saved, but the old avatar could not be removed from storage.' : 'Saved.', !!failed);
@@ -70,11 +78,12 @@ export default function SettingsPage() {
     setChildName(row.child_name);
     setVolume(row.music_volume);
     setAvatarPick(null);
+    setAvatarLibrary(null);
     clearPending();
     say('Changes reverted.');
   }
 
-  const dirty = !!row && (childName.trim() !== row.child_name || volume !== row.music_volume || !!avatarPick);
+  const dirty = !!row && (childName.trim() !== row.child_name || volume !== row.music_volume || !!avatarPick || !!avatarLibrary);
 
   type AudioKind = 'greeting' | 'music' | 'hooray' | 'ohoh' | 'complete';
   const COLUMN: Record<AudioKind, keyof Row> = { greeting: 'greeting_path', music: 'music_path', hooray: 'hooray_path', ohoh: 'ohoh_path', complete: 'complete_path' };
@@ -90,21 +99,35 @@ export default function SettingsPage() {
     say(failed ? 'Back to the built-in sound, but the old file could not be removed from storage.' : 'Back to the built-in sound.', !!failed);
   }
 
+  /** Points a sound setting at `path` (a new upload, or a library file that is already in the bucket) and removes the old file if no record uses it. */
+  async function setSound(kind: AudioKind, path: string, fresh: boolean) {
+    const column = COLUMN[kind];
+    const old = row?.[column] as string | null | undefined;
+    const { error } = await createSupabaseBrowserClient().from('settings').update({ [column]: path }).eq('id', 1);
+    if (error) { if (fresh) void removeMedia([path]); throw new Error(error.message); }
+    setRow((r) => (r ? { ...r, [column]: path } : r));
+    const failed = old && old !== path ? await removeMedia([old]) : null;
+    const done = fresh ? 'Uploaded.' : 'Sound chosen from the library.';
+    say(failed ? `${done} The old file could not be removed from storage.` : done, !!failed);
+  }
+
   async function upload(kind: AudioKind, event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
     try {
-      const path = await uploadMedia(kind, file);
-      const column = COLUMN[kind];
-      const old = row?.[column] as string | null | undefined;
-      const { error } = await createSupabaseBrowserClient().from('settings').update({ [column]: path }).eq('id', 1);
-      if (error) { void removeMedia([path]); throw new Error(error.message); }
-      setRow((r) => (r ? { ...r, [column]: path } : r));
-      const failed = old && old !== path ? await removeMedia([old]) : null;
-      say(failed ? 'Uploaded, but the old file could not be removed from storage.' : 'Uploaded.', !!failed);
+      await setSound(kind, await uploadMedia(kind, file), true);
     } catch (e) {
       say(e instanceof Error ? e.message : 'Upload failed', true);
+    }
+  }
+
+  /** A sound from the library: no upload, the setting just points at the existing file (A24). */
+  async function chooseSound(kind: AudioKind, path: string) {
+    try {
+      await setSound(kind, path, false);
+    } catch (e) {
+      say(e instanceof Error ? e.message : 'Could not use this sound', true);
     }
   }
 
@@ -170,6 +193,7 @@ export default function SettingsPage() {
     if (file.size > 2 * 1024 * 1024) return say('Image must be 2 MB or smaller.', true);
     try {
       clearPending(); // a newer pick replaces the older preview
+      setAvatarLibrary(null);
       setAvatarPick(addPending(file));
       say('Avatar chosen. Press Save changes to upload it.');
     } catch (e) {
@@ -199,9 +223,9 @@ export default function SettingsPage() {
 
       <section className={`${styles.section} ${styles.profile}`}>
         <div className={styles.avatar}>
-          {mediaUrl(avatarPick ?? row?.avatar_path) ? (
+          {mediaUrl(avatarPick ?? avatarLibrary ?? row?.avatar_path) ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={mediaUrl(avatarPick ?? row?.avatar_path) ?? ''} alt="Avatar" className={styles.avatarImg} />
+            <img src={mediaUrl(avatarPick ?? avatarLibrary ?? row?.avatar_path) ?? ''} alt="Avatar" className={styles.avatarImg} />
           ) : (
             <svg aria-hidden="true" width="54" height="38" viewBox="0 0 60 42" fill="#F6E2A6" stroke="#B08A48" strokeWidth="2" strokeLinejoin="round"><path d="M4 38 L8 10 L20 24 L30 4 L40 24 L52 10 L56 38 Z" /></svg>
           )}
@@ -214,6 +238,7 @@ export default function SettingsPage() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
             <input ref={avatarInput} className={styles.hidden} type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp" onChange={uploadAvatar} />
             <button type="button" className={styles.ghost} onClick={() => avatarInput.current?.click()}>{row?.avatar_path || avatarPick ? 'Replace avatar' : 'Upload avatar'}</button>
+            <LibraryButton kind="image" label="avatar" onChoose={(path) => { clearPending(); setAvatarPick(null); setAvatarLibrary(path); say('Avatar chosen. Press Save changes to apply it.'); }} />
             <span className={styles.note}>SVG, PNG, JPG or WebP, square, up to 2 MB. Uploaded when you press Save changes.</span>
           </div>
         </div>
@@ -234,6 +259,7 @@ export default function SettingsPage() {
           </div>
           <input ref={greetingInput} className={styles.hidden} type="file" accept="audio/*" onChange={(e) => upload('greeting', e)} />
           <button type="button" className={styles.ghost} onClick={() => greetingInput.current?.click()}>{row?.greeting_path ? 'Replace' : 'Upload'}</button>
+          <LibraryButton kind="audio" label="greeting" onChoose={(path) => void chooseSound('greeting', path)} />
         </div>
       </section>
 
@@ -245,6 +271,7 @@ export default function SettingsPage() {
           </div>
           <input ref={musicInput} className={styles.hidden} type="file" accept="audio/*" onChange={(e) => upload('music', e)} />
           <button type="button" className={styles.ghost} onClick={() => musicInput.current?.click()}>{row?.music_path ? 'Replace track' : '+ Upload track'}</button>
+          <LibraryButton kind="audio" label="background music" onChoose={(path) => void chooseSound('music', path)} />
         </div>
         <div className={`${styles.row} ${row?.music_path ? styles.rowSel : ''}`}>
           {row?.music_path && (
@@ -280,6 +307,7 @@ export default function SettingsPage() {
             </div>
             <input ref={(el) => { soundInputs.current[it.kind] = el; }} className={styles.hidden} type="file" accept="audio/*" onChange={(e) => upload(it.kind, e)} />
             <button type="button" className={styles.ghost} onClick={() => soundInputs.current[it.kind]?.click()}>{it.path ? 'Replace' : 'Upload'}</button>
+            <LibraryButton kind="audio" label={`${it.title} sound`} onChoose={(path) => void chooseSound(it.kind, path)} />
             {it.path && <button type="button" className={styles.ghost} onClick={() => removeSound(it.kind)}>Use built-in</button>}
           </div>
         ))}

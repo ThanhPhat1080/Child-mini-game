@@ -37,15 +37,24 @@ describe('MediaLibraryDialog', () => {
     expect(onChoose.mock.invocationCallOrder[0]).toBeLessThan(onClose.mock.invocationCallOrder[0]);
   });
 
-  it('sounds get a separate play button that previews without choosing', async () => {
+  it('sounds get a play / pause button that previews without choosing', async () => {
     lib.listLibrary.mockResolvedValue(['cards/c1.mp3']);
     const onChoose = vi.fn();
-    render(<MediaLibraryDialog kind="audio" onChoose={onChoose} onClose={() => undefined} />);
+    const play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue();
+    const pause = vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
+    // jsdom does not play media: report the sound as playing so the second click is a pause.
+    vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(false);
+    const { unmount } = render(<MediaLibraryDialog kind="audio" onChoose={onChoose} onClose={() => undefined} />);
     fireEvent.click(await screen.findByRole('button', { name: 'Play c1.mp3' }));
-    expect(lib.playOnce).toHaveBeenCalledWith('https://cdn.test/cards/c1.mp3');
+    expect(play).toHaveBeenCalledTimes(1);
     expect(onChoose).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Pause c1.mp3' }));
+    expect(pause).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Play c1.mp3' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Choose c1.mp3' }));
     expect(onChoose).toHaveBeenCalledWith('cards/c1.mp3');
+    unmount();
+    vi.restoreAllMocks();
   });
 
   it('Escape closes it', async () => {

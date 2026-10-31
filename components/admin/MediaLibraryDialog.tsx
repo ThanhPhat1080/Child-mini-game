@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { playOnce } from '@/lib/audio';
 import { mediaUrl } from '@/lib/media';
 import { listLibrary } from '@/lib/media/library';
+import { useSoundPreview } from './useSoundPreview';
 
 const btn = {
   border: '1.5px solid #E3D5C4',
@@ -23,6 +23,7 @@ const fileName = (path: string): string => path.split('/').pop() ?? path;
 export function MediaLibraryDialog({ kind, onChoose, onClose }: { kind: 'image' | 'audio'; onChoose: (path: string) => void; onClose: () => void }) {
   const [paths, setPaths] = useState<string[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const preview = useSoundPreview();
 
   useEffect(() => {
     let live = true;
@@ -39,7 +40,10 @@ export function MediaLibraryDialog({ kind, onChoose, onClose }: { kind: 'image' 
     return () => window.removeEventListener('keydown', h);
   }, [onClose]);
 
+
+  // Choosing or closing (Close, Escape) also stops the preview: the hook stops on unmount.
   function pick(path: string) {
+    preview.stop();
     onChoose(path);
     onClose();
   }
@@ -62,10 +66,11 @@ export function MediaLibraryDialog({ kind, onChoose, onClose }: { kind: 'image' 
             </li>
           );
         }
+        const playing = preview.isPlaying(p);
         return (
           <li key={p} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <button type="button" aria-label={`Choose ${name}`} onClick={() => pick(p)} style={{ ...btn, height: 56, wordBreak: 'break-all' }}>{name}</button>
-            <button type="button" aria-label={`Play ${name}`} onClick={() => playOnce(url)} style={{ ...btn, height: 40 }}>Play</button>
+            <button type="button" aria-label={`${playing ? 'Pause' : 'Play'} ${name}`} onClick={() => preview.toggle(p, url)} style={{ ...btn, height: 40 }}>{playing ? 'Pause' : 'Play'}</button>
           </li>
         );
       })}

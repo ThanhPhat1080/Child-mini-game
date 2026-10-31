@@ -6,6 +6,7 @@ import { checkDifferences } from '@/lib/spot/validate';
 import type { ELevel } from '@/lib/spot/adminLevels';
 import { mediaUrl } from '@/lib/media';
 import s from './admin-ui.module.css';
+import { LibraryButton } from './LibraryButton';
 import { PicIcon, dangerBtn, fileName, ghostBtn, panel } from './editor-parts';
 import { SpotMarkerEditor } from './SpotMarkerEditor';
 
@@ -17,7 +18,7 @@ const hint = { fontSize: 12, color: '#7A6458' } as const;
 
 type Side = 'a' | 'b';
 
-function PicturePicker({ side, n, path, onPick, onSvg }: { side: Side; n: number; path: string | null; onPick: (f: File) => void; onSvg: (code: string) => void }) {
+function PicturePicker({ side, n, path, onPick, onLibrary, onSvg }: { side: Side; n: number; path: string | null; onPick: (f: File) => void; onLibrary: (path: string) => void; onSvg: (code: string) => void }) {
   const [svg, setSvg] = useState('');
   const label = side === 'a' ? 'A' : 'B';
   const id = `spot-${side}-${n}`;
@@ -33,6 +34,7 @@ function PicturePicker({ side, n, path, onPick, onSvg }: { side: Side; n: number
         <input id={id} type="file" hidden aria-label={`Picture ${label} file for level ${n}`} accept={SPOT_IMG_TYPES.join(',')}
           onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onPick(f); }} />
         <button type="button" className={`${s.btn} ${s.ghost}`} style={small} onClick={() => document.getElementById(id)?.click()}>{path ? `Change picture ${label}` : `Upload picture ${label}`}</button>
+        <LibraryButton kind="image" label={`level ${n} picture ${label}`} onChoose={onLibrary} />
         {path && <span style={{ ...hint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140 }}>{fileName(path)}</span>}
       </div>
       <details>
@@ -48,9 +50,9 @@ function PicturePicker({ side, n, path, onPick, onSvg }: { side: Side; n: number
 }
 
 /** One level: both pictures, the spots, on/off, order, preview and delete. Edits go up through `onEdit`. */
-export function SpotLevelPanel({ l, n, count, message, shapeWarning, tallWarning, onEdit, onPick, onSvg, onMove, onAskDelete }: {
+export function SpotLevelPanel({ l, n, count, message, shapeWarning, tallWarning, onEdit, onPick, onChooseLibrary, onSvg, onMove, onAskDelete }: {
   l: ELevel; n: number; count: number; message: string | null; shapeWarning: boolean; tallWarning: boolean;
-  onEdit: (patch: Partial<ELevel>) => void; onPick: (side: Side, f: File) => void; onSvg: (side: Side, code: string) => void;
+  onEdit: (patch: Partial<ELevel>) => void; onPick: (side: Side, f: File) => void; onChooseLibrary: (side: Side, path: string) => void; onSvg: (side: Side, code: string) => void;
   onMove: (dir: -1 | 1) => void; onAskDelete: () => void;
 }) {
   const problem = checkDifferences(l.differences);
@@ -74,8 +76,8 @@ export function SpotLevelPanel({ l, n, count, message, shapeWarning, tallWarning
       </div>
 
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <PicturePicker side="a" n={n} path={l.a} onPick={(f) => onPick('a', f)} onSvg={(c) => onSvg('a', c)} />
-        <PicturePicker side="b" n={n} path={l.b} onPick={(f) => onPick('b', f)} onSvg={(c) => onSvg('b', c)} />
+        <PicturePicker side="a" n={n} path={l.a} onPick={(f) => onPick('a', f)} onLibrary={(p) => onChooseLibrary('a', p)} onSvg={(c) => onSvg('a', c)} />
+        <PicturePicker side="b" n={n} path={l.b} onPick={(f) => onPick('b', f)} onLibrary={(p) => onChooseLibrary('b', p)} onSvg={(c) => onSvg('b', c)} />
       </div>
 
       <span style={hint}>Tip: use landscape pictures (4:3 or 3:2) and make every difference big and clear, so a young child can see it from the chair.</span>

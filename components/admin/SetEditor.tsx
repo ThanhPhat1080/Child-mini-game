@@ -11,6 +11,7 @@ import { ImportDialog } from '@/components/admin/ImportDialog';
 import { PRESETS, type PresetKey, blankSet, deleteSet, isQuestionComplete, loadSet, luminance, newQuestion, presetKeyFor, saveSet, tintFor, type EQuestion, type ESet } from '@/lib/sets';
 import s from './admin-ui.module.css';
 import { QuestionPanel } from './QuestionPanel';
+import { LibraryButton } from './LibraryButton';
 import { CheckOption, panel, inputStyle, ghostBtn, dangerBtn, fileName, Img, PicIcon, Eye, Shell, IMG_TYPES, AUDIO_TYPES } from './editor-parts';
 
 type Target = { kind: 'cover' } | { kind: 'qimg' } | { kind: 'voice' } | { kind: 'answer'; i: number };
@@ -137,12 +138,17 @@ export function SetEditor({ setId }: { setId: string }) {
     const okTypes = t.kind === 'voice' ? AUDIO_TYPES : IMG_TYPES;
     if (!okTypes.includes(file.type)) { say(t.kind === 'voice' ? 'Use an MP3, M4A, WAV or OGG audio file.' : 'Use an SVG, PNG, JPG or WebP image.', true); return; }
     try {
-      const path = addPending(file); // preview only; uploaded when you press Save
-      if (t.kind === 'cover') edit({ cover: path });
-      else if (t.kind === 'qimg') editQ(cur, { qimg: path });
-      else if (t.kind === 'voice') editQ(cur, { voice: path });
-      else { const imgs = d.qs[cur].imgs.slice(); imgs[t.i] = path; editQ(cur, { imgs }); }
+      applyTarget(t, addPending(file)); // preview only; uploaded when you press Save
     } catch (err) { say((err as Error).message, true); }
+  }
+
+  /** Puts a picture or sound (a pending file, or a library path that is already uploaded) into the chosen field (A24). */
+  function applyTarget(t: Target, path: string) {
+    if (!d) return;
+    if (t.kind === 'cover') edit({ cover: path });
+    else if (t.kind === 'qimg') editQ(cur, { qimg: path });
+    else if (t.kind === 'voice') editQ(cur, { voice: path });
+    else { const imgs = d.qs[cur].imgs.slice(); imgs[t.i] = path; editQ(cur, { imgs }); }
   }
 
   function playVoice(path: string) {
@@ -286,6 +292,7 @@ export function SetEditor({ setId }: { setId: string }) {
                     <span style={{ fontSize: 15, fontWeight: 700 }}>{d.cover ? fileName(d.cover) : 'No picture yet'}</span>
                     <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <button type="button" className={s.ghost} onClick={() => pickFile({ kind: 'cover' })} style={ghostBtn}>Upload picture</button>
+                      <LibraryButton kind="image" label="set cover picture" onChoose={(path) => applyTarget({ kind: 'cover' }, path)} />
                       {d.cover && <button type="button" className={s.ghost} onClick={() => edit({ cover: null })} style={ghostBtn}>Remove</button>}
                     </span>
                   </div>
@@ -320,6 +327,7 @@ export function SetEditor({ setId }: { setId: string }) {
             onEdit={(patch) => editQ(cur, patch)}
             onAskDelete={() => setConfirm({ type: 'q', i: cur })}
             onPick={(kind) => pickFile(kind)}
+            onChooseLibrary={(kind, path) => applyTarget(kind, path)}
             onPlay={playVoice}
           />
         </>

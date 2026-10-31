@@ -70,6 +70,12 @@ export default function SpotPage() {
   const edit = (id: string, patch: Partial<ELevel>) => { touch(); setDraft(draft.map((l) => (l.id === id ? { ...l, ...patch } : l))); };
   const say = (id: string, text: string | null) => setMsgs((m) => { const n = { ...m }; if (text) n[id] = text; else delete n[id]; return n; });
 
+  /** A picture already in the library: the level points at it, nothing uploaded (A24). */
+  function chooseLibrary(id: string, side: 'a' | 'b', path: string) {
+    say(id, null);
+    edit(id, { [side]: path });
+  }
+
   function pick(id: string, side: 'a' | 'b', f: File) {
     if (!SPOT_IMG_TYPES.includes(f.type)) return say(id, 'Use a PNG, JPG, WebP or SVG picture.');
     if (f.size > MAX_IMAGE_BYTES) return say(id, 'Image must be 2 MB or smaller.');
@@ -141,6 +147,7 @@ export default function SpotPage() {
             key={l.id} l={l} n={i + 1} count={draft.length} message={msgs[l.id] ?? null} shapeWarning={shapeOff(l)} tallWarning={tallOff(l)}
             onEdit={(patch) => edit(l.id, patch)}
             onPick={(side, f) => pick(l.id, side, f)}
+            onChooseLibrary={(side, path) => chooseLibrary(l.id, side, path)}
             onSvg={(side, code) => applySvg(l.id, side, code)}
             onMove={(dir) => { touch(); setDraft(moveLevel(draft, i, dir)); }}
             onAskDelete={() => setConfirm(i)}

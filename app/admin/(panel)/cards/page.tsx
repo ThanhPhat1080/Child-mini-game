@@ -83,6 +83,12 @@ export default function CardsPage() {
   const edit = (id: string, patch: Partial<ECard>) => { touch(); setDraft(draft.map((c) => (c.id === id ? { ...c, ...patch } : c))); };
   const say = (id: string, text: string | null) => setMsgs((m) => { const n = { ...m }; if (text) n[id] = text; else delete n[id]; return n; });
 
+  /** A library file is already in the bucket: the card just points at it (A24). */
+  function chooseLibrary(id: string, kind: 'image' | 'audio', path: string) {
+    say(id, null);
+    edit(id, { [kind]: path });
+  }
+
   function pick(id: string, picked: File, kind: 'image' | 'audio') {
     let f = picked;
     if (kind === 'image') {
@@ -220,6 +226,7 @@ export default function CardsPage() {
             onEdit={(patch) => edit(c.id, patch)}
             onPickImage={(f) => pick(c.id, f, 'image')}
             onPickAudio={(f) => pick(c.id, f, 'audio')}
+            onChooseLibrary={(kind, path) => chooseLibrary(c.id, kind, path)}
             onSvg={(code) => applySvg(c.id, code)}
             onPlay={() => sayWord({ word: c.word.trim(), audio_path: c.audio })}
             onAskDelete={() => setConfirm(i)}

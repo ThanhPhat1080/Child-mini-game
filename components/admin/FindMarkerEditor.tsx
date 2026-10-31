@@ -3,9 +3,9 @@
 import { useId, useState } from 'react';
 import { addObject, moveObject, removeObject, setObjectAudio, setObjectRadius, setObjectWord, type EObject } from '@/lib/find/adminLevels';
 import { MAX_OBJECTS, MAX_WORD, SMALL_R } from '@/lib/find/validate';
-import { playOnce } from '@/lib/audio';
 import { mediaUrl } from '@/lib/media';
 import { AUDIO_ACCEPT } from './CardPanel';
+import { useSoundPreview } from './useSoundPreview';
 import s from './admin-ui.module.css';
 import { PicIcon, dangerBtn, fileName, ghostBtn, inputStyle } from './editor-parts';
 
@@ -28,6 +28,7 @@ export function FindMarkerEditor({ src, objects, onChange, onPickSound, onLibrar
   const [selected, setSelected] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [imgEl, setImgEl] = useState<HTMLImageElement | null>(null);
+  const preview = useSoundPreview();
 
   const sel = selected !== null && selected < objects.length ? selected : null;
   const smallCount = objects.filter((o) => o.r < SMALL_R).length;
@@ -143,7 +144,7 @@ export function FindMarkerEditor({ src, objects, onChange, onPickSound, onLibrar
                   onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onPickSound(i, f); }} />
                 <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Upload sound for object ${n}`} style={small} onClick={(e) => { e.stopPropagation(); document.getElementById(fileId)?.click(); }}>Upload sound</button>
                 <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Choose sound for object ${n}`} style={small} onClick={(e) => { e.stopPropagation(); onLibrarySound(i); }}>Choose sound</button>
-                <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Play sound for object ${n}`} style={small} disabled={!o.audio_path} onClick={(e) => { e.stopPropagation(); playOnce(mediaUrl(o.audio_path)); }}>Play sound</button>
+                <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`${preview.isPlaying(o.audio_path) ? 'Pause' : 'Play'} sound for object ${n}`} style={small} disabled={!o.audio_path} onClick={(e) => { e.stopPropagation(); if (o.audio_path) preview.toggle(o.audio_path, mediaUrl(o.audio_path)); }}>{preview.isPlaying(o.audio_path) ? 'Pause sound' : 'Play sound'}</button>
                 <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Clear sound for object ${n}`} style={small} disabled={!o.audio_path}
                   onClick={(e) => { e.stopPropagation(); onChange(setObjectAudio(objects, i, null)); }}>Clear sound</button>
               </div>

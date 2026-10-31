@@ -438,7 +438,7 @@ describe('CardPanel group picker (A18)', () => {
     const noop = () => {};
     render(
       <CardPanel c={c} n={3} duplicate={false} message={null} autoFocus={false} groups={GROUPS} weakGroup={weakGroup}
-        onEdit={onEdit} onPickImage={noop} onPickAudio={noop} onSvg={noop} onPlay={noop} onAskDelete={noop} />,
+        onEdit={onEdit} onPickImage={noop} onPickAudio={noop} onChooseLibrary={noop} onSvg={noop} onPlay={noop} onAskDelete={noop} />,
     );
     return { onEdit, select: screen.getByRole('combobox', { name: 'Group for card 3' }) as HTMLSelectElement };
   }
