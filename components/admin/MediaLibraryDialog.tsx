@@ -6,6 +6,7 @@ import { ghostBtn } from './editor-parts';
 import { mediaUrl, uploadToLibrary, MAX_IMAGE_BYTES } from '@/lib/media';
 import { listLibrary } from '@/lib/media/library';
 import { useSoundPreview } from './useSoundPreview';
+import { PlayButton } from './PlayButton';
 
 /** Picture types the library accepts (the same as the Cards and Spot pictures). */
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
@@ -16,12 +17,14 @@ const fileName = (path: string): string => path.split('/').pop() ?? path;
 const primaryBtn = { height: 46, padding: '0 26px', borderRadius: 12, border: 'none', background: '#5A4038', color: '#fff', fontWeight: 700, fontFamily: 'Nunito, sans-serif', fontSize: 15, cursor: 'pointer' } as const;
 const uploadBtn = { height: 42, padding: '0 16px', borderRadius: 10, border: 'none', background: '#3F73B5', color: '#fff', fontWeight: 700, fontFamily: 'Nunito, sans-serif', fontSize: 14, cursor: 'pointer' } as const;
 const cancelBtn = { ...ghostBtn, height: 46, padding: '0 22px', fontSize: 15 } as const;
+/** The dialog's height: the list scrolls inside it; the header and footer stay put. */
+const DIALOG_HEIGHT = 'min(600px, calc(100vh - 32px))';
 
-/** Play / pause icons, the same as the Settings sound rows. */
-const PlayIcon = ({ playing }: { playing: boolean }) => (playing ? (
-  <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+/** Header icons: a picture frame for images, a sol note (eighth note) for sounds. */
+const TitleIcon = ({ kind }: { kind: 'image' | 'audio' }) => (kind === 'image' ? (
+  <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5A4038" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>
 ) : (
-  <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="#FFFFFF"><path d="M8 5.5v13l10.5-6.5z" /></svg>
+  <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5A4038" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
 ));
 
 /**
@@ -47,6 +50,13 @@ export function MediaLibraryDialog({ kind, onChoose, onClose }: {
     );
     return () => { live = false; };
   }, [kind]);
+
+  // The page behind does not scroll while the library is open.
+  useEffect(() => {
+    const before = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = before; };
+  }, []);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -117,10 +127,7 @@ export function MediaLibraryDialog({ kind, onChoose, onClose }: {
         const playing = preview.isPlaying(p);
         return (
           <li key={p} data-selected={on ? 'true' : 'false'} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderRadius: 14, background: on ? '#F6EADC' : '#FBF4E9', border: on ? '2px solid #5A4038' : '1.5px solid transparent', boxSizing: 'border-box' }}>
-            <button type="button" aria-label={`${playing ? 'Pause' : 'Play'} ${name}`} onClick={() => preview.toggle(p, mediaUrl(p))}
-              style={{ width: 44, height: 44, flex: 'none', borderRadius: 22, border: 'none', background: '#EBB7BC', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              <PlayIcon playing={playing} />
-            </button>
+            <PlayButton playing={playing} label={`${playing ? 'Pause' : 'Play'} ${name}`} onClick={() => preview.toggle(p, mediaUrl(p))} />
             <button type="button" aria-label={`Choose ${name}`} aria-pressed={on} onClick={() => setSelected(p)}
               style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontWeight: 700, fontSize: 15, color: '#4A3830', fontFamily: 'Nunito, sans-serif', overflowWrap: 'anywhere' }}>
               {name}
@@ -131,21 +138,32 @@ export function MediaLibraryDialog({ kind, onChoose, onClose }: {
     </ul>
   );
 
+  const title = kind === 'image' ? 'Image Library' : 'Sound Library';
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(74,56,48,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, boxSizing: 'border-box', zIndex: 50 }}>
-      <div role="dialog" aria-modal="true" aria-label="Choose from library" style={{ background: '#fff', borderRadius: 20, padding: 28, maxWidth: 640, width: '100%', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', boxSizing: 'border-box', boxShadow: '0 20px 60px rgba(74,56,48,0.3)', display: 'flex', flexDirection: 'column', gap: 16, fontFamily: 'Nunito, sans-serif', color: '#4A3830' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-          <h2 style={{ margin: 0, fontSize: 21, fontWeight: 700 }}>Choose from library</h2>
+      <div role="dialog" aria-modal="true" aria-label={title} style={{ background: '#fff', borderRadius: 20, width: '100%', maxWidth: 640, height: DIALOG_HEIGHT, overflow: 'hidden', boxSizing: 'border-box', boxShadow: '0 20px 60px rgba(74,56,48,0.3)', display: 'flex', flexDirection: 'column', fontFamily: 'Nunito, sans-serif', color: '#4A3830' }}>
+        {/* header: title and Upload new stay fixed */}
+        <div style={{ flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: '24px 28px 16px' }}>
+          <h2 style={{ margin: 0, fontSize: 21, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10 }}><TitleIcon kind={kind} />{title}</h2>
           <input ref={fileInput} type="file" hidden accept={kind === 'image' ? 'image/*' : 'audio/*'} aria-label={`Upload new ${kind === 'image' ? 'picture' : 'sound'}`}
             onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void upload(f); }} />
           <button type="button" disabled={busy} onClick={() => fileInput.current?.click()} style={{ ...uploadBtn, opacity: busy ? 0.6 : 1, cursor: busy ? 'default' : 'pointer' }}>
             {uploading ? 'Uploading...' : 'Upload new'}
           </button>
         </div>
-        {uploadError && <p role="alert" style={{ margin: 0, color: '#A8484F', fontWeight: 700 }}>{uploadError}</p>}
-        {uploading && <p role="status" style={{ margin: 0, color: '#6E5A4E', fontWeight: 700 }}>Uploading your file. It will appear in the list when it is done.</p>}
-        {body}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
+        {(uploadError || uploading) && (
+          <div style={{ flex: 'none', padding: '0 28px 12px' }}>
+            {uploadError && <p role="alert" style={{ margin: 0, color: '#A8484F', fontWeight: 700 }}>{uploadError}</p>}
+            {uploading && <p role="status" style={{ margin: 0, color: '#6E5A4E', fontWeight: 700 }}>Uploading your file. It will appear in the list when it is done.</p>}
+          </div>
+        )}
+        {/* only the list scrolls; scrolling it does not scroll the page behind */}
+        <div data-library-list style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', padding: '4px 28px 16px' }}>
+          {body}
+        </div>
+        {/* footer: Cancel and OK stay fixed */}
+        <div style={{ flex: 'none', display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap', padding: '16px 28px 24px', borderTop: '1px solid #F1E7DA' }}>
           <button type="button" autoFocus onClick={onClose} style={cancelBtn}>Cancel</button>
           <button type="button" aria-label="OK" onClick={ok} disabled={!selected} style={{ ...primaryBtn, opacity: selected ? 1 : 0.5, cursor: selected ? 'pointer' : 'default' }}>OK</button>
         </div>

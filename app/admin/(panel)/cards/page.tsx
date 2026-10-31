@@ -8,14 +8,14 @@ import {
 import { sortHealth, weakGroups } from '@/lib/sort/groups';
 import { LEVELS, pairsOf } from '@/lib/memory/deck';
 import { sayWord } from '@/lib/memory/cards';
-import { MAX_IMAGE_BYTES, addPending, clearPending, svgToPending } from '@/lib/media';
+import { clearPending, svgToPending } from '@/lib/media';
 import { forgetUploads } from '@/lib/media/uploads';
 import { checkSvg } from '@/lib/quizImport';
 import { CardImportDialog } from '@/components/admin/CardImportDialog';
 import { CardsHeaderActions } from '@/components/admin/CardsHeaderActions';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { GroupsPanel } from '@/components/admin/GroupsPanel';
-import { CARD_IMG_TYPES, CardPanel, MAX_SOUND_BYTES, cardAudioType, poolHealth } from '@/components/admin/CardPanel';
+import { CardPanel, poolHealth } from '@/components/admin/CardPanel';
 import s from '@/components/admin/admin-ui.module.css';
 
 /** The database refuses a second group with the same name (unique index on lower(btrim(name))). */
@@ -90,24 +90,6 @@ export default function CardsPage() {
     edit(id, { [kind]: path });
   }
 
-  function pick(id: string, picked: File, kind: 'image' | 'audio') {
-    let f = picked;
-    if (kind === 'image') {
-      if (!CARD_IMG_TYPES.includes(f.type)) return say(id, 'Use a PNG, JPG, WebP or SVG picture.');
-      if (f.size > MAX_IMAGE_BYTES) return say(id, 'Image must be 2 MB or smaller.');
-    } else {
-      const type = cardAudioType(f.type);
-      if (!type) return say(id, 'Use an MP3, M4A or WAV sound.');
-      if (f.size > MAX_SOUND_BYTES) return say(id, 'Sound must be 10 MB or smaller.');
-      // the bucket only knows the standard names (e.g. Chrome calls .m4a "audio/x-m4a")
-      if (type !== f.type) f = new File([f], f.name, { type });
-    }
-    try {
-      const path = addPending(f); // preview only; uploaded when you press Save
-      say(id, null);
-      edit(id, { [kind]: path });
-    } catch (e) { say(id, (e as Error).message); }
-  }
 
   function applySvg(id: string, code: string) {
     // same rules as the Quiz import: no scripts, handlers, embeds or outside links; valid XML; normalized text
@@ -225,8 +207,6 @@ export default function CardsPage() {
             key={c.id} c={c} n={i + 1} autoFocus={c.id === focusId} groups={draftGroups} weakGroup={!!c.groupId && weak.has(c.groupId)}
             duplicate={dups.has(c.word.trim().toLowerCase())} message={msgs[c.id] ?? null}
             onEdit={(patch) => edit(c.id, patch)}
-            onPickImage={(f) => pick(c.id, f, 'image')}
-            onPickAudio={(f) => pick(c.id, f, 'audio')}
             onChooseLibrary={(kind, path) => chooseLibrary(c.id, kind, path)}
             onSvg={(code) => applySvg(c.id, code)}
             onPlay={() => sayWord({ word: c.word.trim(), audio_path: c.audio })}

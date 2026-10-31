@@ -41,10 +41,10 @@ const hint = { fontSize: 12, color: '#7A6458' } as const;
 export const WEAK_GROUP_TEXT = 'Sort It needs at least 4 cards with different words in a group.';
 
 /** One card of the pool: picture, word, pronunciation, group (A18), on/off and delete. Edits go up through `onEdit`. */
-export function CardPanel({ c, n, duplicate, message, autoFocus, groups, weakGroup, onEdit, onPickImage, onPickAudio, onChooseLibrary, onSvg, onPlay, onAskDelete }: {
+export function CardPanel({ c, n, duplicate, message, autoFocus, groups, weakGroup, onEdit, onChooseLibrary, onSvg, onPlay, onAskDelete }: {
   c: ECard; n: number; duplicate: boolean; message: string | null; autoFocus: boolean;
   groups: readonly EGroup[]; weakGroup: boolean;
-  onEdit: (patch: Partial<ECard>) => void; onPickImage: (f: File) => void; onPickAudio: (f: File) => void;
+  onEdit: (patch: Partial<ECard>) => void;
   /** A picture or sound already in the library: the bucket path, nothing uploaded (A24). */
   onChooseLibrary: (kind: 'image' | 'audio', path: string) => void;
   onSvg: (code: string) => void; onPlay: () => void; onAskDelete: () => void;
@@ -53,8 +53,6 @@ export function CardPanel({ c, n, duplicate, message, autoFocus, groups, weakGro
   const len = c.word.trim().length;
   const img = mediaUrl(c.image);
   const missing = [!len && 'a word', !c.image && 'a picture'].filter(Boolean).join(' and ');
-  const imgId = `cimg-${c.id}`;
-  const audId = `caud-${c.id}`;
   const groupValue = c.groupId && groups.some((g) => g.id === c.groupId) ? c.groupId : '';
 
   return (
@@ -72,9 +70,6 @@ export function CardPanel({ c, n, duplicate, message, autoFocus, groups, weakGro
         {img ? <img src={img} alt={`Card ${n} picture`} draggable={false} style={{ width: 104, height: 104, objectFit: 'contain' }} /> : <PicIcon size={32} />}
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input id={imgId} type="file" hidden aria-label={`Picture file for card ${n}`} accept={CARD_IMG_TYPES.join(',')}
-          onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onPickImage(f); }} />
-        <button type="button" className={`${s.btn} ${s.ghost}`} style={small} onClick={() => document.getElementById(imgId)?.click()}>{c.image ? 'Change picture' : 'Upload picture'}</button>
         <LibraryButton kind="image" label={`card ${n} picture`} onChoose={(path) => onChooseLibrary('image', path)} />
         {c.image && <span style={{ ...hint, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{fileName(c.image)}</span>}
       </div>
@@ -93,9 +88,6 @@ export function CardPanel({ c, n, duplicate, message, autoFocus, groups, weakGro
       <span style={{ ...hint, alignSelf: 'flex-end', marginTop: -6 }}>{c.word.length}/{WORD_MAX}</span>
 
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input id={audId} type="file" hidden aria-label={`Sound file for card ${n}`} accept={AUDIO_ACCEPT}
-          onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) onPickAudio(f); }} />
-        <button type="button" className={`${s.btn} ${s.ghost}`} style={small} onClick={() => document.getElementById(audId)?.click()}>{c.audio ? 'Change sound' : 'Upload sound'}</button>
         <LibraryButton kind="audio" label={`card ${n} sound`} onChoose={(path) => onChooseLibrary('audio', path)} />
         {c.audio && <button type="button" className={`${s.btn} ${s.ghost}`} style={small} onClick={() => onEdit({ audio: null })}>Remove sound</button>}
         <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Play card ${n}`} style={small} disabled={!len && !c.audio} onClick={onPlay}>▶ Play</button>

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { addPending, clearPending, commitPendingMedia, materializeSvg, mediaUrl, removeMedia, svgToPending } from '@/lib/media';
+import { clearPending, commitPendingMedia, materializeSvg, mediaUrl, removeMedia, svgToPending } from '@/lib/media';
 import { forgetUploads } from '@/lib/media/uploads';
 import { pathsToDelete, setMediaPaths } from '@/lib/mediaPaths';
 import { SetCard } from '@/components/SetCard';
@@ -15,7 +15,7 @@ import { QuestionPanel } from './QuestionPanel';
 import { LibraryButton } from './LibraryButton';
 import { SvgPaste } from './SvgPaste';
 import { checkSvg } from '@/lib/quizImport';
-import { CheckOption, panel, inputStyle, ghostBtn, dangerBtn, fileName, Img, PicIcon, Eye, Shell, IMG_TYPES, AUDIO_TYPES } from './editor-parts';
+import { CheckOption, panel, inputStyle, ghostBtn, dangerBtn, fileName, Img, PicIcon, Eye, Shell } from './editor-parts';
 
 type Target = { kind: 'cover' } | { kind: 'qimg' } | { kind: 'voice' } | { kind: 'answer'; i: number };
 
@@ -34,8 +34,6 @@ export function SetEditor({ setId }: { setId: string }) {
   const [importOpen, setImportOpen] = useState(false);
   const [missing, setMissing] = useState(false);
   const [toast, setToast] = useState<{ text: string; error: boolean } | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const target = useRef<Target | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const say = useCallback((text: string, error = false) => {
@@ -126,29 +124,8 @@ export function SetEditor({ setId }: { setId: string }) {
     setCur(saved.qs.length ? Math.min(Math.max(cur, 0), saved.qs.length - 1) : -1);
   }
 
-  function pickFile(t: Target) {
-    target.current = t;
-    if (fileRef.current) {
-      fileRef.current.accept = (t.kind === 'voice' ? AUDIO_TYPES : IMG_TYPES).join(',');
-      fileRef.current.value = '';
-      fileRef.current.click();
-    }
-  }
 
-  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file && target.current) pickedFile(target.current, file);
-  }
 
-  /** A file picked with an Upload button or "Upload new" in the library: checked, then kept as a preview until Save. */
-  function pickedFile(t: Target, file: File) {
-    if (!d) return;
-    const okTypes = t.kind === 'voice' ? AUDIO_TYPES : IMG_TYPES;
-    if (!okTypes.includes(file.type)) { say(t.kind === 'voice' ? 'Use an MP3, M4A, WAV or OGG audio file.' : 'Use an SVG, PNG, JPG or WebP image.', true); return; }
-    try {
-      applyTarget(t, addPending(file)); // preview only; uploaded when you press Save
-    } catch (err) { say((err as Error).message, true); }
-  }
 
   /** Puts a picture or sound (a pending file, or a library path that is already uploaded) into the chosen field (A24). */
   function applyTarget(t: Target, path: string) {
@@ -220,7 +197,6 @@ export function SetEditor({ setId }: { setId: string }) {
 
   return (
     <Shell>
-      <input ref={fileRef} type="file" hidden onChange={onFile} />
       <div style={{ position: 'sticky', top: 0, zIndex: 20, background: '#FBF4E9', padding: '12px 0', margin: '-12px 0', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, boxShadow: '0 8px 8px -8px rgba(90,64,56,0.18)' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <Link href="/admin/sets" className={s.link} style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -306,7 +282,6 @@ export function SetEditor({ setId }: { setId: string }) {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span style={{ fontSize: 15, fontWeight: 700 }}>{d.cover ? fileName(d.cover) : 'No picture yet'}</span>
                     <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <button type="button" className={s.ghost} onClick={() => pickFile({ kind: 'cover' })} style={ghostBtn}>Upload picture</button>
                       <LibraryButton kind="image" label="set cover picture" onChoose={(path) => applyTarget({ kind: 'cover' }, path)} />
                       <div style={{ flexBasis: '100%' }}><SvgPaste label="set cover picture" onUse={(code) => applySvg({ kind: 'cover' }, code)} /></div>
                       {d.cover && <button type="button" className={s.ghost} onClick={() => edit({ cover: null })} style={ghostBtn}>Remove</button>}
@@ -342,7 +317,6 @@ export function SetEditor({ setId }: { setId: string }) {
             onMove={move}
             onEdit={(patch) => editQ(cur, patch)}
             onAskDelete={() => setConfirm({ type: 'q', i: cur })}
-            onPick={(kind) => pickFile(kind)}
             onChooseLibrary={(kind, path) => applyTarget(kind, path)}
            
             onSvg={(kind, code) => applySvg(kind, code)}

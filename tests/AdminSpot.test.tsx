@@ -20,6 +20,8 @@ vi.mock('@/lib/spot/adminLevels', async (orig) => ({
   saveLevels: h.saveLevels,
 }));
 vi.mock('@/lib/spot/imageSize', () => ({ naturalSize: h.naturalSize }));
+const lib = vi.hoisted(() => ({ listLibrary: vi.fn() }));
+vi.mock('@/lib/media/library', () => ({ listLibrary: lib.listLibrary }));
 vi.mock('@/lib/media', async (orig) => ({
   ...(await orig<typeof import('@/lib/media')>()),
   addPending: h.addPending,
@@ -40,7 +42,13 @@ const level = (n: number, o: Partial<ELevel> = {}): ELevel => ({ id: `l${n}`, is
 
 const saveBtn = () => screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement;
 const revertBtn = () => screen.getByRole('button', { name: 'Revert' }) as HTMLButtonElement;
-const file = (name: string, type = 'image/png', size = 10) => new File([new Uint8Array(size)], name, { type });
+
+/** Picks a picture from the library for one side of a level, then the file, then OK. */
+async function pickPictureFromLibrary(n: number, side: 'A' | 'B', name: string) {
+  fireEvent.click(screen.getByRole('button', { name: `Choose from library for level ${n} picture ${side}` }));
+  fireEvent.click(await screen.findByRole('button', { name: `Choose ${name}` }));
+  fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+}
 
 async function renderWith(list: ELevel[]) {
   h.loadLevels.mockResolvedValue(list);
@@ -79,8 +87,9 @@ describe('Admin Spot page (A14-A16)', () => {
     expect(saveBtn().disabled).toBe(true); // nothing changed
     fireEvent.click(screen.getByRole('button', { name: 'Add level' }));
     expect(saveBtn().disabled).toBe(true);
-    fireEvent.change(screen.getByLabelText('Picture A file for level 2'), { target: { files: [file('a.png')] } });
-    fireEvent.change(screen.getByLabelText('Picture B file for level 2'), { target: { files: [file('b.png')] } });
+    lib.listLibrary.mockResolvedValue(['spot/a.png', 'spot/b.png']);
+    await pickPictureFromLibrary(2, 'A', 'a.png');
+    await pickPictureFromLibrary(2, 'B', 'b.png');
     expect(saveBtn().disabled).toBe(true); // no spots yet
     clickPictureA(2, 0.2, 0.2);
     clickPictureA(2, 0.5, 0.5);
@@ -142,14 +151,6 @@ describe('Admin Spot page (A14-A16)', () => {
     expect(screen.queryByText(/different shapes/i)).toBeNull();
   });
 
-  it('rejects a wrong file type and an oversized picture', async () => {
-    await renderWith([level(1)]);
-    fireEvent.change(screen.getByLabelText('Picture A file for level 1'), { target: { files: [file('x.gif', 'image/gif')] } });
-    expect(screen.getByRole('alert').textContent).toMatch(/PNG, JPG, WebP or SVG/);
-    fireEvent.change(screen.getByLabelText('Picture A file for level 1'), { target: { files: [file('x.png', 'image/png', 3 * 1024 * 1024)] } });
-    expect(screen.getByRole('alert').textContent).toMatch(/2 MB/);
-    expect(h.addPending).not.toHaveBeenCalled();
-  });
 
   it('Delete asks first: Cancel keeps the level, confirming removes it from the draft only', async () => {
     await renderWith([level(1), level(2)]);

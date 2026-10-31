@@ -9,14 +9,13 @@ const o = (x: number, y: number, r = 0.06, word = '', audio: string | null = nul
 
 function setup(objects: EObject[] = []) {
   const onChange = vi.fn();
-  const onPickSound = vi.fn();
   const onLibrarySound = vi.fn();
-  render(<FindMarkerEditor src="/a.png" objects={objects} onChange={onChange} onPickSound={onPickSound} onLibrarySound={onLibrarySound} />);
+  render(<FindMarkerEditor src="/a.png" objects={objects} onChange={onChange} onLibrarySound={onLibrarySound} />);
   const img = screen.getByRole('img', { name: 'Picture' });
   // a 400 x 300 picture at (100, 50)
   img.getBoundingClientRect = () => ({ left: 100, top: 50, width: 400, height: 300, right: 500, bottom: 350, x: 100, y: 50, toJSON: () => ({}) });
   const clickAt = (fx: number, fy: number) => fireEvent.click(img, { clientX: 100 + fx * 400, clientY: 50 + fy * 300 });
-  return { onChange, onPickSound, onLibrarySound, clickAt };
+  return { onChange, onLibrarySound, clickAt };
 }
 
 describe('FindMarkerEditor (A21)', () => {
@@ -113,10 +112,10 @@ describe('FindMarkerEditor (A21)', () => {
   });
 
   it('warns about small objects in the singular and plural, without blocking', () => {
-    const { unmount } = render(<FindMarkerEditor src="/a.png" objects={[o(0.2, 0.2, 0.03)]} onChange={vi.fn()} onPickSound={vi.fn()} onLibrarySound={vi.fn()} />);
+    const { unmount } = render(<FindMarkerEditor src="/a.png" objects={[o(0.2, 0.2, 0.03)]} onChange={vi.fn()} onLibrarySound={vi.fn()} />);
     expect(screen.getByText('1 object is small and may be hard to click.')).toBeTruthy();
     unmount();
-    render(<FindMarkerEditor src="/a.png" objects={[o(0.2, 0.2, 0.03), o(0.6, 0.6, 0.035)]} onChange={vi.fn()} onPickSound={vi.fn()} onLibrarySound={vi.fn()} />);
+    render(<FindMarkerEditor src="/a.png" objects={[o(0.2, 0.2, 0.03), o(0.6, 0.6, 0.035)]} onChange={vi.fn()} onLibrarySound={vi.fn()} />);
     expect(screen.getByText('2 objects are small and may be hard to click.')).toBeTruthy();
   });
 
@@ -126,12 +125,6 @@ describe('FindMarkerEditor (A21)', () => {
     expect(screen.getByLabelText('Object 2 row').textContent).toContain('No sound');
   });
 
-  it('an uploaded sound file goes up as onPickSound(index, file)', () => {
-    const { onPickSound } = setup([o(0.2, 0.2), o(0.6, 0.6)]);
-    const f = new File([new Uint8Array(10)], 'cat.mp3', { type: 'audio/mpeg' });
-    fireEvent.change(screen.getByLabelText('Sound file for object 2'), { target: { files: [f] } });
-    expect(onPickSound).toHaveBeenCalledWith(1, f);
-  });
 
   it('Choose sound asks the parent for the library for that object', () => {
     const { onLibrarySound } = setup([o(0.2, 0.2), o(0.6, 0.6)]);

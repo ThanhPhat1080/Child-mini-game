@@ -18,7 +18,7 @@ export function LibraryButton({ kind, label, onChoose }: {
   return (
     <>
       <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Choose from library for ${label}`} style={small} onClick={() => setOpen(true)}>
-        Choose from library
+        {kind === 'image' ? '+ Choose images' : '+ Choose sounds'}
       </button>
       {open && <MediaLibraryDialog kind={kind} onChoose={onChoose} onClose={() => setOpen(false)} />}
     </>

@@ -4,12 +4,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isLevelComplete, loadLevels, moveLevel, newLevel, saveLevels, type ELevel } from '@/lib/spot/adminLevels';
 import { aspectsClose } from '@/lib/spot/validate';
 import { naturalSize } from '@/lib/spot/imageSize';
-import { MAX_IMAGE_BYTES, addPending, clearPending, mediaUrl, svgToPending } from '@/lib/media';
+import { clearPending, mediaUrl, svgToPending } from '@/lib/media';
 import { forgetUploads } from '@/lib/media/uploads';
 import { checkSvg } from '@/lib/quizImport';
 import { CardsHeaderActions } from '@/components/admin/CardsHeaderActions';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
-import { SPOT_IMG_TYPES, SpotLevelPanel } from '@/components/admin/SpotLevelPanel';
+import { SpotLevelPanel } from '@/components/admin/SpotLevelPanel';
 import s from '@/components/admin/admin-ui.module.css';
 
 /** Spot the Differences level builder (A14-A16). Nothing is uploaded or written until Save. */
@@ -77,15 +77,6 @@ export default function SpotPage() {
     edit(id, { [side]: path });
   }
 
-  function pick(id: string, side: 'a' | 'b', f: File) {
-    if (!SPOT_IMG_TYPES.includes(f.type)) return say(id, 'Use a PNG, JPG, WebP or SVG picture.');
-    if (f.size > MAX_IMAGE_BYTES) return say(id, 'Image must be 2 MB or smaller.');
-    try {
-      const path = addPending(f); // preview only; uploaded when you press Save
-      say(id, null);
-      edit(id, { [side]: path });
-    } catch (e) { say(id, (e as Error).message); }
-  }
 
   function applySvg(id: string, side: 'a' | 'b', code: string) {
     const r = checkSvg(code); // same rules as the Quiz import
@@ -147,7 +138,6 @@ export default function SpotPage() {
           <SpotLevelPanel
             key={l.id} l={l} n={i + 1} count={draft.length} message={msgs[l.id] ?? null} shapeWarning={shapeOff(l)} tallWarning={tallOff(l)}
             onEdit={(patch) => edit(l.id, patch)}
-            onPick={(side, f) => pick(l.id, side, f)}
             onChooseLibrary={(side, path) => chooseLibrary(l.id, side, path)}
             onSvg={(side, code) => applySvg(l.id, side, code)}
             onMove={(dir) => { touch(); setDraft(moveLevel(draft, i, dir)); }}

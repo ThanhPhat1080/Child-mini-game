@@ -19,7 +19,7 @@ describe('MediaLibraryDialog', () => {
   it('is a labelled dialog that lists pictures as choosable buttons', async () => {
     lib.listLibrary.mockResolvedValue(['cards/c1.png', 'spot/a.png']);
     render(<MediaLibraryDialog kind="image" onChoose={() => undefined} onClose={() => undefined} />);
-    expect(screen.getByRole('dialog', { name: 'Choose from library' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Image Library' })).toBeTruthy();
     expect(lib.listLibrary).toHaveBeenCalledWith('image');
     expect(await screen.findByRole('button', { name: 'Choose c1.png' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Choose a.png' })).toBeTruthy();

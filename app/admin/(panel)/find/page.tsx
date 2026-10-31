@@ -1,14 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { isLevelComplete, loadFindLevels, moveFindLevel, newFindLevel, saveFindLevels, setObjectAudio, type ELevel } from '@/lib/find/adminLevels';
-import { MAX_IMAGE_BYTES, addPending, clearPending, svgToPending } from '@/lib/media';
+import { isLevelComplete, loadFindLevels, moveFindLevel, newFindLevel, saveFindLevels, type ELevel } from '@/lib/find/adminLevels';
+import { clearPending, svgToPending } from '@/lib/media';
 import { forgetUploads } from '@/lib/media/uploads';
 import { checkSvg } from '@/lib/quizImport';
 import { CardsHeaderActions } from '@/components/admin/CardsHeaderActions';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
-import { MAX_SOUND_BYTES, cardAudioType } from '@/components/admin/CardPanel';
-import { FIND_IMG_TYPES, FindLevelPanel } from '@/components/admin/FindLevelPanel';
+import { FindLevelPanel } from '@/components/admin/FindLevelPanel';
 
 /** Find It level builder (A20-A22). Nothing is uploaded or written until Save. */
 export default function FindPage() {
@@ -56,15 +55,6 @@ export default function FindPage() {
   const edit = (id: string, patch: Partial<ELevel>) => { touch(); setDraft(draft.map((l) => (l.id === id ? { ...l, ...patch } : l))); };
   const say = (id: string, text: string | null) => setMsgs((m) => { const n = { ...m }; if (text) n[id] = text; else delete n[id]; return n; });
 
-  function pickPicture(id: string, f: File) {
-    if (!FIND_IMG_TYPES.includes(f.type)) return say(id, 'Use a PNG, JPG, WebP or SVG picture.');
-    if (f.size > MAX_IMAGE_BYTES) return say(id, 'Image must be 2 MB or smaller.');
-    try {
-      const path = addPending(f); // preview only; uploaded when you press Save
-      say(id, null);
-      edit(id, { image: path });
-    } catch (e) { say(id, (e as Error).message); }
-  }
 
   function applySvg(id: string, code: string) {
     const r = checkSvg(code); // same rules as the Quiz import
@@ -73,18 +63,6 @@ export default function FindPage() {
     edit(id, { image: svgToPending(r.svg) });
   }
 
-  function pickSound(id: string, level: ELevel, i: number, picked: File) {
-    const type = cardAudioType(picked.type);
-    if (!type) return say(id, 'Use an MP3, M4A or WAV sound.');
-    if (picked.size > MAX_SOUND_BYTES) return say(id, 'Sound must be 10 MB or smaller.');
-    // the bucket only knows the standard names (e.g. Chrome calls .m4a "audio/x-m4a")
-    const f = type !== picked.type ? new File([picked], picked.name, { type }) : picked;
-    try {
-      const path = addPending(f); // preview only; uploaded when you press Save
-      say(id, null);
-      edit(id, { objects: setObjectAudio(level.objects, i, path) });
-    } catch (e) { say(id, (e as Error).message); }
-  }
 
   function add() { touch(); setDraft([...draft!, newFindLevel()]); }
 
@@ -131,9 +109,7 @@ export default function FindPage() {
           <FindLevelPanel
             key={l.id} l={l} n={i + 1} count={draft.length} message={msgs[l.id] ?? null}
             onEdit={(patch) => edit(l.id, patch)}
-            onPickPicture={(f) => pickPicture(l.id, f)}
             onSvg={(code) => applySvg(l.id, code)}
-            onPickSound={(k, f) => pickSound(l.id, l, k, f)}
             onMove={(dir) => { touch(); setDraft(moveFindLevel(draft, i, dir)); }}
             onAskDelete={() => setConfirm(i)}
           />
