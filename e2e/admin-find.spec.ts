@@ -107,24 +107,25 @@ test('(c) a picture shared by two levels survives deleting one, and is removed w
   const shared = first.image_path;
   expect(await storage()).toEqual([shared]);
 
-  // level 2: choose the same picture from the library
+  // a new level goes on top: this one is level 1, the apple level moves to level 2
+  // choose the same picture from the library
   await page.getByRole('button', { name: 'Add level' }).click();
-  await article(page, 2).getByRole('button', { name: '+ Choose images', exact: true }).click();
+  await article(page, 1).getByRole('button', { name: '+ Choose images', exact: true }).click();
   await page.getByRole('dialog', { name: 'Image Library' }).getByRole('button', { name: `Choose ${basename(shared)}` }).click();
   await page.getByRole('dialog', { name: 'Image Library' }).getByRole('button', { name: 'OK', exact: true }).click();
-  await expect(picture(page, 2)).toBeVisible();
-  await clickPicture(page, 2, 0.6, 0.5);
-  await clickPicture(page, 2, 0.4, 0.7);
-  await article(page, 2).getByLabel('Word for object 1', { exact: true }).fill('cat');
-  await article(page, 2).getByLabel('Word for object 2', { exact: true }).fill('duck');
+  await expect(picture(page, 1)).toBeVisible();
+  await clickPicture(page, 1, 0.6, 0.5);
+  await clickPicture(page, 1, 0.4, 0.7);
+  await article(page, 1).getByLabel('Word for object 1', { exact: true }).fill('cat');
+  await article(page, 1).getByLabel('Word for object 2', { exact: true }).fill('duck');
   await save(page).click();
   await expect(saved(page)).toBeVisible();
   const levels = await levelsOf();
   expect(levels).toHaveLength(2);
-  const second = levels.find((l) => l.objects[0]?.word === 'cat')!; // level 2 (its picture is the same as level 1's)
+  const second = levels.find((l) => l.objects[0]?.word === 'cat')!; // the new level (its picture is the same as the apple level's)
 
-  // delete level 1: level 2 still uses the picture, so the file stays
-  await page.getByRole('button', { name: 'Delete level 1' }).click();
+  // delete the apple level (now level 2): the cat level still uses the picture, so the file stays
+  await page.getByRole('button', { name: 'Delete level 2' }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Delete level' }).click();
   await save(page).click();
   await expect(saved(page)).toBeVisible();

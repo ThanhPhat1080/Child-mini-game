@@ -82,19 +82,33 @@ describe('Admin Spot page (A14-A16)', () => {
     expect(screen.getByRole('img', { name: 'Level 1 picture A thumbnail' }).getAttribute('src')).toBe('/media/spot/1a.png');
   });
 
+  it('Add level sits in the header beside Revert and Save, in blue, and a new level goes on top', async () => {
+    await renderWith([level(1)]);
+    const add = screen.getByRole('button', { name: 'Add level' });
+    expect(screen.getAllByRole('button', { name: 'Add level' })).toHaveLength(1);
+    expect(add.compareDocumentPosition(revertBtn()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(add.style.backgroundColor).toBe('rgb(63, 115, 181)');
+    fireEvent.click(add);
+    const articles = screen.getAllByRole('article');
+    expect(articles[0].getAttribute('aria-label')).toBe('Level 1');
+    expect(within(articles[0]).getByRole('button', { name: 'Choose from library for level 1 picture A' })).toBeTruthy();
+    expect(articles[1].getAttribute('aria-label')).toBe('Level 2');
+    expect(screen.getByRole('img', { name: 'Level 2 picture A thumbnail' }).getAttribute('src')).toBe('/media/spot/1a.png');
+  });
+
   it('Save is disabled until both pictures and 3 differences exist', async () => {
     await renderWith([level(1)]);
     expect(saveBtn().disabled).toBe(true); // nothing changed
     fireEvent.click(screen.getByRole('button', { name: 'Add level' }));
     expect(saveBtn().disabled).toBe(true);
     lib.listLibrary.mockResolvedValue(['spot/a.png', 'spot/b.png']);
-    await pickPictureFromLibrary(2, 'A', 'a.png');
-    await pickPictureFromLibrary(2, 'B', 'b.png');
+    await pickPictureFromLibrary(1, 'A', 'a.png');
+    await pickPictureFromLibrary(1, 'B', 'b.png');
     expect(saveBtn().disabled).toBe(true); // no spots yet
-    clickPictureA(2, 0.2, 0.2);
-    clickPictureA(2, 0.5, 0.5);
+    clickPictureA(1, 0.2, 0.2);
+    clickPictureA(1, 0.5, 0.5);
     expect(saveBtn().disabled).toBe(true); // 2 spots
-    clickPictureA(2, 0.8, 0.8);
+    clickPictureA(1, 0.8, 0.8);
     expect(saveBtn().disabled).toBe(false);
   });
 
