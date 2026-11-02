@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { addObject, moveObject, removeObject, setObjectAudio, setObjectRadius, setObjectWord, type EObject } from '@/lib/find/adminLevels';
 import { MAX_OBJECTS, MAX_WORD, SMALL_R } from '@/lib/find/validate';
 import { mediaUrl } from '@/lib/media';
+import { sayWord, stopWord } from '@/lib/memory/cards';
 import { useSoundPreview } from './useSoundPreview';
 import s from './admin-ui.module.css';
 import { PicIcon, dangerBtn, fileName, ghostBtn, inputStyle } from './editor-parts';
@@ -29,6 +30,18 @@ export function FindMarkerEditor({ src, objects, onChange, onLibrarySound }: Pro
   const [notice, setNotice] = useState<string | null>(null);
   const [imgEl, setImgEl] = useState<HTMLImageElement | null>(null);
   const preview = useSoundPreview();
+  useEffect(() => stopWord, []);
+
+  /** The recording when there is one; otherwise the browser says the word, like the game does. */
+  const playObject = (i: number, o: EObject) => {
+    if (o.audio_path) {
+      stopWord();
+      preview.toggle(rowKey(i, o.audio_path), mediaUrl(o.audio_path));
+      return;
+    }
+    preview.stop();
+    sayWord({ word: o.word.trim(), audio_path: null });
+  };
 
   const sel = selected !== null && selected < objects.length ? selected : null;
   const smallCount = objects.filter((o) => o.r < SMALL_R).length;
@@ -140,7 +153,7 @@ export function FindMarkerEditor({ src, objects, onChange, onLibrarySound }: Pro
                   {o.audio_path ? fileName(o.audio_path) : 'No sound'}
                 </span>
                 <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Choose sound for object ${n}`} style={small} onClick={(e) => { e.stopPropagation(); onLibrarySound(i); }}>+ Choose sounds</button>
-                <PlayButton size={34} playing={preview.isPlaying(rowKey(i, o.audio_path))} label={`${preview.isPlaying(rowKey(i, o.audio_path)) ? 'Pause' : 'Play'} sound for object ${n}`} disabled={!o.audio_path} onClick={() => { if (o.audio_path) preview.toggle(rowKey(i, o.audio_path), mediaUrl(o.audio_path)); }} />
+                <PlayButton size={34} playing={preview.isPlaying(rowKey(i, o.audio_path))} label={`${preview.isPlaying(rowKey(i, o.audio_path)) ? 'Pause' : 'Play'} sound for object ${n}`} disabled={!o.audio_path && !o.word.trim()} onClick={() => playObject(i, o)} />
                 <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Clear sound for object ${n}`} style={small} disabled={!o.audio_path}
                   onClick={(e) => { e.stopPropagation(); onChange(setObjectAudio(objects, i, null)); }}>Clear sound</button>
               </div>
