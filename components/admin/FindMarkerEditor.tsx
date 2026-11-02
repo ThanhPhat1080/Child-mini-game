@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { addObject, moveObject, removeObject, setObjectAudio, setObjectRadius, setObjectWord, type EObject } from '@/lib/find/adminLevels';
 import { MAX_OBJECTS, MAX_WORD, SMALL_R } from '@/lib/find/validate';
 import { mediaUrl } from '@/lib/media';
@@ -32,15 +32,26 @@ export function FindMarkerEditor({ src, objects, onChange, onLibrarySound }: Pro
   const preview = useSoundPreview();
   useEffect(() => stopWord, []);
 
+  const isPlayingRow = (i: number, o: EObject) => (o.audio_path ? preview.isPlaying(rowKey(i, o.audio_path)) : speaking === i);
+
+  /** Row whose word the browser is saying (no recording), so its button shows Pause. */
+  const [speaking, setSpeaking] = useState<number | null>(null);
+  const spoken = useRef(0);
+
   /** The recording when there is one; otherwise the browser says the word, like the game does. */
   const playObject = (i: number, o: EObject) => {
+    spoken.current += 1; // an earlier word that ends late must not clear this one
     if (o.audio_path) {
       stopWord();
+      setSpeaking(null);
       preview.toggle(rowKey(i, o.audio_path), mediaUrl(o.audio_path));
       return;
     }
     preview.stop();
-    sayWord({ word: o.word.trim(), audio_path: null });
+    if (speaking === i) { stopWord(); setSpeaking(null); return; } // Pause stops the voice
+    const turn = spoken.current;
+    setSpeaking(i);
+    sayWord({ word: o.word.trim(), audio_path: null }, () => { if (spoken.current === turn) setSpeaking(null); });
   };
 
   const sel = selected !== null && selected < objects.length ? selected : null;
@@ -153,7 +164,7 @@ export function FindMarkerEditor({ src, objects, onChange, onLibrarySound }: Pro
                   {o.audio_path ? fileName(o.audio_path) : 'No sound'}
                 </span>
                 <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Choose sound for object ${n}`} style={small} onClick={(e) => { e.stopPropagation(); onLibrarySound(i); }}>+ Choose sounds</button>
-                <PlayButton playing={preview.isPlaying(rowKey(i, o.audio_path))} label={`${preview.isPlaying(rowKey(i, o.audio_path)) ? 'Pause' : 'Play'} sound for object ${n}`} disabled={!o.audio_path && !o.word.trim()} onClick={() => playObject(i, o)} />
+                <PlayButton playing={isPlayingRow(i, o)} label={`${isPlayingRow(i, o) ? 'Pause' : 'Play'} sound for object ${n}`} disabled={!o.audio_path && !o.word.trim()} onClick={() => playObject(i, o)} />
                 <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Clear sound for object ${n}`} style={small} disabled={!o.audio_path}
                   onClick={(e) => { e.stopPropagation(); onChange(setObjectAudio(objects, i, null)); }}>Clear sound</button>
               </div>

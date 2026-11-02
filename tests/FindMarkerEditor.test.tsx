@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FindMarkerEditor } from '@/components/admin/FindMarkerEditor';
 import type { EObject } from '@/lib/find/adminLevels';
@@ -146,7 +146,20 @@ describe('FindMarkerEditor (A21)', () => {
     const play = screen.getByRole('button', { name: 'Play sound for object 1' }) as HTMLButtonElement;
     expect(play.disabled).toBe(false);
     fireEvent.click(play);
-    expect(say.sayWord).toHaveBeenCalledWith({ word: 'cat', audio_path: null });
+    expect(say.sayWord).toHaveBeenCalledWith({ word: 'cat', audio_path: null }, expect.any(Function));
+  });
+
+  it('shows Pause while the browser says the word, Play again when it ends or is paused', () => {
+    setup([o(0.2, 0.2, 0.06, 'cat')]);
+    fireEvent.click(screen.getByRole('button', { name: 'Play sound for object 1' }));
+    expect(screen.getByRole('button', { name: 'Pause sound for object 1' })).toBeTruthy();
+    const end = say.sayWord.mock.calls.at(-1)![1] as () => void;
+    act(() => end());
+    expect(screen.getByRole('button', { name: 'Play sound for object 1' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Play sound for object 1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pause sound for object 1' }));
+    expect(say.stopWord).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Play sound for object 1' })).toBeTruthy();
   });
 
   it('Play is off only when the object has neither a sound nor a word', () => {
