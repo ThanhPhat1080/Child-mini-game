@@ -1,6 +1,6 @@
 # Admin: Media library and level lists (requests and decisions)
 
-Record of what the PO asked for in the session of 2026-11-02 and the choices made. Merged in PR #89 (branch `claude/admin-media-page`). Spec IDs touched: A20-A24 (library, Find/Spot editors). Not yet written into `spec.md`.
+Record of what the PO asked for in the session of 2026-11-02 and the choices made. Merged in PR #89 (branch `claude/admin-media-page`). Spec IDs touched: A20-A24 (library, Find/Spot editors). Written into `spec.md` as A27-A31 (A14, A20 and A23 amended).
 
 ## 1. Library pop-up ("Image Library", "Sound Library")
 - **Rename**: double click a file name; it becomes a text box with the name selected. Only the name is editable: the 13-character upload id and the extension stay (`oh-ring-9j2k4m1a7b3cx.mp3`, edit `oh-ring`). Enter or leaving the box saves; Esc cancels; no change = nothing happens. A toast reports success or the error (for example a taken name).
