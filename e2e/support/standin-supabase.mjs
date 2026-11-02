@@ -273,8 +273,10 @@ const server = createServer(async (req, res) => {
 
   try {
     if (path === '/__reset' && req.method === 'POST') {
-      state = { ...defaultState(), ...(parseJson(bodyBuf) ?? {}) };
+      const { storage = [], ...rows } = parseJson(bodyBuf) ?? {};
+      state = { ...defaultState(), ...rows };
       files.clear();
+      for (const p of storage) files.set(p, { type: 'application/octet-stream', body: Buffer.alloc(0) }); // files already in the bucket
       return send(res, 200, { ok: true });
     }
     if (path === '/__state') return send(res, 200, { ...state, storage: [...files.keys()] });
@@ -305,6 +307,20 @@ const server = createServer(async (req, res) => {
       const prefixes = parseJson(bodyBuf)?.prefixes ?? [];
       for (const p of prefixes) files.delete(p);
       return send(res, 200, prefixes.map((name) => ({ name })));
+    }
+    if (path === '/storage/v1/object/list/media' && req.method === 'POST') {
+      // the folder listing the media library uses: files directly under `prefix`, and one entry per sub-folder (id null)
+      const { prefix = '', limit = 100, offset = 0 } = parseJson(bodyBuf) ?? {};
+      const base = prefix ? `${prefix}/` : '';
+      const seen = new Map();
+      for (const key of files.keys()) {
+        if (!key.startsWith(base)) continue;
+        const rest = key.slice(base.length);
+        const slash = rest.indexOf('/');
+        if (slash < 0) seen.set(rest, { name: rest, id: randomUUID() });
+        else seen.set(rest.slice(0, slash), { name: rest.slice(0, slash), id: null });
+      }
+      return send(res, 200, [...seen.values()].slice(offset, offset + limit));
     }
     const up = /^\/storage\/v1\/object\/media\/(.+)$/.exec(path);
     if (up && (req.method === 'POST' || req.method === 'PUT')) {

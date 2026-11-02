@@ -1,8 +1,7 @@
 import { randomId } from '@/lib/randomId';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { PENDING_PREFIX, isBucketPath, mapSetMedia, type SetPaths } from '@/lib/mediaPaths';
+import { PENDING_PREFIX, isBucketPath, mapSetMedia, storedName, type SetPaths } from '@/lib/mediaPaths';
 import { referencedPaths } from '@/lib/media/refs';
-import { rememberUpload } from '@/lib/media/uploads';
 
 export const MEDIA_BUCKET = 'media';
 export const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
@@ -67,7 +66,7 @@ export async function uploadMedia(folder: string, file: File): Promise<string> {
   const supabase = createSupabaseBrowserClient();
   const dot = file.name.lastIndexOf('.');
   const ext = dot >= 0 ? file.name.slice(dot + 1).toLowerCase() : 'bin';
-  const path = `${folder}/${Date.now()}-${randomId().slice(0, 8)}.${ext}`;
+  const path = `${folder}/${storedName(file.name, ext)}`;
   const { error } = await supabase.storage
     .from(MEDIA_BUCKET)
     .upload(path, file, { contentType: file.type, upsert: false });
@@ -95,12 +94,24 @@ export async function removeMedia(paths: (string | null | undefined)[]): Promise
   return error ? error.message : null;
 }
 
-/** Uploads a file picked in the library dialog now, so it can be chosen before Save. Listed until the page saves or reverts (A24). */
-export async function uploadToLibrary(kind: 'image' | 'audio', file: File): Promise<string> {
-  const path = await uploadMedia('library', file);
-  rememberUpload(path, kind);
-  return path;
+/** True when some record uses this bucket file. Throws when that cannot be checked. */
+export async function isMediaInUse(path: string): Promise<boolean> {
+  return (await referencedPaths([path])).has(path);
 }
+
+/**
+ * Deletes one file from the media bucket for good (library Delete). The caller checks isMediaInUse first;
+ * this checks again, so a file a record picked up in the meantime is kept. Returns false when it was kept. Throws on failure. Admin only (RLS).
+ */
+export async function deleteMedia(path: string): Promise<boolean> {
+  if (await isMediaInUse(path)) return false;
+  const { error } = await createSupabaseBrowserClient().storage.from(MEDIA_BUCKET).remove([path]);
+  if (error) throw new Error(error.message);
+  return true;
+}
+
+/** Uploads a file picked in the library (pop-up or Media page) into the `library` folder now, so it can be chosen before Save. */
+export const uploadToLibrary = (file: File): Promise<string> => uploadMedia('library', file);
 
 /** Uploads one picked file now (called on Save) and returns its bucket path. */
 export async function uploadPending(token: string, folder: string): Promise<string> {

@@ -35,7 +35,7 @@ function say(t: string | null, audioUrl?: string | null): Promise<void> {
       voiceEl.onended = () => resolve();
       voiceEl.onerror = () => resolve();
       voiceEl.play().catch(() => resolve());
-    } else if (t?.trim()) speakKid(t, { pitch: 1.5, rate: 0.8, onEnd: resolve });
+    } else if (t?.trim()) speakKid(t, { pitch: 1.3, rate: 0.8, onEnd: resolve });
     else resolve();
   });
 }
@@ -108,7 +108,7 @@ export default function QuestionPage() {
         const hold = Math.max(0, PICK_MS - (Date.now() - pickedAt)); // let the picked card finish its effect first
         setTimeout(show, hold + (a.is_correct ? 0 : 200)); // wrong: pause 200 ms more
       };
-      if (a.text?.trim()) speakKid(a.text.trim(), { pitch: 1.5, rate: 0.8, onEnd: finish });
+      if (a.text?.trim()) speakKid(a.text.trim(), { pitch: 1.3, rate: 0.8, onEnd: finish });
       else finish();
     },
     [cur, result, reading, sounds],

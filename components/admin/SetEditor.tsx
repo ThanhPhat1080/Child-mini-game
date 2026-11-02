@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { clearPending, commitPendingMedia, materializeSvg, mediaUrl, removeMedia, svgToPending } from '@/lib/media';
-import { forgetUploads } from '@/lib/media/uploads';
 import { pathsToDelete, setMediaPaths } from '@/lib/mediaPaths';
 import { SetCard } from '@/components/SetCard';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
@@ -14,6 +13,8 @@ import s from './admin-ui.module.css';
 import { QuestionPanel } from './QuestionPanel';
 import { LibraryButton } from './LibraryButton';
 import { Toast, useToast, type ToastKind } from './Toast';
+import { useMediaRenamed } from '@/lib/media/renames';
+import { replacePath } from '@/lib/mediaPaths';
 import { RevertButton, SaveButton } from './SaveButtons';
 import { SvgPaste } from './SvgPaste';
 import { checkSvg } from '@/lib/quizImport';
@@ -36,6 +37,10 @@ export function SetEditor({ setId }: { setId: string }) {
   const [importOpen, setImportOpen] = useState(false);
   const [missing, setMissing] = useState(false);
   const { toast, show: showToast, close: closeToast } = useToast();
+  // a file renamed in the library: edits not saved yet follow it
+  useMediaRenamed(useCallback((from: string, to: string) => {
+    setD((v) => replacePath(v, from, to)); setSaved((v) => replacePath(v, from, to));
+  }, []));
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const say = useCallback((text: string, kind: ToastKind | boolean = 'success') => {
@@ -107,7 +112,7 @@ export function SetEditor({ setId }: { setId: string }) {
       if (fresh) {
         setD(fresh); setSaved(fresh); setHexText(null);
         clearPending();
-        forgetUploads();
+       
         // the database now decides what is still used; free everything else (T15)
         const stale = pathsToDelete(setMediaPaths(saved), setMediaPaths(fresh), uploaded);
         cleanupFailed = !!(await removeMedia(stale));
@@ -120,7 +125,7 @@ export function SetEditor({ setId }: { setId: string }) {
 
   function revert() {
     if (!saved) return;
-    clearPending(); forgetUploads(); // nothing was uploaded, so there is nothing to delete
+    clearPending(); // nothing was uploaded, so there is nothing to delete
     setD(saved); setHexText(null); setNameError(false);
     setCur(saved.qs.length ? Math.min(Math.max(cur, 0), saved.qs.length - 1) : -1);
   }

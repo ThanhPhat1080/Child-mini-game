@@ -21,7 +21,7 @@ vi.mock('@/lib/supabase/client', () => ({
 }));
 
 import { addPending, clearPending } from '@/lib/media';
-import { isLevelComplete, loadLevels, moveLevel, newLevel, saveLevels, type ELevel } from '@/lib/spot/adminLevels';
+import { isLevelComplete, loadLevels, newLevel, saveLevels, type ELevel } from '@/lib/spot/adminLevels';
 
 const three = [{ x: 0.2, y: 0.2, r: 0.06 }, { x: 0.5, y: 0.5, r: 0.06 }, { x: 0.8, y: 0.8, r: 0.06 }];
 const level = (o: Partial<ELevel> = {}): ELevel => ({ id: 'l1', isNew: false, a: 'spot/a1.png', b: 'spot/b1.png', differences: three, active: true, ...o });
@@ -58,11 +58,11 @@ describe('newLevel / isLevelComplete', () => {
 });
 
 describe('loadLevels', () => {
-  it('reads every level ordered by sort_order then created_at and maps the columns', async () => {
+  it('reads every level ordered by created_at then sort_order and maps the columns', async () => {
     h.selectResult = { data: [{ id: 'a', image_a_path: 'spot/a.png', image_b_path: 'spot/b.png', differences: three, active: false, sort_order: 1 }], error: null };
     await expect(loadLevels()).resolves.toEqual([{ id: 'a', isNew: false, a: 'spot/a.png', b: 'spot/b.png', differences: three, active: false }]);
     expect(h.from).toHaveBeenCalledWith('spot_levels');
-    expect(h.order).toHaveBeenCalledWith('sort_order');
+    expect(h.order).toHaveBeenNthCalledWith(1, 'created_at');
   });
   it('throws the Supabase error message', async () => {
     h.selectResult = { data: null, error: { message: 'boom' } };
@@ -77,8 +77,8 @@ describe('saveLevels', () => {
     expect(r).toEqual({ error: null, warning: null });
     expect(h.log).toEqual(['upload', 'upload', 'upsert']);
     const rows = h.upsert.mock.calls[0][0];
-    expect(rows[0].image_a_path).toMatch(/^spot\/\d+-[0-9a-f]{8}\.png$/);
-    expect(rows[0].image_b_path).toMatch(/^spot\/\d+-[0-9a-f]{8}\.png$/);
+    expect(rows[0].image_a_path).toMatch(/^spot\/[A-Za-z0-9-]*-[0-9a-z]{13}\.png$/);
+    expect(rows[0].image_b_path).toMatch(/^spot\/[A-Za-z0-9-]*-[0-9a-z]{13}\.png$/);
     expect(rows.map((x: { sort_order: number }) => x.sort_order)).toEqual([0, 1]);
     expect(rows[0]).toMatchObject({ id: 'x', differences: three, active: true });
     expect(h.upsert.mock.calls[0][1]).toEqual({ onConflict: 'id' });
@@ -109,7 +109,7 @@ describe('saveLevels', () => {
     expect(r).toEqual({ error: 'db down', warning: null });
     const removed = h.remove.mock.calls[0][0] as string[];
     expect(removed).toHaveLength(1);
-    expect(removed[0]).toMatch(/^spot\/\d+-/);
+    expect(removed[0]).toMatch(/^spot\/[A-Za-z0-9-]+-/);
     expect(removed).not.toContain('spot/old.png');
   });
 
@@ -127,16 +127,3 @@ describe('saveLevels', () => {
   });
 });
 
-describe('moveLevel', () => {
-  const l = (id: string) => level({ id });
-  it('swaps neighbours', () => {
-    expect(moveLevel([l('a'), l('b'), l('c')], 1, -1).map((x) => x.id)).toEqual(['b', 'a', 'c']);
-    expect(moveLevel([l('a'), l('b'), l('c')], 1, 1).map((x) => x.id)).toEqual(['a', 'c', 'b']);
-  });
-  it('ignores out-of-range moves', () => {
-    const list = [l('a'), l('b')];
-    expect(moveLevel(list, 0, -1)).toBe(list);
-    expect(moveLevel(list, 1, 1)).toBe(list);
-    expect(moveLevel(list, 5, -1)).toBe(list);
-  });
-});

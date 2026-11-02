@@ -36,11 +36,8 @@ export function speakKid(text: string, opts: { pitch?: number; rate?: number; on
   // Always English, whatever the browser or page language is: without `lang` (or with no voice found yet, as when
   // the voice list has not loaded) the browser falls back to its own language, e.g. Vietnamese.
   u.lang = 'en-US';
-  const voices = synth.getVoices().filter((v) => v.lang.toLowerCase().startsWith('en'));
-  const us = voices.filter((v) => v.lang.toLowerCase().replace('_', '-') === 'en-us');
-  const pick = (list: SpeechSynthesisVoice[]) => list.find((v) => /samantha|zira|female|google us english|karen|victoria/i.test(v.name)) ?? list[0];
-  u.voice = pick(us) ?? pick(voices) ?? null;
-  u.pitch = opts.pitch ?? 1.9;
+  // The browser's default voice for en-US is used (no voice is set on purpose).
+  u.pitch = opts.pitch ?? 1.3;
   u.rate = opts.rate ?? 0.95;
   u.volume = 1;
   if (opts.onEnd) {

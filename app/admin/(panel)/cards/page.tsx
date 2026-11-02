@@ -9,7 +9,8 @@ import { sortHealth, weakGroups } from '@/lib/sort/groups';
 import { LEVELS, pairsOf } from '@/lib/memory/deck';
 import { sayWord } from '@/lib/memory/cards';
 import { clearPending, svgToPending } from '@/lib/media';
-import { forgetUploads } from '@/lib/media/uploads';
+import { useMediaRenamed } from '@/lib/media/renames';
+import { replacePath } from '@/lib/mediaPaths';
 import { checkSvg } from '@/lib/quizImport';
 import { CardImportDialog } from '@/components/admin/CardImportDialog';
 import { Toast, useToast } from '@/components/admin/Toast';
@@ -33,6 +34,10 @@ export default function CardsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast, show: showToast, close: closeToast } = useToast();
+  // a file renamed in the library: edits not saved yet follow it
+  useMediaRenamed(useCallback((from: string, to: string) => {
+    setSaved((v) => replacePath(v, from, to)); setDraft((v) => replacePath(v, from, to));
+  }, []));
   const [importOpen, setImportOpen] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
 
@@ -140,7 +145,7 @@ export default function CardsPage() {
   }
 
   function revert() {
-    clearPending(); forgetUploads(); // nothing was uploaded, so there is nothing to delete
+    clearPending(); // nothing was uploaded, so there is nothing to delete
     setDraft(saved); setDraftGroups(savedGroups); setMsgs({}); touch();
   }
 
@@ -158,11 +163,11 @@ export default function CardsPage() {
       const d = await deleteGroups(gone);
       if (d.error) {
         // the cards are saved (their files uploaded): take them as saved, keep the group edits so Save can retry the delete
-        if (await load(true)) { clearPending(); forgetUploads(); setMsgs({}); }
+        if (await load(true)) { clearPending(); setMsgs({}); }
         showToast('error', d.error); setBusy(false); return;
       }
     }
-    if (await load()) { clearPending(); forgetUploads(); setMsgs({}); showToast(r.warning ? 'warning' : 'success', r.warning ?? 'Saved'); }
+    if (await load()) { clearPending(); setMsgs({}); showToast(r.warning ? 'warning' : 'success', r.warning ?? 'Saved'); }
     setBusy(false);
   }
 

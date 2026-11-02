@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ELevel } from '@/lib/spot/adminLevels';
 import type { Crop } from '@/lib/crop/geometry';
@@ -27,12 +27,13 @@ const crop: Crop = { x: 0.1, y: 0.1, w: 0.5, h: 0.75, ratio: 1.5 };
 function renderPanel(onCropped = vi.fn(), startCrop?: Crop) {
   render(
     <SpotLevelPanel
-      l={level} n={1} count={1} message={null} shapeWarning={false}
+      l={level} n={1} message={null} shapeWarning={false}
       startCrop={startCrop} onCropped={onCropped}
       onEdit={() => undefined} onChooseLibrary={() => undefined} onSvg={() => undefined}
-      onMove={() => undefined} onAskDelete={() => undefined}
+      onAskDelete={() => undefined}
     />,
   );
+  fireEvent.click(screen.getByRole('button', { name: 'Expand level 1' })); // a saved level starts collapsed
   return onCropped;
 }
 

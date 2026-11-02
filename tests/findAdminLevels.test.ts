@@ -29,7 +29,6 @@ import {
   isLevelComplete,
   levelMediaPaths,
   loadFindLevels,
-  moveFindLevel,
   moveObject,
   newFindLevel,
   removeObject,
@@ -188,26 +187,14 @@ describe('levelMediaPaths', () => {
   });
 });
 
-describe('moveFindLevel', () => {
-  const l = (id: string) => level({ id });
-  it('swaps neighbours', () => {
-    expect(moveFindLevel([l('a'), l('b'), l('c')], 1, -1).map((x) => x.id)).toEqual(['b', 'a', 'c']);
-    expect(moveFindLevel([l('a'), l('b'), l('c')], 1, 1).map((x) => x.id)).toEqual(['a', 'c', 'b']);
-  });
-  it('ignores out-of-range moves', () => {
-    const list = [l('a'), l('b')];
-    expect(moveFindLevel(list, 0, -1).map((x) => x.id)).toEqual(['a', 'b']);
-    expect(moveFindLevel(list, 1, 1).map((x) => x.id)).toEqual(['a', 'b']);
-  });
-});
 
 describe('loadFindLevels', () => {
-  it('reads every level ordered by sort_order then created_at and maps the columns', async () => {
+  it('reads every level ordered by created_at then sort_order and maps the columns', async () => {
     const objects = [obj(0.2, 'cat'), obj(0.8, 'dog')];
     h.selectResult = { data: [{ id: 'a', image_path: 'find/p.png', objects, active: false, sort_order: 1 }], error: null };
     await expect(loadFindLevels()).resolves.toEqual([{ id: 'a', isNew: false, image: 'find/p.png', objects, active: false }]);
     expect(h.from).toHaveBeenCalledWith('find_levels');
-    expect(h.order).toHaveBeenCalledWith('sort_order');
+    expect(h.order).toHaveBeenNthCalledWith(1, 'created_at');
   });
   it('throws the Supabase error message', async () => {
     h.selectResult = { data: null, error: { message: 'boom' } };
@@ -236,13 +223,13 @@ describe('saveFindLevels', () => {
     expect(r).toEqual({ error: null, warning: null });
     expect(h.log).toEqual(['upload', 'upload', 'upsert']);
     expect(h.upload.mock.calls.map((c) => c[0])).toEqual([
-      expect.stringMatching(/^find\/\d+-[0-9a-f]{8}\.png$/),
-      expect.stringMatching(/^find\/\d+-[0-9a-f]{8}\.mp3$/),
+      expect.stringMatching(/^find\/[A-Za-z0-9-]*-[0-9a-z]{13}\.png$/),
+      expect.stringMatching(/^find\/[A-Za-z0-9-]*-[0-9a-z]{13}\.mp3$/),
     ]);
     const rows = h.upsert.mock.calls[0][0];
-    expect(rows[0].image_path).toMatch(/^find\/\d+-[0-9a-f]{8}\.png$/);
+    expect(rows[0].image_path).toMatch(/^find\/[A-Za-z0-9-]*-[0-9a-z]{13}\.png$/);
     expect(rows[0].objects[0]).toEqual({ x: 0.2, y: 0.5, r: DEFAULT_R, word: 'cat', audio_path: rows[0].objects[0].audio_path });
-    expect(rows[0].objects[0].audio_path).toMatch(/^find\/\d+-[0-9a-f]{8}\.mp3$/);
+    expect(rows[0].objects[0].audio_path).toMatch(/^find\/[A-Za-z0-9-]*-[0-9a-z]{13}\.mp3$/);
     expect(rows[0].objects[1]).toEqual(obj(0.8, 'dog'));
     expect(rows[1]).toMatchObject({ id: 'y', image_path: 'find/q.png' });
     expect(rows[0]).toMatchObject({ id: 'x', active: true });
@@ -297,7 +284,7 @@ describe('saveFindLevels', () => {
     expect(r).toEqual({ error: 'db down', warning: null });
     const removed = h.remove.mock.calls[0][0] as string[];
     expect(removed).toHaveLength(1);
-    expect(removed[0]).toMatch(/^find\/\d+-/);
+    expect(removed[0]).toMatch(/^find\/[A-Za-z0-9-]+-/);
     expect(removed).not.toContain('find/old.png');
   });
 

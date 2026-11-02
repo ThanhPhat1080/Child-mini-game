@@ -13,3 +13,5 @@ next-env.d.ts
 .venv/
 tts-input-template.json
 text-to-speech-out/
+scripts/.venv
+scripts/tts_out

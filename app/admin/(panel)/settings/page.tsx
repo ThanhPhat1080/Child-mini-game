@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { mediaUrl, removeMedia } from '@/lib/media';
-import { forgetUploads } from '@/lib/media/uploads';
 import { applause, ohOh, speakKid, yay, type SoundHandle } from '@/lib/sfx';
 import styles from '../../admin.module.css';
 import { Toast, useToast } from '@/components/admin/Toast';
+import { useMediaRenamed } from '@/lib/media/renames';
+import { replacePath } from '@/lib/mediaPaths';
 import { RevertButton, SaveButton } from '@/components/admin/SaveButtons';
 import { LibraryButton } from '@/components/admin/LibraryButton';
 import { PlayButton } from '@/components/admin/PlayButton';
@@ -31,6 +32,10 @@ export default function SettingsPage() {
   const [avatarDraft, setAvatarDraft] = useState<string | null>(null);
   const [soundDraft, setSoundDraft] = useState<SoundDraft>({});
   const { toast, show: showToast, close: closeToast } = useToast();
+  // a file renamed in the library: the row and the choices not saved yet follow it
+  useMediaRenamed(useCallback((from: string, to: string) => {
+    setRow((v) => replacePath(v, from, to)); setAvatarDraft((v) => replacePath(v, from, to)); setSoundDraft((v) => replacePath(v, from, to));
+  }, []));
   const [saving, setSaving] = useState(false);
   const preview = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
@@ -84,7 +89,7 @@ export default function SettingsPage() {
     setRow((r) => (r ? { ...r, ...patch } : r));
     setAvatarDraft(null);
     setSoundDraft({});
-    forgetUploads();
+   
     stopPreview();
     const failed = await removeMedia(replaced);
     if (failed) showToast('warning', 'Saved, but an old file could not be removed from storage.'); else showToast('success', 'Saved');
@@ -97,7 +102,7 @@ export default function SettingsPage() {
     setVolume(row.music_volume);
     setAvatarDraft(null);
     setSoundDraft({});
-    forgetUploads();
+   
     stopPreview();
     showToast('success', 'Changes reverted.');
   }

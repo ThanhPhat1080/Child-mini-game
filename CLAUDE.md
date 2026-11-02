@@ -17,6 +17,9 @@ Schema changes only via new `supabase/migrations/*.sql`, never by hand in the da
 - Desktop Chromium only, no TV work (ADR-028). Child keyboard: 1/2/3 answer, Left/Right move, Enter/Space pick, Esc back (`lib/keynav.ts`); keep a visible focus ring.
 - Games plug into the registry (ADR-014). One audio manager; nothing plays before "tap to enter". One deployment per child, configured by env vars only.
 
+## Optimistic UI
+For an admin action that is fast and rarely fails (rename, reorder, toggle): update the UI first, send the request after, and on failure put the old state back and show an error toast. Disable anything that depends on the unconfirmed value (e.g. OK in the library) until it settles. Never use it for deletes, uploads or anything that cannot be undone.
+
 ## Workflow
 Each ticket has acceptance criteria; do not mark it done until they pass. When Claude makes the same mistake twice, add the fix here. Keep this file under one page.
 
