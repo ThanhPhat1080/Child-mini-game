@@ -119,7 +119,7 @@ export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAs
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14, padding: '12px 14px', borderRadius: 14, background: '#FBF4E9' }}>
                 {q.voice ? (
                   <>
-                    <button type="button" className={s.play} aria-label="Play question voice" onClick={() => onPlay(q.voice!)} style={{ width: 40, height: 40, borderRadius: 20, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                    <button type="button" className={s.btn} aria-label="Play question voice" onClick={() => onPlay(q.voice!)} style={{ width: 40, height: 40, borderRadius: 20, border: 'none', background: '#EBB7BC', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                       <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M8 5.5v13l10.5-6.5z" /></svg>
                     </button>
                     <span style={{ flex: '1 1 180px', fontWeight: 700, fontSize: 15, overflowWrap: 'anywhere' }}>{fileName(q.voice)}</span>
