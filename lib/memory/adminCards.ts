@@ -30,12 +30,12 @@ export function duplicateWords(cards: ECard[]): Set<string> {
 /** Bucket files a card points to (bundled art, links and unsaved picks are not ours to delete). */
 export const cardMediaPaths = (c: ECard): string[] => [c.image, c.audio].filter(isBucketPath);
 
-/** Every card, active or not (admin view), oldest first. */
+/** Every card, active or not (admin view), newest first. */
 export async function loadCards(): Promise<ECard[]> {
   const { data, error } = await createSupabaseBrowserClient()
     .from('memory_cards')
     .select('id, word, image_path, audio_path, active, group_id')
-    .order('created_at');
+    .order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   return ((data ?? []) as Row[]).map((r) => ({ id: r.id, isNew: false, word: r.word, image: r.image_path, audio: r.audio_path, active: r.active, groupId: r.group_id ?? null }));
 }

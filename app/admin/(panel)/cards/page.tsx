@@ -127,7 +127,7 @@ export default function CardsPage() {
   function add() {
     const c = newCard();
     touch();
-    setDraft([...draft!, c]);
+    setDraft([c, ...draft!]);
     setFocusId(c.id);
   }
 
@@ -135,7 +135,7 @@ export default function CardsPage() {
     // SVG code becomes one pending file per distinct drawing; blank pictures stay incomplete until picked
     const added = imported.map((c) => ({ ...c, image: c.image?.startsWith('<') ? svgToPending(c.image) : c.image }));
     touch();
-    setDraft([...draft!, ...added]);
+    setDraft([...added, ...draft!]);
     setImportOpen(false);
   }
 

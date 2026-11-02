@@ -4,7 +4,7 @@ import { MEDIA_SOURCES, objectAudioPaths } from '@/lib/media/refs';
 import { unsavedUploads } from '@/lib/media/uploads';
 
 /**
- * Every bucket file of one kind that a record still uses, distinct and sorted (A23).
+ * Every bucket file of one kind that a record still uses, distinct; files uploaded but not saved yet first (newest first), then the rest sorted (A23).
  * Reads the columns listed in MEDIA_SOURCES. Throws when a query fails.
  */
 export async function listLibrary(kind: 'image' | 'audio'): Promise<string[]> {
@@ -20,6 +20,8 @@ export async function listLibrary(kind: 'image' | 'audio'): Promise<string[]> {
       for (const p of paths) if (typeof p === 'string' && isBucketPath(p)) found.add(p);
     }
   }
-  for (const p of unsavedUploads(kind)) found.add(p); // uploaded in a dialog, not saved yet (A24)
-  return [...found].sort();
+  // uploaded in a dialog, not saved yet (A24): newest first, above the rest
+  const fresh = unsavedUploads(kind).reverse();
+  const rest = [...found].filter((p) => !fresh.includes(p)).sort();
+  return [...new Set([...fresh, ...rest])];
 }
