@@ -1,16 +1,18 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { isLevelComplete, loadLevels, moveLevel, newLevel, saveLevels, type ELevel } from '@/lib/spot/adminLevels';
+import { isLevelComplete, loadLevels, newLevel, saveLevels, type ELevel } from '@/lib/spot/adminLevels';
 import { aspectsClose } from '@/lib/spot/validate';
 import type { Crop } from '@/lib/crop/geometry';
 import { naturalSize } from '@/lib/spot/imageSize';
 import { clearPending, mediaUrl, svgToPending } from '@/lib/media';
-import { forgetUploads } from '@/lib/media/uploads';
 import { checkSvg } from '@/lib/quizImport';
 import { Toast, useToast } from '@/components/admin/Toast';
+import { useMediaRenamed } from '@/lib/media/renames';
+import { replacePath } from '@/lib/mediaPaths';
 import { CardsHeaderActions } from '@/components/admin/CardsHeaderActions';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
+import { SortToggle, displayOrder } from '@/components/admin/LevelSort';
 import { SpotLevelPanel } from '@/components/admin/SpotLevelPanel';
 import s from '@/components/admin/admin-ui.module.css';
 
@@ -22,9 +24,15 @@ export default function SpotPage() {
   const [confirm, setConfirm] = useState<number | null>(null);
   /** Picture A's crop per level, kept while editing: picture B starts from it (A25). Cleared on Save and Revert. */
   const [aCrops, setACrops] = useState<Record<string, Crop>>({});
+  /** Display order: newest (last created) first by default. A level's number does not change with it. */
+  const [desc, setDesc] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast, show: showToast, close: closeToast } = useToast();
+  // a file renamed in the library: edits not saved yet follow it
+  useMediaRenamed(useCallback((from: string, to: string) => {
+    setSaved((v) => replacePath(v, from, to)); setDraft((v) => replacePath(v, from, to));
+  }, []));
   const [ratios, setRatios] = useState<Record<string, number>>({});
   const asked = useRef(new Set<string>());
 
@@ -88,10 +96,10 @@ export default function SpotPage() {
     edit(id, { [side]: svgToPending(r.svg) });
   }
 
-  function add() { touch(); setDraft([newLevel(), ...draft!]); }
+  function add() { touch(); setDraft([...draft!, newLevel()]); }
 
   function revert() {
-    clearPending(); forgetUploads(); // nothing was uploaded, so there is nothing to delete
+    clearPending(); // nothing was uploaded, so there is nothing to delete
     setACrops({});
     setDraft(saved); setMsgs({}); touch();
   }
@@ -101,7 +109,7 @@ export default function SpotPage() {
     setBusy(true); touch();
     const r = await saveLevels(saved, draft);
     if (r.error) { showToast('error', r.error); setBusy(false); return; }
-    if (await load()) { clearPending(); forgetUploads(); setACrops({}); setMsgs({}); showToast(r.warning ? 'warning' : 'success', r.warning ?? 'Saved'); }
+    if (await load()) { clearPending(); setACrops({}); setMsgs({}); showToast(r.warning ? 'warning' : 'success', r.warning ?? 'Saved'); }
     setBusy(false);
   }
 
@@ -133,15 +141,15 @@ export default function SpotPage() {
       {error && <p role="alert" style={{ margin: 0, color: '#A8484F', fontWeight: 700, fontSize: 14 }}>{error}</p>}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {draft.map((l, i) => (
+        <SortToggle desc={desc} onToggle={() => setDesc(!desc)} />
+        {displayOrder(draft, desc).map(({ level: l, i }) => (
           <SpotLevelPanel
-            key={l.id} l={l} n={i + 1} count={draft.length} message={msgs[l.id] ?? null} shapeWarning={shapeOff(l)}
+            key={l.id} l={l} n={i + 1} message={msgs[l.id] ?? null} shapeWarning={shapeOff(l)}
             startCrop={aCrops[l.id]}
             onCropped={(side, c) => { if (side === 'a') setACrops((m) => ({ ...m, [l.id]: c })); }}
             onEdit={(patch) => edit(l.id, patch)}
             onChooseLibrary={(side, path) => chooseLibrary(l.id, side, path)}
             onSvg={(side, code) => applySvg(l.id, side, code)}
-            onMove={(dir) => { touch(); setDraft(moveLevel(draft, i, dir)); }}
             onAskDelete={() => setConfirm(i)}
           />
         ))}

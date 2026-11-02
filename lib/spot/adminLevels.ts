@@ -18,24 +18,15 @@ export function isLevelComplete(l: ELevel): boolean {
 /** Bucket files a level points to (bundled art, links and unsaved picks are not ours to delete). */
 export const levelMediaPaths = (l: ELevel): string[] => [l.a, l.b].filter(isBucketPath);
 
-/** Every level, active or not (admin view), in play order. */
+/** Every level, active or not (admin view), in the order they were created. Saving writes that order as the play order. */
 export async function loadLevels(): Promise<ELevel[]> {
   const { data, error } = await createSupabaseBrowserClient()
     .from('spot_levels')
     .select('id, image_a_path, image_b_path, differences, active, sort_order')
-    .order('sort_order')
-    .order('created_at');
+    .order('created_at')
+    .order('sort_order');
   if (error) throw new Error(error.message);
   return ((data ?? []) as Row[]).map((r) => ({ id: r.id, isNew: false, a: r.image_a_path, b: r.image_b_path, differences: r.differences, active: r.active }));
-}
-
-/** Swaps a level with its neighbour; out-of-range moves return the same list. */
-export function moveLevel(list: ELevel[], index: number, dir: -1 | 1): ELevel[] {
-  const to = index + dir;
-  if (index < 0 || index >= list.length || to < 0 || to >= list.length) return list;
-  const next = [...list];
-  [next[index], next[to]] = [next[to], next[index]];
-  return next;
 }
 
 /**

@@ -13,6 +13,8 @@ const save = (page: Page) => page.getByRole('button', { name: 'Save' });
 async function openSpot(page: Page): Promise<void> {
   await page.goto('/admin/spot');
   await expect(page.getByRole('button', { name: 'Add level' })).toBeVisible();
+  // saved levels start collapsed to their header
+  for (const b of await page.getByRole('button', { name: /^Expand level/ }).all()) await b.click();
 }
 
 /** Pastes an SVG file into picture A or B of level `n` ("Or paste SVG code"), a local preview until Save. */

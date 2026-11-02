@@ -1,27 +1,31 @@
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
-import { isBucketPath } from '@/lib/mediaPaths';
-import { MEDIA_SOURCES, objectAudioPaths } from '@/lib/media/refs';
-import { unsavedUploads } from '@/lib/media/uploads';
+import { MEDIA_BUCKET } from '@/lib/media';
+import { libraryOrder } from '@/lib/mediaPaths';
+
+const IMAGE_EXT = /\.(png|jpe?g|webp|svg)$/i;
+const AUDIO_EXT = /\.(mp3|m4a|wav)$/i;
+const PAGE = 100;
 
 /**
- * Every bucket file of one kind that a record still uses, distinct; files uploaded but not saved yet first (newest first), then the rest sorted (A23).
- * Reads the columns listed in MEDIA_SOURCES. Throws when a query fails.
+ * Every file of one kind in the media bucket, used or not (the pick-from-library pop-up and the Media page). Folders are walked down to a few levels;
+ * bundled art is not in the bucket. Newest first by the upload id in the name. Throws when the bucket cannot be listed.
  */
 export async function listLibrary(kind: 'image' | 'audio'): Promise<string[]> {
-  const supabase = createSupabaseBrowserClient();
-  const found = new Set<string>();
-  for (const src of MEDIA_SOURCES) {
-    if (src.kind !== kind) continue;
-    const { data, error } = await supabase.from(src.table).select(src.column);
-    if (error) throw new Error(error.message);
-    for (const row of (data ?? []) as unknown as Record<string, unknown>[]) {
-      const value = row[src.column];
-      const paths = src.objectAudio ? objectAudioPaths(value) : [value];
-      for (const p of paths) if (typeof p === 'string' && isBucketPath(p)) found.add(p);
+  const store = createSupabaseBrowserClient().storage.from(MEDIA_BUCKET);
+  const want = kind === 'image' ? IMAGE_EXT : AUDIO_EXT;
+  const found: string[] = [];
+  async function walk(dir: string, depth: number): Promise<void> {
+    for (let offset = 0; ; offset += PAGE) {
+      const { data, error } = await store.list(dir, { limit: PAGE, offset });
+      if (error) throw new Error(error.message);
+      for (const item of data ?? []) {
+        const path = dir ? `${dir}/${item.name}` : item.name;
+        if (item.id === null) { if (depth < 3) await walk(path, depth + 1); } // a folder
+        else if (want.test(item.name)) found.push(path);
+      }
+      if ((data?.length ?? 0) < PAGE) return;
     }
   }
-  // uploaded in a dialog, not saved yet (A24): newest first, above the rest
-  const fresh = unsavedUploads(kind).reverse();
-  const rest = [...found].filter((p) => !fresh.includes(p)).sort();
-  return [...new Set([...fresh, ...rest])];
+  await walk('', 0);
+  return libraryOrder(found);
 }
