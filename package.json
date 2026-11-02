@@ -10,7 +10,12 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "tts:setup": "python3 -m venv scripts/.venv && scripts/.venv/bin/pip install edge-tts",
+    "tts": "scripts/.venv/bin/python scripts/generate_tts.py",
+    "tts:fast": "scripts/.venv/bin/python scripts/generate_tts.py --rate +15% --out text-to-speech-out/fast",
+    "tts:slow": "scripts/.venv/bin/python scripts/generate_tts.py --rate -15% --out text-to-speech-out/slow",
+    "tts:voices": "scripts/.venv/bin/edge-tts --list-voices | grep en-US"
   },
   "dependencies": {
     "@fontsource/baloo-2": "^5.0.0",
