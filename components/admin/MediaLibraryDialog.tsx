@@ -54,6 +54,7 @@ export function MediaLibraryDialog({ kind, onChoose, onClose, startCrop, onCropp
   const [cropping, setCropping] = useState<File | null>(null);
   const preview = useSoundPreview();
   const fileInput = useRef<HTMLInputElement | null>(null);
+  const listBox = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -86,6 +87,13 @@ export function MediaLibraryDialog({ kind, onChoose, onClose, startCrop, onCropp
     onClose();
   }
 
+  /** A new upload goes to the top of the list, is highlighted, and the list scrolls up to it. */
+  function addUploaded(path: string) {
+    setPaths((list) => [path, ...(list ?? []).filter((x) => x !== path)]);
+    setSelected(path);
+    listBox.current?.scrollTo?.({ top: 0 });
+  }
+
   /** Save in the crop window: crops the picked file to the chosen square, uploads it and lists it. */
   async function saveCrop(crop: Crop) {
     const picked = cropping;
@@ -97,7 +105,7 @@ export function MediaLibraryDialog({ kind, onChoose, onClose, startCrop, onCropp
       const square = await cropToSquare(picked, crop);
       if (square.size > MAX_IMAGE_BYTES) throw new Error('Image must be 2 MB or smaller.');
       const path = await uploadToLibrary(kind, square);
-      setPaths((list) => [...new Set([...(list ?? []), path])].sort());
+      addUploaded(path);
       onCropped?.(crop);
     } catch (e) {
       setUploadError(e instanceof Error ? e.message : 'Upload failed');
@@ -127,7 +135,7 @@ export function MediaLibraryDialog({ kind, onChoose, onClose, startCrop, onCropp
     setUploading(true);
     try {
       const path = await uploadToLibrary(kind, file);
-      setPaths((list) => [...new Set([...(list ?? []), path])].sort());
+      addUploaded(path);
     } catch (e) {
       setUploadError(e instanceof Error ? e.message : 'Upload failed');
     } finally {
@@ -149,8 +157,11 @@ export function MediaLibraryDialog({ kind, onChoose, onClose, startCrop, onCropp
         return (
           <li key={p}>
             <button type="button" aria-label={`Choose ${name}`} aria-pressed={on} data-selected={on ? 'true' : 'false'} onClick={() => setSelected(p)}
-              style={{ width: '100%', height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 12, background: '#fff', cursor: 'pointer', border: on ? '3px solid #5A4038' : '1.5px solid #E3D5C4', padding: 0 }}>
-              {url && <img src={url} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />}
+              style={{ width: '100%', height: 148, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 12, background: '#fff', cursor: 'pointer', border: on ? '3px solid #5A4038' : '1.5px solid #E3D5C4', padding: 0 }}>
+              <span style={{ flex: '1 1 auto', minHeight: 0, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, boxSizing: 'border-box' }}>
+                {url && <img src={url} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />}
+              </span>
+              <span title={name} style={{ flex: 'none', width: '100%', padding: '4px 6px', boxSizing: 'border-box', fontSize: 12, fontWeight: 700, color: '#4A3830', fontFamily: 'Nunito, sans-serif', background: on ? '#F6EADC' : '#FBF4E9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
             </button>
           </li>
         );
@@ -197,7 +208,7 @@ export function MediaLibraryDialog({ kind, onChoose, onClose, startCrop, onCropp
           </div>
         )}
         {/* only the list scrolls; scrolling it does not scroll the page behind */}
-        <div data-library-list style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', padding: '4px 28px 16px' }}>
+        <div ref={listBox} data-library-list style={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain', padding: '4px 28px 16px' }}>
           {body}
         </div>
         {/* footer: Cancel and OK stay fixed */}

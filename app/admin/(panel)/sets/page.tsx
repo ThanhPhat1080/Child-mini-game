@@ -103,7 +103,7 @@ export default function SetsPage() {
             </tr>
           </thead>
           <tbody>
-            {(rows ?? []).map((r) => (
+            {[...(rows ?? [])].reverse().map((r) => (
               <tr key={r.id} className={s.row} style={{ borderTop: '1px solid #F1E7DA' }}>
                 <td style={{ padding: '12px 20px' }}>
                   <Link href={`/admin/sets/${r.id}`} style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', color: 'inherit' }}>

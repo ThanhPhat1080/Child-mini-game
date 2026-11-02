@@ -8,6 +8,7 @@ import { BackButton } from '@/components/BackButton';
 import { MusicButton } from '@/components/MusicButton';
 import { FindBoard, type FindRipple } from '@/components/find/FindBoard';
 import { FindWordList } from '@/components/find/FindWordList';
+import { FindScrollColumn } from '@/components/find/FindScrollColumn';
 import { FindDone } from '@/components/find/FindDone';
 import { FlowerBack } from '@/components/memory/FlowerBack';
 import { fetchFindLevel } from '@/lib/find/levels';
@@ -195,9 +196,9 @@ export default function FindPlay() {
         {phase === 'ready' && level && !(won && praise) && (
           <>
             {/* The words, in object order, on the left (F3). The asked word is the current row; the list never shows it once done. */}
-            <div data-find-col style={{ position: 'absolute', left: 40, top: 200, bottom: 56, width: 480, zIndex: 2, overflowY: 'auto' }}>
+            <FindScrollColumn reduced={reduced}>
               <FindWordList objects={level.objects} current={found.length >= level.objects.length ? -1 : index} found={found} onSay={sayAt} />
-            </div>
+            </FindScrollColumn>
             {/* The picture fills the rest of the stage (F2): FindBoard sizes it from the picture's aspect, capped at 1500 x 900. */}
             <div style={{ position: 'absolute', left: 560, right: 56, top: 110, bottom: 56, zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <FindBoard url={pictureUrl} objects={level.objects} found={found} ripple={ripple} reduced={reduced} onTap={onTap} />

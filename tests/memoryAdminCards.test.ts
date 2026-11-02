@@ -90,7 +90,7 @@ describe('loadCards', () => {
     h.selectResult = { data: [{ id: 'a', word: 'cat', image_path: 'cards/a.png', audio_path: null, active: false, group_id: null }], error: null };
     await expect(loadCards()).resolves.toEqual([{ id: 'a', isNew: false, word: 'cat', image: 'cards/a.png', audio: null, active: false, groupId: null }]);
     expect(h.from).toHaveBeenCalledWith('memory_cards');
-    expect(h.order).toHaveBeenCalledWith('created_at');
+    expect(h.order).toHaveBeenCalledWith('created_at', { ascending: false });
   });
   it('throws the Supabase error message', async () => {
     h.selectResult = { data: null, error: { message: 'boom' } };

@@ -166,6 +166,8 @@ button.hm-tap:active{transform:scale(.94)}
 .hm-find-pop{animation:hm-find-pop .35s ease-out}
 .hm-reduced .hm-find-ripple{animation:none;opacity:.7;transform:translate(-50%,-50%)}
 .hm-reduced .hm-find-pop{animation:none}
+[data-find-scroll-area]::-webkit-scrollbar{display:none}
+[data-find-scroll]:focus-visible{outline:6px solid #7A5C50;outline-offset:4px}
 [data-find-row] button:focus-visible{outline:6px solid #7A5C50;outline-offset:4px}
 @media (prefers-reduced-motion: reduce){.hm-find-grow{animation:none}.hm-find-ripple{animation:none;opacity:.7}.hm-find-pop{animation:none}}
 /* ---- Listen & Pick question view ---- */
