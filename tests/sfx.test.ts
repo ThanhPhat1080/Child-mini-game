@@ -20,19 +20,10 @@ describe('speakKid language', () => {
     expect(spoken[0].voice).toBeNull();
   });
 
-  it('never picks a Vietnamese voice and prefers an en-US voice', () => {
+  it('leaves the voice to the browser default, with lang en-US, even when voices are installed', () => {
     voices = [voice('Linh', 'vi-VN'), voice('Google UK English Female', 'en-GB'), voice('Google US English', 'en-US')];
     speakKid('Hello');
-    expect((spoken[0].voice as SpeechSynthesisVoice).name).toBe('Google US English');
-  });
-
-  it('falls back to another English voice, and to none rather than Vietnamese', () => {
-    voices = [voice('Linh', 'vi-VN'), voice('Daniel', 'en-GB')];
-    speakKid('Hello');
-    expect((spoken[0].voice as SpeechSynthesisVoice).name).toBe('Daniel');
-    voices = [voice('Linh', 'vi-VN')];
-    speakKid('Hello');
-    expect(spoken[1].voice).toBeNull();
-    expect(spoken[1].lang).toBe('en-US');
+    expect(spoken[0].voice).toBeNull();
+    expect(spoken[0].lang).toBe('en-US');
   });
 });

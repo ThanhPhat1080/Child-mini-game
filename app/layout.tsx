@@ -10,6 +10,7 @@ import '@fontsource/nunito/vietnamese-400.css';
 import '@fontsource/nunito/vietnamese-600.css';
 import '@fontsource/nunito/vietnamese-700.css';
 import './globals.css';
+import RightClickAsLeft from '@/components/RightClickAsLeft';
 
 export const metadata = {
   title: 'HaMy',
@@ -17,8 +18,11 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en-us">
+      <body>
+        <RightClickAsLeft />
+        {children}
+      </body>
     </html>
   );
 }

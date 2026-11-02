@@ -172,9 +172,17 @@ describe('useSortDrag', () => {
     expect(cb.onDrop).toHaveBeenCalledWith('a', 1);
   });
 
-  it('ignores a non-primary button or a non-primary pointer', () => {
-    const { cb, down, fire, drag } = setup();
+  it('treats the right button like the left one', () => {
+    const { cb, down, fire } = setup();
     down(400, 500, { button: 2 });
+    fire('pointermove', 600, 200);
+    fire('pointerup', 600, 200);
+    expect(cb.onDrop).toHaveBeenCalledWith('a', 1);
+  });
+
+  it('ignores a middle button or a non-primary pointer', () => {
+    const { cb, down, fire, drag } = setup();
+    down(400, 500, { button: 1 });
     down(400, 500, { isPrimary: false });
     fire('pointermove', 200, 200);
     fire('pointerup', 200, 200);

@@ -53,7 +53,8 @@ export function useSortDrag(opts: SortDragOptions): {
   const press = useCallback(
     (id: string, e: React.PointerEvent<HTMLElement>) => {
       const o = optsRef.current;
-      if (o.busy || live.current || e.button !== 0 || e.isPrimary === false) return;
+      // Right button counts as left (the child's right-click is treated as a click everywhere else too).
+      if (o.busy || live.current || (e.button !== 0 && e.button !== 2) || e.isPrimary === false) return;
       const pointerId = e.pointerId;
       const target = e.currentTarget;
 
