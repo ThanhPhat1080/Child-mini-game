@@ -153,7 +153,7 @@ export function FindMarkerEditor({ src, objects, onChange, onLibrarySound }: Pro
                   {o.audio_path ? fileName(o.audio_path) : 'No sound'}
                 </span>
                 <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Choose sound for object ${n}`} style={small} onClick={(e) => { e.stopPropagation(); onLibrarySound(i); }}>+ Choose sounds</button>
-                <PlayButton size={34} playing={preview.isPlaying(rowKey(i, o.audio_path))} label={`${preview.isPlaying(rowKey(i, o.audio_path)) ? 'Pause' : 'Play'} sound for object ${n}`} disabled={!o.audio_path && !o.word.trim()} onClick={() => playObject(i, o)} />
+                <PlayButton playing={preview.isPlaying(rowKey(i, o.audio_path))} label={`${preview.isPlaying(rowKey(i, o.audio_path)) ? 'Pause' : 'Play'} sound for object ${n}`} disabled={!o.audio_path && !o.word.trim()} onClick={() => playObject(i, o)} />
                 <button type="button" className={`${s.btn} ${s.ghost}`} aria-label={`Clear sound for object ${n}`} style={small} disabled={!o.audio_path}
                   onClick={(e) => { e.stopPropagation(); onChange(setObjectAudio(objects, i, null)); }}>Clear sound</button>
               </div>
