@@ -8,6 +8,7 @@ import { naturalSize } from '@/lib/spot/imageSize';
 import { clearPending, mediaUrl, svgToPending } from '@/lib/media';
 import { forgetUploads } from '@/lib/media/uploads';
 import { checkSvg } from '@/lib/quizImport';
+import { Toast, useToast } from '@/components/admin/Toast';
 import { CardsHeaderActions } from '@/components/admin/CardsHeaderActions';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { SpotLevelPanel } from '@/components/admin/SpotLevelPanel';
@@ -23,8 +24,7 @@ export default function SpotPage() {
   const [aCrops, setACrops] = useState<Record<string, Crop>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [warning, setWarning] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const { toast, show: showToast, close: closeToast } = useToast();
   const [ratios, setRatios] = useState<Record<string, number>>({});
   const asked = useRef(new Set<string>());
 
@@ -70,7 +70,7 @@ export default function SpotPage() {
   const incomplete = draft.filter((l) => !isLevelComplete(l)).length;
   const canSave = dirty && incomplete === 0 && !busy;
 
-  const touch = () => { setNotice(null); setError(null); setWarning(null); };
+  const touch = () => { closeToast(); setError(null); };
   const edit = (id: string, patch: Partial<ELevel>) => { touch(); setDraft(draft.map((l) => (l.id === id ? { ...l, ...patch } : l))); };
   const say = (id: string, text: string | null) => setMsgs((m) => { const n = { ...m }; if (text) n[id] = text; else delete n[id]; return n; });
 
@@ -100,9 +100,8 @@ export default function SpotPage() {
     if (!draft || !saved || !canSave) return;
     setBusy(true); touch();
     const r = await saveLevels(saved, draft);
-    if (r.error) { setError(r.error); setBusy(false); return; }
-    if (r.warning) setWarning(r.warning);
-    if (await load()) { clearPending(); forgetUploads(); setACrops({}); setMsgs({}); setNotice('Saved'); }
+    if (r.error) { showToast('error', r.error); setBusy(false); return; }
+    if (await load()) { clearPending(); forgetUploads(); setACrops({}); setMsgs({}); showToast(r.warning ? 'warning' : 'success', r.warning ?? 'Saved'); }
     setBusy(false);
   }
 
@@ -117,7 +116,6 @@ export default function SpotPage() {
   if (busy) status = 'Saving…';
   else if (incomplete) status = `${incomplete} ${incomplete === 1 ? 'level needs' : 'levels need'} two pictures and 3 to 10 spots before you can save.`;
   else if (dirty) status = 'Unsaved changes. Press Save to keep them.';
-  else if (notice) status = notice;
 
   return (
     <>
@@ -133,7 +131,6 @@ export default function SpotPage() {
       </div>
 
       {error && <p role="alert" style={{ margin: 0, color: '#A8484F', fontWeight: 700, fontSize: 14 }}>{error}</p>}
-      {warning && <p role="status" style={{ margin: 0, color: '#7A5410', fontWeight: 700, fontSize: 14 }}>{warning}</p>}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {draft.map((l, i) => (
@@ -159,6 +156,7 @@ export default function SpotPage() {
           onConfirm={() => { touch(); setDraft(draft.filter((_, k) => k !== confirm)); say(doomed.id, null); setConfirm(null); }}
         />
       )}
+      <Toast toast={toast} onClose={closeToast} />
     </>
   );
 }

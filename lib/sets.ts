@@ -56,8 +56,13 @@ export type ESet = {
   qs: EQuestion[];
 };
 
-export function isQuestionComplete(q: { text: string; voice: string | null; imgs: (string | null)[]; correct: number | null; count: number }): boolean {
-  return (!!q.text.trim() || !!q.voice) && q.imgs.slice(0, q.count).every(Boolean) && q.correct !== null && q.correct < q.count;
+/** An answer needs a picture, a text, or both (C4). Both empty is invalid. */
+export function hasAnswerContent(image: string | null | undefined, text: string | null | undefined): boolean {
+  return !!image || !!text?.trim();
+}
+
+export function isQuestionComplete(q: { text: string; voice: string | null; imgs: (string | null)[]; texts: string[]; correct: number | null; count: number }): boolean {
+  return (!!q.text.trim() || !!q.voice) && q.imgs.slice(0, q.count).every((img, i) => hasAnswerContent(img, q.texts[i])) && q.correct !== null && q.correct < q.count;
 }
 
 export function newQuestion(): EQuestion {

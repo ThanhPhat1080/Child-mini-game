@@ -1,6 +1,6 @@
 'use client';
 
-import { isQuestionComplete, type EQuestion, type ESet } from '@/lib/sets';
+import { hasAnswerContent, isQuestionComplete, type EQuestion, type ESet } from '@/lib/sets';
 import s from './admin-ui.module.css';
 import { LibraryButton } from './LibraryButton';
 import { SvgPaste } from './SvgPaste';
@@ -29,7 +29,7 @@ export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAs
   const checks = q ? [
     { label: 'Question text or voice', done: !!q.text.trim() || !!q.voice, optional: false },
     { label: 'Question image (optional)', done: !!q.qimg, optional: true },
-    { label: 'Picture for every answer', done: q.imgs.slice(0, q.count).every(Boolean), optional: false },
+    { label: 'Picture or text for every answer', done: q.imgs.slice(0, q.count).every((im, i) => hasAnswerContent(im, q.texts[i])), optional: false },
     { label: 'Correct answer chosen', done: q.correct !== null && q.correct < q.count, optional: false },
   ] : [];
 
@@ -168,7 +168,7 @@ export function QuestionPanel({ d, cur, q, onSelect, onAdd, onMove, onEdit, onAs
                       <LibraryButton kind="image" label={`answer ${i + 1} image`} onChoose={(p) => onChooseLibrary({ kind: 'answer', i }, p)} />
                       <SvgPaste label={`answer ${i + 1} image`} onUse={(code) => onSvg({ kind: 'answer', i }, code)} />
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <label htmlFor={`at${i}`} style={{ fontSize: 13, fontWeight: 700 }}>Answer text <span style={{ fontWeight: 600, color: '#7A6458' }}>(read aloud when picked)</span></label>
+                        <label htmlFor={`at${i}`} style={{ fontSize: 13, fontWeight: 700 }}>Answer text <span style={{ fontWeight: 600, color: '#7A6458' }}>(read aloud when picked; needed if no image)</span></label>
                         <input id={`at${i}`} className={s.in} type="text" value={q.texts[i]} placeholder="e.g. Apple" onChange={(e) => onEdit({ texts: q.texts.map((t, k) => (k === i ? e.target.value : t)) })} style={{ ...inputStyle, height: 40, fontSize: 15 }} />
                       </div>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
