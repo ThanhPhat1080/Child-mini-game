@@ -22,3 +22,10 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .toastPill { animation: none; } .spinner { animation: none; } }
 .textBtn:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 4px; }
+
+/* Play / pause: a solid rose that reads as clickable; disabled turns grey, so the two are never alike. */
+.play { background: #B5535D; box-shadow: 0 2px 0 #8E3F48; transition: background 0.15s, transform 0.15s; }
+.play:hover:not(:disabled) { background: #9C434D; transform: scale(1.06); }
+.play:active:not(:disabled) { transform: scale(0.96); box-shadow: none; }
+.play:focus-visible { outline: 3px solid #c77d85; outline-offset: 2px; }
+.play:disabled { background: #E3D9CE; box-shadow: none; cursor: not-allowed; }
