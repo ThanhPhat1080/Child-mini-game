@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { Pic } from '@/components/Pic';
 
 /** What the avatar says when tapped. One place to change it. */
 export const AVATAR_SAY = "Let's play with me!";
@@ -53,8 +54,7 @@ export function AvatarSay({ avatar, initials }: { avatar: string | null; initial
         onClick={tap}
         style={{ width: SIZE, height: SIZE, padding: 0, borderRadius: SIZE / 2, background: '#F5D9C4', border: '8px solid #fff', boxShadow: '0 8px 0 #EADCC8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 60, fontWeight: 600, color: '#B8737B', overflow: 'hidden', boxSizing: 'border-box' }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {avatar ? <img src={avatar} alt="" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
+        {avatar ? <Pic src={avatar} alt="" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
       </button>
     </div>
   );

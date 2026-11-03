@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { isPending, mediaUrl, pendingName } from '@/lib/media';
+import { Pic } from '@/components/Pic';
 
 export const IMG_TYPES = ['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp'];
 export const AUDIO_TYPES = ['audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/ogg'];
@@ -11,8 +12,7 @@ export const dangerBtn = { padding: '0 14px', borderRadius: 10, border: '1.5px s
 export const fileName = (p: string | null) => (p ? (isPending(p) ? pendingName(p) : p.split('/').pop() ?? p) : '');
 
 export function Img({ path, w, h }: { path: string; w: number | string; h: number | string }) {
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={mediaUrl(path) ?? ''} alt="" draggable={false} style={{ width: w, height: h, objectFit: 'contain' }} />;
+  return <Pic src={mediaUrl(path) ?? ''} alt="" draggable={false} style={{ width: w, height: h, objectFit: 'contain' }} />;
 }
 
 export function PicIcon({ size = 30 }: { size?: number }) {

@@ -516,7 +516,7 @@ describe('Listen & Pick play screen (L1-L5, L8, L10)', () => {
       expect(wrongItems().map((e) => e.getAttribute('aria-label'))).toEqual([`Hear word${ids[0].slice(1)}`, `Hear word${ids[3].slice(1)}`]);
       expect(wrongItems()[0].textContent).toContain('x2');
       expect(wrongItems()[1].textContent).not.toContain('x2');
-      expect(wrongItems()[0].querySelector('img')?.getAttribute('src')).toBe(`/media/${ids[0]}.svg`);
+      expect(new URL(wrongItems()[0].querySelector('img')!.src).pathname).toBe(`/media/${ids[0]}.svg`);
       expect(screen.getAllByRole('link', { name: 'Back to games' })).toHaveLength(1);
       expect(h.settings).toHaveBeenCalled();
       h.sayWord.mockClear();

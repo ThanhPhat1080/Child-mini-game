@@ -68,7 +68,7 @@ describe('ListenDone (L6, L7)', () => {
     expect(items()[1].textContent).not.toContain('x');
     expect(items()[0].tagName).toBe('BUTTON');
     expect(screen.getByRole('button', { name: 'Hear word1' })).toBe(items()[0]);
-    expect(items()[0].querySelector('img')?.getAttribute('src')).toBe('/media/c1.svg');
+    expect(new URL(items()[0].querySelector('img')!.src).pathname).toBe('/media/c1.svg');
     fireEvent.click(items()[1]);
     expect(h.sayWord).toHaveBeenCalledTimes(1);
     expect(h.sayWord.mock.calls[0][0].id).toBe('c2');

@@ -5,6 +5,7 @@ import { DEFAULT_R, MAX_DIFFS, MAX_R, MIN_R, SMALL_R } from '@/lib/spot/validate
 import type { Difference } from '@/lib/spot/types';
 import s from './admin-ui.module.css';
 import { PicIcon, dangerBtn, ghostBtn } from './editor-parts';
+import { Pic } from '@/components/Pic';
 
 const EDGE = 0.01;
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -62,8 +63,7 @@ export function SpotMarkerEditor({ srcA, srcB, differences, onChange }: { srcA: 
       {src ? (
         <div style={{ background: '#FBF4E9', borderRadius: 14, padding: 8, display: 'flex', justifyContent: 'center' }}>
           <div onClick={place} style={{ position: 'relative', width: '100%', maxWidth: 640, lineHeight: 0, cursor: 'crosshair' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img ref={setImgEl} src={src} alt={viewB ? 'Picture B' : 'Picture A'} draggable={false} style={{ display: 'block', width: '100%', height: 'auto', borderRadius: 8 }} />
+            <Pic ref={setImgEl} src={src} alt={viewB ? 'Picture B' : 'Picture A'} draggable={false} style={{ display: 'block', width: '100%', height: 'auto', borderRadius: 8 }} />
             {differences.map((d, i) => (
               <button
                 key={i} type="button" aria-label={`Spot ${i + 1}`} aria-pressed={sel === i}

@@ -8,6 +8,7 @@ import { deleteSet, isQuestionComplete, tintFor } from '@/lib/sets';
 import { SetCard } from '@/components/SetCard';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import s from '@/components/admin/admin-ui.module.css';
+import { Pic } from '@/components/Pic';
 
 type Row = {
   id: string; title: string; subtitle: string | null; heading_color: string; cover_path: string | null; status: string; updated_at: string;
@@ -153,6 +154,5 @@ function Thumb({ path, color }: { path: string | null; color: string }) {
   );
 }
 function CoverImg({ path, size }: { path: string; size: number }) {
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={mediaUrl(path) ?? ''} alt="" width={size} height={size} style={{ objectFit: 'contain' }} />;
+  return <Pic src={mediaUrl(path) ?? ''} alt="" width={size} height={size} style={{ objectFit: 'contain' }} />;
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { mediaUrl } from '@/lib/media';
 import type { MemoryCard } from '@/lib/memory/types';
+import { Pic } from '@/components/Pic';
 
 /** A card's picture, or a plain placeholder block when it is missing or broken. Never shows the word. */
 export function SortPicture({ card }: { card: MemoryCard }) {
@@ -17,6 +18,5 @@ export function SortPicture({ card }: { card: MemoryCard }) {
   if (!src || broken) {
     return <span data-placeholder aria-hidden="true" style={{ display: 'block', width: '70%', height: '70%', borderRadius: 28, background: '#EFE6DA' }} />;
   }
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img ref={ref} src={src} alt="" draggable={false} onError={() => setBroken(true)} style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} />;
+  return <Pic ref={ref} src={src} alt="" draggable={false} onError={() => setBroken(true)} style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} />;
 }
