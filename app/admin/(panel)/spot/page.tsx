@@ -14,7 +14,6 @@ import { CardsHeaderActions } from '@/components/admin/CardsHeaderActions';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { SortToggle, displayOrder } from '@/components/admin/LevelSort';
 import { SpotLevelPanel } from '@/components/admin/SpotLevelPanel';
-import s from '@/components/admin/admin-ui.module.css';
 
 /** Spot the Differences level builder (A14-A16). Nothing is uploaded or written until Save. */
 export default function SpotPage() {
