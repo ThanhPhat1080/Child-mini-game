@@ -11,7 +11,7 @@ import s from '@/components/admin/admin-ui.module.css';
 
 type Row = {
   id: string; title: string; subtitle: string | null; heading_color: string; cover_path: string | null; status: string; updated_at: string;
-  questions: { prompt_text: string | null; prompt_audio_path: string | null; answers: { slot: number; image_path: string | null; is_correct: boolean }[] }[];
+  questions: { prompt_text: string | null; prompt_audio_path: string | null; answers: { slot: number; image_path: string | null; text: string | null; is_correct: boolean }[] }[];
 };
 type View = { id: string; title: string; subtitle: string | null; heading_color: string; cover_path: string | null; pub: boolean; count: number; total: number; updated: string };
 
@@ -19,8 +19,9 @@ function toView(r: Row): View {
   const complete = r.questions.filter((q) => {
     const imgs: (string | null)[] = [null, null, null];
     let correct: number | null = null;
-    q.answers.forEach((a) => { imgs[a.slot - 1] = a.image_path; if (a.is_correct) correct = a.slot - 1; });
-    return isQuestionComplete({ text: q.prompt_text ?? '', voice: q.prompt_audio_path, imgs, correct, count: q.answers.length === 2 ? 2 : 3 });
+    const texts = ['', '', ''];
+    q.answers.forEach((a) => { imgs[a.slot - 1] = a.image_path; texts[a.slot - 1] = a.text ?? ''; if (a.is_correct) correct = a.slot - 1; });
+    return isQuestionComplete({ text: q.prompt_text ?? '', voice: q.prompt_audio_path, imgs, texts, correct, count: q.answers.length === 2 ? 2 : 3 });
   }).length;
   return {
     id: r.id, title: r.title, subtitle: r.subtitle, heading_color: r.heading_color, cover_path: r.cover_path, pub: r.status === 'published',
@@ -39,7 +40,7 @@ export default function SetsPage() {
   const load = useCallback(async () => {
     const { data, error: e } = await createSupabaseBrowserClient()
       .from('quiz_sets')
-      .select('id, title, subtitle, heading_color, cover_path, status, updated_at, questions(prompt_text, prompt_audio_path, answers(slot, image_path, is_correct))')
+      .select('id, title, subtitle, heading_color, cover_path, status, updated_at, questions(prompt_text, prompt_audio_path, answers(slot, image_path, text, is_correct))')
       .order('position');
     if (e) setError(e.message);
     else setRows(((data as unknown as Row[]) ?? []).map(toView));
@@ -102,7 +103,7 @@ export default function SetsPage() {
             </tr>
           </thead>
           <tbody>
-            {(rows ?? []).map((r) => (
+            {[...(rows ?? [])].reverse().map((r) => (
               <tr key={r.id} className={s.row} style={{ borderTop: '1px solid #F1E7DA' }}>
                 <td style={{ padding: '12px 20px' }}>
                   <Link href={`/admin/sets/${r.id}`} style={{ display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', color: 'inherit' }}>

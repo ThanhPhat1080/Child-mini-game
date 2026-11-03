@@ -90,7 +90,7 @@ describe('loadCards', () => {
     h.selectResult = { data: [{ id: 'a', word: 'cat', image_path: 'cards/a.png', audio_path: null, active: false, group_id: null }], error: null };
     await expect(loadCards()).resolves.toEqual([{ id: 'a', isNew: false, word: 'cat', image: 'cards/a.png', audio: null, active: false, groupId: null }]);
     expect(h.from).toHaveBeenCalledWith('memory_cards');
-    expect(h.order).toHaveBeenCalledWith('created_at');
+    expect(h.order).toHaveBeenCalledWith('created_at', { ascending: false });
   });
   it('throws the Supabase error message', async () => {
     h.selectResult = { data: null, error: { message: 'boom' } };
@@ -103,8 +103,8 @@ describe('commitPendingMap', () => {
     const a = addPending(file('a.png'));
     const b = addPending(file('b.mp3', 'audio/mpeg'));
     const out = await commitPendingMap(new Map([[a, 'cards'], [b, 'card-voices']]));
-    expect(out.get(a)).toMatch(/^cards\/\d+-[0-9a-f]{8}\.png$/);
-    expect(out.get(b)).toMatch(/^card-voices\/\d+-[0-9a-f]{8}\.mp3$/);
+    expect(out.get(a)).toMatch(/^cards\/[A-Za-z0-9-]*-[0-9a-z]{13}\.png$/);
+    expect(out.get(b)).toMatch(/^card-voices\/[A-Za-z0-9-]*-[0-9a-z]{13}\.mp3$/);
   });
   it('removes what it uploaded and rethrows when one fails', async () => {
     h.upload.mockResolvedValueOnce({ error: null }).mockResolvedValueOnce({ error: { message: 'boom' } });
@@ -125,7 +125,7 @@ describe('saveCards', () => {
     expect(h.log).toEqual(['upload', 'upsert', 'remove']);
     expect(h.remove.mock.calls[0][0]).toEqual(['cards/old.png']);
     const row = h.upsert.mock.calls[0][0][0];
-    expect(row.image_path).toMatch(/^cards\/\d+-[0-9a-f]{8}\.png$/);
+    expect(row.image_path).toMatch(/^cards\/[A-Za-z0-9-]*-[0-9a-z]{13}\.png$/);
     expect(h.upsert.mock.calls[0][1]).toEqual({ onConflict: 'id' });
   });
 
@@ -185,7 +185,7 @@ describe('saveCards', () => {
     expect(h.remove).toHaveBeenCalledTimes(1);
     const removed = h.remove.mock.calls[0][0] as string[];
     expect(removed).toHaveLength(1);
-    expect(removed[0]).toMatch(/^cards\/\d+-/);
+    expect(removed[0]).toMatch(/^cards\/[A-Za-z0-9-]+-/);
   });
 
   it('keeps old files when the table delete fails', async () => {

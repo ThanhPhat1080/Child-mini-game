@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase/client';
 import { mediaUrl, removeMedia } from '@/lib/media';
-import { forgetUploads } from '@/lib/media/uploads';
 import { applause, ohOh, speakKid, yay, type SoundHandle } from '@/lib/sfx';
 import styles from '../../admin.module.css';
+import { Toast, useToast } from '@/components/admin/Toast';
+import { useMediaRenamed } from '@/lib/media/renames';
+import { replacePath } from '@/lib/mediaPaths';
+import { RevertButton, SaveButton } from '@/components/admin/SaveButtons';
 import { LibraryButton } from '@/components/admin/LibraryButton';
 import { PlayButton } from '@/components/admin/PlayButton';
 
@@ -20,7 +23,7 @@ const baseName = (p: string | null) => (p ? p.split('/').pop() ?? p : null);
 /** Play-state key of one sound setting. Keyed by setting, not by file: two settings may share one file. */
 const fileKey = (k: AudioKind) => `file:${k}`;
 
-/** Every choice here is a preview until "Save changes"; "Revert" drops it (A25, A26). */
+/** Every choice here is a preview until "Save"; "Revert" drops it (A25, A26). */
 export default function SettingsPage() {
   const [row, setRow] = useState<Row | null>(null);
   const [childName, setChildName] = useState('');
@@ -28,14 +31,15 @@ export default function SettingsPage() {
   /** An avatar chosen from the library, not saved yet (A24). */
   const [avatarDraft, setAvatarDraft] = useState<string | null>(null);
   const [soundDraft, setSoundDraft] = useState<SoundDraft>({});
-  const [toast, setToast] = useState<{ text: string; error: boolean } | null>(null);
+  const { toast, show: showToast, close: closeToast } = useToast();
+  // a file renamed in the library: the row and the choices not saved yet follow it
+  useMediaRenamed(useCallback((from: string, to: string) => {
+    setRow((v) => replacePath(v, from, to)); setAvatarDraft((v) => replacePath(v, from, to)); setSoundDraft((v) => replacePath(v, from, to));
+  }, []));
+  const [saving, setSaving] = useState(false);
   const preview = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
 
-  const say = (text: string, error = false) => {
-    setToast({ text, error });
-    setTimeout(() => setToast(null), 3000);
-  };
 
   /** What the row shows and plays: the draft if there is one, else the saved file. */
   const shown = (k: AudioKind): string | null => (k in soundDraft ? soundDraft[k] ?? null : (row?.[COLUMN[k]] as string | null | undefined) ?? null);
@@ -47,7 +51,7 @@ export default function SettingsPage() {
       .eq('id', 1)
       .single()
       .then(({ data, error }) => {
-        if (error || !data) return say(error?.message ?? 'Could not load settings', true);
+        if (error || !data) return showToast('error', error?.message ?? 'Could not load settings');
         const r = data as Row;
         setRow(r);
         setChildName(r.child_name);
@@ -63,6 +67,11 @@ export default function SettingsPage() {
   }
 
   async function save() {
+    setSaving(true);
+    try { await doSave(); } finally { setSaving(false); }
+  }
+
+  async function doSave() {
     const patch: Partial<Row> = { child_name: childName.trim(), music_volume: volume };
     const replaced: string[] = []; // files no setting uses any more, removed after a successful save
     if (avatarDraft) {
@@ -76,14 +85,14 @@ export default function SettingsPage() {
       if (old && old !== path) replaced.push(old);
     }
     const { error } = await createSupabaseBrowserClient().from('settings').update(patch).eq('id', 1);
-    if (error) return say(error.message, true);
+    if (error) return showToast('error', error.message);
     setRow((r) => (r ? { ...r, ...patch } : r));
     setAvatarDraft(null);
     setSoundDraft({});
-    forgetUploads();
+   
     stopPreview();
     const failed = await removeMedia(replaced);
-    say(failed ? 'Saved, but an old file could not be removed from storage.' : 'Saved.', !!failed);
+    if (failed) showToast('warning', 'Saved, but an old file could not be removed from storage.'); else showToast('success', 'Saved');
   }
 
   /** Drops unsaved edits and goes back to the last saved values. */
@@ -93,9 +102,9 @@ export default function SettingsPage() {
     setVolume(row.music_volume);
     setAvatarDraft(null);
     setSoundDraft({});
-    forgetUploads();
+   
     stopPreview();
-    say('Changes reverted.');
+    showToast('success', 'Changes reverted.');
   }
 
   const soundChanged = (Object.keys(soundDraft) as AudioKind[]).some((k) => (soundDraft[k] ?? null) !== ((row?.[COLUMN[k]] as string | null | undefined) ?? null));
@@ -105,13 +114,13 @@ export default function SettingsPage() {
   function chooseSound(kind: AudioKind, path: string) {
     if (playing === fileKey(kind)) stopPreview();
     setSoundDraft((d) => ({ ...d, [kind]: path }));
-    say('Sound chosen. Press Save changes to apply it.');
+    showToast('success', 'Sound chosen. Press Save to apply it.');
   }
 
   function removeSound(kind: AudioKind) {
     if (playing === fileKey(kind)) stopPreview();
     setSoundDraft((d) => ({ ...d, [kind]: null }));
-    say('Built-in sound chosen. Press Save changes to apply it.');
+    showToast('success', 'Built-in sound chosen. Press Save to apply it.');
   }
 
   /** Preview of the built-in sound when no custom track is set. Play / pause like the other rows. */
@@ -190,8 +199,8 @@ export default function SettingsPage() {
           <p className={styles.sub}>What the child sees and hears on the Welcome screen.</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button type="button" className={styles.ghost} style={{ height: 46 }} onClick={revert} disabled={!dirty}>Revert</button>
-          <button type="button" className={styles.primary} style={{ height: 46 }} onClick={save}>Save changes</button>
+          <RevertButton saving={saving} dirty={dirty} onClick={revert} />
+          <SaveButton saving={saving} enabled={dirty} onClick={save} />
         </div>
       </div>
 
@@ -210,8 +219,8 @@ export default function SettingsPage() {
             <input id="cn" className={`${styles.input} ${styles.nameInput}`} type="text" value={childName} onChange={(e) => setChildName(e.target.value)} />
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-            <LibraryButton kind="image" label="avatar" onChoose={(path) => { setAvatarDraft(path); say('Avatar chosen. Press Save changes to apply it.'); }} />
-            <span className={styles.note}>Applied when you press Save changes.</span>
+            <LibraryButton kind="image" label="avatar" onChoose={(path) => { setAvatarDraft(path); showToast('success', 'Avatar chosen. Press Save to apply it.'); }} />
+            <span className={styles.note}>Applied when you press Save.</span>
           </div>
         </div>
       </section>
@@ -282,7 +291,7 @@ export default function SettingsPage() {
         })}
       </section>
 
-      {toast && <div role="status" className={`${styles.toast} ${toast.error ? styles.toastErr : ''}`}>{toast.text}</div>}
+      <Toast toast={toast} onClose={closeToast} />
     </>
   );
 }

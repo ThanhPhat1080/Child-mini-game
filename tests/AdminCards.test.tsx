@@ -95,12 +95,13 @@ describe('Admin cards page (A11, A13)', () => {
     expect(toggle(2).checked).toBe(false);
   });
 
-  it('"Add card" appends an empty card', async () => {
+  it('"Add card" puts an empty card at the top', async () => {
     await renderWith([card(1)]);
     fireEvent.click(screen.getByRole('button', { name: 'Add card' }));
-    expect(word(2).value).toBe('');
-    expect(toggle(2).checked).toBe(true);
-    expect(screen.queryByRole('img', { name: 'Card 2 picture' })).toBeNull();
+    expect(word(1).value).toBe('');
+    expect(word(2).value).toBe('word1');
+    expect(toggle(1).checked).toBe(true);
+    expect(screen.queryByRole('img', { name: 'Card 1 picture' })).toBeNull();
   });
 
   it('Save stays disabled until every card is complete and something changed', async () => {
@@ -108,9 +109,9 @@ describe('Admin cards page (A11, A13)', () => {
     expect(saveBtn().disabled).toBe(true); // nothing changed yet
     fireEvent.click(screen.getByRole('button', { name: 'Add card' }));
     expect(saveBtn().disabled).toBe(true); // new card has no word and no picture
-    fireEvent.change(word(2), { target: { value: 'lion' } });
+    fireEvent.change(word(1), { target: { value: 'lion' } });
     expect(saveBtn().disabled).toBe(true); // still no picture
-    await chooseFromLibrary('card 2 picture', 'lion.png');
+    await chooseFromLibrary('card 1 picture', 'lion.png');
     expect(saveBtn().disabled).toBe(false);
   });
 
@@ -315,7 +316,7 @@ describe('Admin cards page (A11, A13)', () => {
     });
   });
 
-  it('Quick import cards appends them as unsaved changes; identical SVG shares one pending token', async () => {
+  it('Quick import cards puts them at the top as unsaved changes; identical SVG shares one pending token', async () => {
     const tokens = new Map<string, string>();
     h.svgToPending.mockImplementation((svg: string) => {
       if (!tokens.has(svg)) tokens.set(svg, `pending:svg${tokens.size + 1}`);
@@ -334,12 +335,12 @@ describe('Admin cards page (A11, A13)', () => {
     fireEvent.change(input, { target: { files: [f] } });
     fireEvent.click(await screen.findByRole('button', { name: 'Import 4 cards' }));
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect([2, 3, 4, 5].map((n) => word(n).value)).toEqual(['lion', 'tiger', 'bear', 'fox']);
+    expect([1, 2, 3, 4].map((n) => word(n).value)).toEqual(['lion', 'tiger', 'bear', 'fox']);
     expect(tokens.size).toBe(1);
+    expect(screen.getByRole('img', { name: 'Card 1 picture' }).getAttribute('src')).toBe('blob:pending:svg1');
     expect(screen.getByRole('img', { name: 'Card 2 picture' }).getAttribute('src')).toBe('blob:pending:svg1');
-    expect(screen.getByRole('img', { name: 'Card 3 picture' }).getAttribute('src')).toBe('blob:pending:svg1');
-    expect(toggle(5).checked).toBe(false);
-    expect(screen.queryByRole('img', { name: 'Card 5 picture' })).toBeNull();
+    expect(toggle(4).checked).toBe(false);
+    expect(screen.queryByRole('img', { name: 'Card 4 picture' })).toBeNull();
     expect(saveBtn().disabled).toBe(true); // fox has no picture yet
     expect(screen.getByText(/1 card needs a picture/)).toBeTruthy();
     expect(h.saveCards).not.toHaveBeenCalled();
@@ -633,10 +634,10 @@ describe('Admin cards page: groups (A17, A18)', () => {
     expect(saveBtn().disabled).toBe(false); // a group with no cards is fine, cards without a group are fine
     fireEvent.click(screen.getByRole('button', { name: 'Add card' }));
     expect(saveBtn().disabled).toBe(true);
-    fireEvent.change(picker(2), { target: { value: picker(2).options[1].value } });
+    fireEvent.change(picker(1), { target: { value: picker(1).options[1].value } });
     expect(saveBtn().disabled).toBe(true); // a group never completes a card
-    fireEvent.change(word(2), { target: { value: 'robin' } });
-    await chooseFromLibrary('card 2 picture', 'robin.png');
+    fireEvent.change(word(1), { target: { value: 'robin' } });
+    await chooseFromLibrary('card 1 picture', 'robin.png');
     expect(saveBtn().disabled).toBe(false);
   });
 

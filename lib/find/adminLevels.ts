@@ -55,22 +55,13 @@ export const smallCount = (l: ELevel): number => l.objects.filter((o) => o.r < S
 export const levelMediaPaths = (l: ELevel): string[] =>
   [l.image, ...l.objects.map((o) => o.audio_path)].filter(isBucketPath);
 
-/** Swaps a level with its neighbour; out-of-range moves return a copy of the same order. */
-export function moveFindLevel(list: ELevel[], index: number, dir: -1 | 1): ELevel[] {
-  const next = [...list];
-  const to = index + dir;
-  if (index < 0 || index >= list.length || to < 0 || to >= list.length) return next;
-  [next[index], next[to]] = [next[to], next[index]];
-  return next;
-}
-
-/** Every level, active or not (admin view), in play order. */
+/** Every level, active or not (admin view), in the order they were created. Saving writes that order as the play order. */
 export async function loadFindLevels(): Promise<ELevel[]> {
   const { data, error } = await createSupabaseBrowserClient()
     .from('find_levels')
     .select('id, image_path, objects, active, sort_order')
-    .order('sort_order')
-    .order('created_at');
+    .order('created_at')
+    .order('sort_order');
   if (error) throw new Error(error.message);
   return ((data ?? []) as Row[]).map((r) => ({
     id: r.id,

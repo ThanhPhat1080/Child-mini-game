@@ -1,15 +1,18 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { isLevelComplete, loadLevels, moveLevel, newLevel, saveLevels, type ELevel } from '@/lib/spot/adminLevels';
+import { isLevelComplete, loadLevels, newLevel, saveLevels, type ELevel } from '@/lib/spot/adminLevels';
 import { aspectsClose } from '@/lib/spot/validate';
 import type { Crop } from '@/lib/crop/geometry';
 import { naturalSize } from '@/lib/spot/imageSize';
 import { clearPending, mediaUrl, svgToPending } from '@/lib/media';
-import { forgetUploads } from '@/lib/media/uploads';
 import { checkSvg } from '@/lib/quizImport';
+import { Toast, useToast } from '@/components/admin/Toast';
+import { useMediaRenamed } from '@/lib/media/renames';
+import { replacePath } from '@/lib/mediaPaths';
 import { CardsHeaderActions } from '@/components/admin/CardsHeaderActions';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
+import { SortToggle, displayOrder } from '@/components/admin/LevelSort';
 import { SpotLevelPanel } from '@/components/admin/SpotLevelPanel';
 import s from '@/components/admin/admin-ui.module.css';
 
@@ -21,10 +24,15 @@ export default function SpotPage() {
   const [confirm, setConfirm] = useState<number | null>(null);
   /** Picture A's crop per level, kept while editing: picture B starts from it (A25). Cleared on Save and Revert. */
   const [aCrops, setACrops] = useState<Record<string, Crop>>({});
+  /** Display order: newest (last created) first by default. A level's number does not change with it. */
+  const [desc, setDesc] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [warning, setWarning] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const { toast, show: showToast, close: closeToast } = useToast();
+  // a file renamed in the library: edits not saved yet follow it
+  useMediaRenamed(useCallback((from: string, to: string) => {
+    setSaved((v) => replacePath(v, from, to)); setDraft((v) => replacePath(v, from, to));
+  }, []));
   const [ratios, setRatios] = useState<Record<string, number>>({});
   const asked = useRef(new Set<string>());
 
@@ -70,7 +78,7 @@ export default function SpotPage() {
   const incomplete = draft.filter((l) => !isLevelComplete(l)).length;
   const canSave = dirty && incomplete === 0 && !busy;
 
-  const touch = () => { setNotice(null); setError(null); setWarning(null); };
+  const touch = () => { closeToast(); setError(null); };
   const edit = (id: string, patch: Partial<ELevel>) => { touch(); setDraft(draft.map((l) => (l.id === id ? { ...l, ...patch } : l))); };
   const say = (id: string, text: string | null) => setMsgs((m) => { const n = { ...m }; if (text) n[id] = text; else delete n[id]; return n; });
 
@@ -88,10 +96,10 @@ export default function SpotPage() {
     edit(id, { [side]: svgToPending(r.svg) });
   }
 
-  function add() { touch(); setDraft([newLevel(), ...draft!]); }
+  function add() { touch(); setDraft([...draft!, newLevel()]); }
 
   function revert() {
-    clearPending(); forgetUploads(); // nothing was uploaded, so there is nothing to delete
+    clearPending(); // nothing was uploaded, so there is nothing to delete
     setACrops({});
     setDraft(saved); setMsgs({}); touch();
   }
@@ -100,9 +108,8 @@ export default function SpotPage() {
     if (!draft || !saved || !canSave) return;
     setBusy(true); touch();
     const r = await saveLevels(saved, draft);
-    if (r.error) { setError(r.error); setBusy(false); return; }
-    if (r.warning) setWarning(r.warning);
-    if (await load()) { clearPending(); forgetUploads(); setACrops({}); setMsgs({}); setNotice('Saved'); }
+    if (r.error) { showToast('error', r.error); setBusy(false); return; }
+    if (await load()) { clearPending(); setACrops({}); setMsgs({}); showToast(r.warning ? 'warning' : 'success', r.warning ?? 'Saved'); }
     setBusy(false);
   }
 
@@ -117,7 +124,6 @@ export default function SpotPage() {
   if (busy) status = 'Saving…';
   else if (incomplete) status = `${incomplete} ${incomplete === 1 ? 'level needs' : 'levels need'} two pictures and 3 to 10 spots before you can save.`;
   else if (dirty) status = 'Unsaved changes. Press Save to keep them.';
-  else if (notice) status = notice;
 
   return (
     <>
@@ -133,18 +139,17 @@ export default function SpotPage() {
       </div>
 
       {error && <p role="alert" style={{ margin: 0, color: '#A8484F', fontWeight: 700, fontSize: 14 }}>{error}</p>}
-      {warning && <p role="status" style={{ margin: 0, color: '#7A5410', fontWeight: 700, fontSize: 14 }}>{warning}</p>}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {draft.map((l, i) => (
+        <SortToggle desc={desc} onToggle={() => setDesc(!desc)} />
+        {displayOrder(draft, desc).map(({ level: l, i }) => (
           <SpotLevelPanel
-            key={l.id} l={l} n={i + 1} count={draft.length} message={msgs[l.id] ?? null} shapeWarning={shapeOff(l)}
+            key={l.id} l={l} n={i + 1} message={msgs[l.id] ?? null} shapeWarning={shapeOff(l)}
             startCrop={aCrops[l.id]}
             onCropped={(side, c) => { if (side === 'a') setACrops((m) => ({ ...m, [l.id]: c })); }}
             onEdit={(patch) => edit(l.id, patch)}
             onChooseLibrary={(side, path) => chooseLibrary(l.id, side, path)}
             onSvg={(side, code) => applySvg(l.id, side, code)}
-            onMove={(dir) => { touch(); setDraft(moveLevel(draft, i, dir)); }}
             onAskDelete={() => setConfirm(i)}
           />
         ))}
@@ -159,6 +164,7 @@ export default function SpotPage() {
           onConfirm={() => { touch(); setDraft(draft.filter((_, k) => k !== confirm)); say(doomed.id, null); setConfirm(null); }}
         />
       )}
+      <Toast toast={toast} onClose={closeToast} />
     </>
   );
 }

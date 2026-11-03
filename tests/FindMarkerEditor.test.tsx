@@ -1,7 +1,10 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FindMarkerEditor } from '@/components/admin/FindMarkerEditor';
 import type { EObject } from '@/lib/find/adminLevels';
+
+const say = vi.hoisted(() => ({ sayWord: vi.fn(), stopWord: vi.fn() }));
+vi.mock('@/lib/memory/cards', () => say);
 
 afterEach(cleanup);
 
@@ -136,5 +139,31 @@ describe('FindMarkerEditor (A21)', () => {
     const { onChange } = setup([o(0.2, 0.2, 0.06, 'cat', 'sound/cat.mp3'), o(0.6, 0.6)]);
     fireEvent.click(screen.getByRole('button', { name: 'Clear sound for object 1' }));
     expect(onChange).toHaveBeenCalledWith([o(0.2, 0.2, 0.06, 'cat', null), o(0.6, 0.6)]);
+  });
+
+  it('Play is on without a sound when the object has a word: the browser says it', () => {
+    setup([o(0.2, 0.2, 0.06, 'cat')]);
+    const play = screen.getByRole('button', { name: 'Play sound for object 1' }) as HTMLButtonElement;
+    expect(play.disabled).toBe(false);
+    fireEvent.click(play);
+    expect(say.sayWord).toHaveBeenCalledWith({ word: 'cat', audio_path: null }, expect.any(Function));
+  });
+
+  it('shows Pause while the browser says the word, Play again when it ends or is paused', () => {
+    setup([o(0.2, 0.2, 0.06, 'cat')]);
+    fireEvent.click(screen.getByRole('button', { name: 'Play sound for object 1' }));
+    expect(screen.getByRole('button', { name: 'Pause sound for object 1' })).toBeTruthy();
+    const end = say.sayWord.mock.calls.at(-1)![1] as () => void;
+    act(() => end());
+    expect(screen.getByRole('button', { name: 'Play sound for object 1' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Play sound for object 1' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Pause sound for object 1' }));
+    expect(say.stopWord).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Play sound for object 1' })).toBeTruthy();
+  });
+
+  it('Play is off only when the object has neither a sound nor a word', () => {
+    setup([o(0.2, 0.2)]);
+    expect((screen.getByRole('button', { name: 'Play sound for object 1' }) as HTMLButtonElement).disabled).toBe(true);
   });
 });

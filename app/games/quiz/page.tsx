@@ -10,15 +10,16 @@ import { SetCard, type SetCardData } from '@/components/SetCard';
 import { MusicButton } from '@/components/MusicButton';
 import { QuizHelp } from '@/components/QuizHelp';
 import { handleChoiceKey } from '@/lib/keynav';
+import { hasAnswerContent } from '@/lib/sets';
 
 const PITCH = 544; // card width 480 + gap 64
 const cards = () => Array.from(document.querySelectorAll<HTMLElement>('a[data-set-card]'));
 
-type Row = Omit<SetCardData, 'count'> & { questions: { prompt_text: string | null; prompt_audio_path: string | null; answers: { image_path: string | null; is_correct: boolean }[] }[] };
+type Row = Omit<SetCardData, 'count'> & { questions: { prompt_text: string | null; prompt_audio_path: string | null; answers: { image_path: string | null; text: string | null; is_correct: boolean }[] }[] };
 
 function isComplete(q: Row['questions'][number]): boolean {
   const a = q.answers;
-  return (!!q.prompt_text?.trim() || !!q.prompt_audio_path) && a.length >= 2 && a.length <= 3 && a.every((x) => x.image_path) && a.filter((x) => x.is_correct).length === 1;
+  return (!!q.prompt_text?.trim() || !!q.prompt_audio_path) && a.length >= 2 && a.length <= 3 && a.every((x) => hasAnswerContent(x.image_path, x.text)) && a.filter((x) => x.is_correct).length === 1;
 }
 
 /** Quiz set selection (C3/C11). Only published sets are visible to anon (RLS). */
@@ -40,7 +41,7 @@ export default function QuizSets() {
   useEffect(() => {
     createSupabaseBrowserClient()
       .from('quiz_sets')
-      .select('id, title, subtitle, heading_color, cover_path, questions(prompt_text, prompt_audio_path, answers(image_path, is_correct))')
+      .select('id, title, subtitle, heading_color, cover_path, questions(prompt_text, prompt_audio_path, answers(image_path, text, is_correct))')
       .eq('status', 'published')
       .order('position')
       .then(({ data }) => {

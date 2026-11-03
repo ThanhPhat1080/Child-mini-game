@@ -63,10 +63,10 @@ describe('commitPendingMedia (Save)', () => {
     const folders = upload.mock.calls.map((c) => (c[0] as string).split('/')[0]).sort();
     expect(folders).toEqual(['answers', 'covers', 'voices']);
     expect(uploaded).toHaveLength(3);
-    expect(out.cover).toMatch(/^covers\/\d+-[0-9a-f]{8}\.svg$/);
-    expect(out.qs[0].imgs[0]).toMatch(/^answers\/\d+-[0-9a-f]{8}\.svg$/);
+    expect(out.cover).toMatch(/^covers\/[A-Za-z0-9-]*-[0-9a-z]{13}\.svg$/);
+    expect(out.qs[0].imgs[0]).toMatch(/^answers\/[A-Za-z0-9-]*-[0-9a-z]{13}\.svg$/);
     expect(out.qs[0].imgs[1]).toBe('answers/old.png');
-    expect(out.qs[0].voice).toMatch(/^voices\/\d+-[0-9a-f]{8}\.mp3$/);
+    expect(out.qs[0].voice).toMatch(/^voices\/[A-Za-z0-9-]*-[0-9a-z]{13}\.mp3$/);
     expect(JSON.stringify(out)).not.toContain('pending:');
   });
 

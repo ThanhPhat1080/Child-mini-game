@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { clearPending, commitPendingMedia, materializeSvg, mediaUrl, removeMedia, svgToPending } from '@/lib/media';
-import { forgetUploads } from '@/lib/media/uploads';
 import { pathsToDelete, setMediaPaths } from '@/lib/mediaPaths';
 import { SetCard } from '@/components/SetCard';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
@@ -13,6 +12,10 @@ import { PRESETS, type PresetKey, blankSet, deleteSet, isQuestionComplete, loadS
 import s from './admin-ui.module.css';
 import { QuestionPanel } from './QuestionPanel';
 import { LibraryButton } from './LibraryButton';
+import { Toast, useToast, type ToastKind } from './Toast';
+import { useMediaRenamed } from '@/lib/media/renames';
+import { replacePath } from '@/lib/mediaPaths';
+import { RevertButton, SaveButton } from './SaveButtons';
 import { SvgPaste } from './SvgPaste';
 import { checkSvg } from '@/lib/quizImport';
 import { CheckOption, panel, inputStyle, ghostBtn, dangerBtn, fileName, Img, PicIcon, Eye, Shell } from './editor-parts';
@@ -33,13 +36,16 @@ export function SetEditor({ setId }: { setId: string }) {
   const [deleted, setDeleted] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [missing, setMissing] = useState(false);
-  const [toast, setToast] = useState<{ text: string; error: boolean } | null>(null);
+  const { toast, show: showToast, close: closeToast } = useToast();
+  // a file renamed in the library: edits not saved yet follow it
+  useMediaRenamed(useCallback((from: string, to: string) => {
+    setD((v) => replacePath(v, from, to)); setSaved((v) => replacePath(v, from, to));
+  }, []));
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const say = useCallback((text: string, error = false) => {
-    setToast({ text, error });
-    setTimeout(() => setToast(null), 3000);
-  }, []);
+  const say = useCallback((text: string, kind: ToastKind | boolean = 'success') => {
+    showToast(kind === true ? 'error' : kind === false ? 'success' : kind, text);
+  }, [showToast]);
 
   const init = useCallback(async () => {
     if (isNewRoute) { const b = blankSet(); setD(b); setSaved(b); setCur(-1); return; }
@@ -106,20 +112,20 @@ export function SetEditor({ setId }: { setId: string }) {
       if (fresh) {
         setD(fresh); setSaved(fresh); setHexText(null);
         clearPending();
-        forgetUploads();
+       
         // the database now decides what is still used; free everything else (T15)
         const stale = pathsToDelete(setMediaPaths(saved), setMediaPaths(fresh), uploaded);
         cleanupFailed = !!(await removeMedia(stale));
       }
     } catch { /* keep local state */ }
     if (err) return;
-    if (cleanupFailed) say('Saved, but some old files could not be removed from storage.', true); else say('Saved');
+    if (cleanupFailed) say('Saved, but some old files could not be removed from storage.', 'warning'); else say('Saved');
     if (d.isNew) router.replace(`/admin/sets/${d.id}`);
   }
 
   function revert() {
     if (!saved) return;
-    clearPending(); forgetUploads(); // nothing was uploaded, so there is nothing to delete
+    clearPending(); // nothing was uploaded, so there is nothing to delete
     setD(saved); setHexText(null); setNameError(false);
     setCur(saved.qs.length ? Math.min(Math.max(cur, 0), saved.qs.length - 1) : -1);
   }
@@ -176,7 +182,7 @@ export function SetEditor({ setId }: { setId: string }) {
       else {
         clearPending();
         setSaved(d); setDeleted(true);
-        if (r.warning) say(r.warning, true);
+        if (r.warning) say(r.warning, 'warning');
       }
     }
   }
@@ -215,8 +221,8 @@ export function SetEditor({ setId }: { setId: string }) {
               ) : (
                 <button type="button" disabled title={previewHint} className={s.btn} style={{ height: 44, padding: '0 18px', borderRadius: 12, border: '1.5px solid #EADCC8', background: '#F6EFE6', color: '#A8968A', fontWeight: 700, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8, boxSizing: 'border-box', fontFamily: 'Nunito, sans-serif' }}><Eye />Preview as child</button>
               )}
-              <button type="button" onClick={revert} disabled={!dirty || busy} className={`${s.btn} ${s.ghost}`} style={{ height: 44, padding: '0 20px', borderRadius: 12, border: '1.5px solid #E3D5C4', background: '#fff', color: '#4A3830', fontSize: 15, fontWeight: 700, fontFamily: 'Nunito, sans-serif', cursor: 'pointer', opacity: dirty ? 1 : 0.5 }}>Revert</button>
-              <button type="button" onClick={doSave} disabled={busy || (!dirty && !d.isNew)} className={s.btn} style={{ height: 44, padding: '0 22px', borderRadius: 12, border: 'none', background: '#5A4038', color: '#fff', fontSize: 15, fontWeight: 700, fontFamily: 'Nunito, sans-serif', cursor: 'pointer', opacity: busy || (!dirty && !d.isNew) ? 0.6 : 1 }}>{busy ? 'Saving…' : 'Save'}</button>
+              <RevertButton saving={busy} dirty={dirty} onClick={revert} />
+              <SaveButton saving={busy} enabled={dirty || d.isNew} onClick={doSave} />
             </div>
             <span style={{ fontSize: 13, color: '#7A6458', maxWidth: 420, textAlign: 'right' }}>{previewHint}</span>
           </div>
@@ -338,7 +344,7 @@ export function SetEditor({ setId }: { setId: string }) {
         />
       )}
       {confirm && <ConfirmDialog title={confirmTitle} body={confirmBody} button={confirmButton} busy={busy} onCancel={() => setConfirm(null)} onConfirm={confirmDelete} />}
-      {toast && <div role="status" className={`${s.toast} ${toast.error ? s.toastErr : ''}`}>{toast.text}</div>}
+      <Toast toast={toast} onClose={closeToast} />
     </Shell>
   );
 }

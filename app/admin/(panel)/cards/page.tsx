@@ -9,9 +9,11 @@ import { sortHealth, weakGroups } from '@/lib/sort/groups';
 import { LEVELS, pairsOf } from '@/lib/memory/deck';
 import { sayWord } from '@/lib/memory/cards';
 import { clearPending, svgToPending } from '@/lib/media';
-import { forgetUploads } from '@/lib/media/uploads';
+import { useMediaRenamed } from '@/lib/media/renames';
+import { replacePath } from '@/lib/mediaPaths';
 import { checkSvg } from '@/lib/quizImport';
 import { CardImportDialog } from '@/components/admin/CardImportDialog';
+import { Toast, useToast } from '@/components/admin/Toast';
 import { CardsHeaderActions } from '@/components/admin/CardsHeaderActions';
 import { ConfirmDialog } from '@/components/admin/ConfirmDialog';
 import { GroupsPanel } from '@/components/admin/GroupsPanel';
@@ -31,8 +33,11 @@ export default function CardsPage() {
   const [confirm, setConfirm] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [warning, setWarning] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const { toast, show: showToast, close: closeToast } = useToast();
+  // a file renamed in the library: edits not saved yet follow it
+  useMediaRenamed(useCallback((from: string, to: string) => {
+    setSaved((v) => replacePath(v, from, to)); setDraft((v) => replacePath(v, from, to));
+  }, []));
   const [importOpen, setImportOpen] = useState(false);
   const [focusId, setFocusId] = useState<string | null>(null);
 
@@ -80,7 +85,7 @@ export default function CardsPage() {
   const usage = new Map<string, number>();
   for (const c of draft) if (c.groupId) usage.set(c.groupId, (usage.get(c.groupId) ?? 0) + 1);
 
-  const touch = () => { setNotice(null); setError(null); setWarning(null); };
+  const touch = () => { closeToast(); setError(null); };
   const edit = (id: string, patch: Partial<ECard>) => { touch(); setDraft(draft.map((c) => (c.id === id ? { ...c, ...patch } : c))); };
   const say = (id: string, text: string | null) => setMsgs((m) => { const n = { ...m }; if (text) n[id] = text; else delete n[id]; return n; });
 
@@ -127,7 +132,7 @@ export default function CardsPage() {
   function add() {
     const c = newCard();
     touch();
-    setDraft([...draft!, c]);
+    setDraft([c, ...draft!]);
     setFocusId(c.id);
   }
 
@@ -135,12 +140,12 @@ export default function CardsPage() {
     // SVG code becomes one pending file per distinct drawing; blank pictures stay incomplete until picked
     const added = imported.map((c) => ({ ...c, image: c.image?.startsWith('<') ? svgToPending(c.image) : c.image }));
     touch();
-    setDraft([...draft!, ...added]);
+    setDraft([...added, ...draft!]);
     setImportOpen(false);
   }
 
   function revert() {
-    clearPending(); forgetUploads(); // nothing was uploaded, so there is nothing to delete
+    clearPending(); // nothing was uploaded, so there is nothing to delete
     setDraft(saved); setDraftGroups(savedGroups); setMsgs({}); touch();
   }
 
@@ -149,21 +154,20 @@ export default function CardsPage() {
     if (!draft || !saved || !draftGroups || !savedGroups || !canSave) return;
     setBusy(true); touch();
     const g = await saveGroups(savedGroups, draftGroups);
-    if (g.error) { setError(groupSaveError(g.error)); setBusy(false); return; }
+    if (g.error) { showToast('error', groupSaveError(g.error)); setBusy(false); return; }
     const r = await saveCards(saved, pruneDeletedGroups(draft, draftGroups));
-    if (r.error) { setError(r.error); setBusy(false); return; }
+    if (r.error) { showToast('error', r.error); setBusy(false); return; }
     const keep = new Set(draftGroups.map((x) => x.id));
     const gone = savedGroups.map((x) => x.id).filter((id) => !keep.has(id));
     if (gone.length) {
       const d = await deleteGroups(gone);
       if (d.error) {
         // the cards are saved (their files uploaded): take them as saved, keep the group edits so Save can retry the delete
-        if (await load(true)) { clearPending(); forgetUploads(); setMsgs({}); }
-        setError(d.error); setBusy(false); return;
+        if (await load(true)) { clearPending(); setMsgs({}); }
+        showToast('error', d.error); setBusy(false); return;
       }
     }
-    if (r.warning) setWarning(r.warning);
-    if (await load()) { clearPending(); forgetUploads(); setMsgs({}); setNotice('Saved'); }
+    if (await load()) { clearPending(); setMsgs({}); showToast(r.warning ? 'warning' : 'success', r.warning ?? 'Saved'); }
     setBusy(false);
   }
 
@@ -172,7 +176,6 @@ export default function CardsPage() {
   if (busy) status = 'Saving…';
   else if (incomplete) status = `${incomplete} ${incomplete === 1 ? 'card needs' : 'cards need'} a picture and a word before you can save.`;
   else if (dirty) status = 'Unsaved changes. Press Save to keep them.';
-  else if (notice) status = notice;
 
   return (
     <>
@@ -188,7 +191,6 @@ export default function CardsPage() {
       </div>
 
       {error && <p role="alert" style={{ margin: 0, color: '#A8484F', fontWeight: 700, fontSize: 14 }}>{error}</p>}
-      {warning && <p role="status" style={{ margin: 0, color: '#7A5410', fontWeight: 700, fontSize: 14 }}>{warning}</p>}
 
       <section style={{ background: '#fff', borderRadius: 18, padding: '18px 22px', boxShadow: '0 1px 0 #EADCC8', display: 'flex', flexDirection: 'column', gap: 4 }}>
         <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>Levels</h2>
@@ -230,6 +232,7 @@ export default function CardsPage() {
           onConfirm={() => { touch(); setDraft(draft.filter((_, k) => k !== confirm)); say(doomed.id, null); setConfirm(null); }}
         />
       )}
+      <Toast toast={toast} onClose={closeToast} />
     </>
   );
 }

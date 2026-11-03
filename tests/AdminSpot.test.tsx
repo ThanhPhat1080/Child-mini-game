@@ -54,6 +54,8 @@ async function renderWith(list: ELevel[]) {
   h.loadLevels.mockResolvedValue(list);
   render(<SpotPage />);
   await screen.findByRole('button', { name: 'Add level' });
+  // saved levels start collapsed; most tests need them open
+  for (const b of screen.queryAllByRole('button', { name: /^Expand level/ })) fireEvent.click(b);
 }
 
 /** Stubs the picture's rect so a click at fractions (fx, fy) maps back to them. */
@@ -82,7 +84,7 @@ describe('Admin Spot page (A14-A16)', () => {
     expect(screen.getByRole('img', { name: 'Level 1 picture A thumbnail' }).getAttribute('src')).toBe('/media/spot/1a.png');
   });
 
-  it('Add level sits in the header beside Revert and Save, in blue, and a new level goes on top', async () => {
+  it('Add level sits in the header beside Revert and Save, in blue, and a new level is the last number, open, and shown first (newest first)', async () => {
     await renderWith([level(1)]);
     const add = screen.getByRole('button', { name: 'Add level' });
     expect(screen.getAllByRole('button', { name: 'Add level' })).toHaveLength(1);
@@ -90,10 +92,10 @@ describe('Admin Spot page (A14-A16)', () => {
     expect(add.style.backgroundColor).toBe('rgb(63, 115, 181)');
     fireEvent.click(add);
     const articles = screen.getAllByRole('article');
-    expect(articles[0].getAttribute('aria-label')).toBe('Level 1');
-    expect(within(articles[0]).getByRole('button', { name: 'Choose from library for level 1 picture A' })).toBeTruthy();
-    expect(articles[1].getAttribute('aria-label')).toBe('Level 2');
-    expect(screen.getByRole('img', { name: 'Level 2 picture A thumbnail' }).getAttribute('src')).toBe('/media/spot/1a.png');
+    expect(articles[0].getAttribute('aria-label')).toBe('Level 2');
+    expect(within(articles[0]).getByRole('button', { name: 'Choose from library for level 2 picture A' })).toBeTruthy();
+    expect(articles[1].getAttribute('aria-label')).toBe('Level 1');
+    expect(screen.getByRole('img', { name: 'Level 1 picture A thumbnail' }).getAttribute('src')).toBe('/media/spot/1a.png');
   });
 
   it('Save is disabled until both pictures and 3 differences exist', async () => {
@@ -102,13 +104,13 @@ describe('Admin Spot page (A14-A16)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add level' }));
     expect(saveBtn().disabled).toBe(true);
     lib.listLibrary.mockResolvedValue(['spot/a.png', 'spot/b.png']);
-    await pickPictureFromLibrary(1, 'A', 'a.png');
-    await pickPictureFromLibrary(1, 'B', 'b.png');
+    await pickPictureFromLibrary(2, 'A', 'a.png');
+    await pickPictureFromLibrary(2, 'B', 'b.png');
     expect(saveBtn().disabled).toBe(true); // no spots yet
-    clickPictureA(1, 0.2, 0.2);
-    clickPictureA(1, 0.5, 0.5);
+    clickPictureA(2, 0.2, 0.2);
+    clickPictureA(2, 0.5, 0.5);
     expect(saveBtn().disabled).toBe(true); // 2 spots
-    clickPictureA(1, 0.8, 0.8);
+    clickPictureA(2, 0.8, 0.8);
     expect(saveBtn().disabled).toBe(false);
   });
 
@@ -204,15 +206,6 @@ describe('Admin Spot page (A14-A16)', () => {
     expect(saveBtn().disabled).toBe(false);
   });
 
-  it('up/down buttons reorder levels', async () => {
-    await renderWith([level(1), level(2)]);
-    expect((screen.getByRole('button', { name: 'Move level 1 up' }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole('button', { name: 'Move level 2 down' }) as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Move level 1 down' }));
-    expect(within(screen.getByRole('article', { name: 'Level 1' })).getByRole('img', { name: 'Level 1 picture A thumbnail' }).getAttribute('src')).toBe('/media/spot/2a.png');
-    expect(saveBtn().disabled).toBe(false);
-  });
-
   it('"Preview as child" links to the level and is hidden for a new level', async () => {
     await renderWith([level(1)]);
     const link = screen.getByRole('link', { name: 'Preview as child' });
@@ -227,5 +220,20 @@ describe('Admin Spot page (A14-A16)', () => {
     expect(links.indexOf('Spot')).toBe(links.indexOf('Cards') + 1);
     expect(screen.getByRole('link', { name: 'Spot' }).getAttribute('href')).toBe('/admin/spot');
     expect(screen.getByRole('link', { name: 'Spot' }).getAttribute('aria-current')).toBe('page');
+  });
+
+  it('a saved level starts collapsed to its header and small pictures, and the sort button reverses the list', async () => {
+    h.loadLevels.mockResolvedValue([level(1), level(2)]);
+    render(<SpotPage />);
+    await screen.findByRole('button', { name: 'Add level' });
+    expect(screen.getByRole('img', { name: 'Level 1 picture A thumbnail' })).toBeTruthy(); // pictures stay visible
+    expect(screen.getByRole('img', { name: 'Level 1 picture B thumbnail' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Choose from library for level 1 picture A' })).toBeNull();
+    const order = () => screen.getAllByRole('article').map((a) => a.getAttribute('aria-label'));
+    expect(order()).toEqual(['Level 2', 'Level 1']);
+    fireEvent.click(screen.getByRole('button', { name: /^Sort levels/ }));
+    expect(order()).toEqual(['Level 1', 'Level 2']);
+    fireEvent.click(screen.getByRole('button', { name: 'Expand level 1' }));
+    expect(screen.getByRole('button', { name: 'Choose from library for level 1 picture A' })).toBeTruthy();
   });
 });

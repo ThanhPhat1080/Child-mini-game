@@ -43,6 +43,8 @@ export type StandinState = {
   quiz_sets: Row[];
   questions: Row[];
   answers: Row[];
+  /** Paths of files already in the media bucket (empty placeholders). */
+  storage: string[];
 };
 
 /** Replaces the whole stand-in state; with no argument it restores the default (18 cards, settings, no sets). */

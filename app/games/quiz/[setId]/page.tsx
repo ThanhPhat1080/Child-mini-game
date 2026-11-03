@@ -11,6 +11,7 @@ import { MusicButton } from '@/components/MusicButton';
 import { ohOh, yay, speakKid } from '@/lib/sfx';
 import { Confetti } from '@/components/Confetti';
 import { handleChoiceKey } from '@/lib/keynav';
+import { hasAnswerContent } from '@/lib/sets';
 import { clearProgress, deviceStore, firstUnfinished, loadProgress, nextUnfinished, saveProgress } from '@/lib/quizProgress';
 
 type Answer = { slot: number; image_path: string | null; text: string | null; is_correct: boolean };
@@ -34,7 +35,7 @@ function say(t: string | null, audioUrl?: string | null): Promise<void> {
       voiceEl.onended = () => resolve();
       voiceEl.onerror = () => resolve();
       voiceEl.play().catch(() => resolve());
-    } else if (t?.trim()) speakKid(t, { pitch: 1.5, rate: 0.8, onEnd: resolve });
+    } else if (t?.trim()) speakKid(t, { pitch: 1.3, rate: 0.8, onEnd: resolve });
     else resolve();
   });
 }
@@ -76,7 +77,7 @@ export default function QuestionPage() {
       .order('position')
       .then(({ data }) => {
         const rows = ((data as unknown as Question[]) ?? []).map((r) => ({ ...r, answers: [...r.answers].sort((a, b) => a.slot - b.slot) }));
-        setQs(rows.filter((r) => (!!r.prompt_text?.trim() || !!r.prompt_audio_path) && r.answers.length >= 2 && r.answers.every((a) => a.image_path) && r.answers.filter((a) => a.is_correct).length === 1));
+        setQs(rows.filter((r) => (!!r.prompt_text?.trim() || !!r.prompt_audio_path) && r.answers.length >= 2 && r.answers.every((a) => hasAnswerContent(a.image_path, a.text)) && r.answers.filter((a) => a.is_correct).length === 1));
       });
   }, [setId]);
 
@@ -107,7 +108,7 @@ export default function QuestionPage() {
         const hold = Math.max(0, PICK_MS - (Date.now() - pickedAt)); // let the picked card finish its effect first
         setTimeout(show, hold + (a.is_correct ? 0 : 200)); // wrong: pause 200 ms more
       };
-      if (a.text?.trim()) speakKid(a.text.trim(), { pitch: 1.5, rate: 0.8, onEnd: finish });
+      if (a.text?.trim()) speakKid(a.text.trim(), { pitch: 1.3, rate: 0.8, onEnd: finish });
       else finish();
     },
     [cur, result, reading, sounds],
@@ -242,7 +243,8 @@ export default function QuestionPage() {
           const dim = result === 'wrong' && picked === i;
           const chosen = picked === i && result !== 'wrong'; // grows while waiting for, and under, the hooray popup
           const img = mediaUrl(a.image_path);
-          const showText = !cur.hide_answer_text && !!a.text?.trim(); // hidden text is still read aloud, just not drawn
+          const textOnly = !img; // no picture: the text is the card, so it is drawn even when "hide text" is on
+          const showText = (!cur.hide_answer_text || textOnly) && !!a.text?.trim(); // hidden text is still read aloud, just not drawn
           return (
             <button key={a.slot} type="button" data-answer className={`hm-ans${dim ? ' hm-wobble' : ''}${readIdx === i ? ' hm-reading' : ''}${chosen ? ' hm-picked' : ''}`} aria-label={`Answer ${i + 1}`} onClick={() => pick(i)} style={{ position: 'relative', width: 460, height: 400, borderRadius: 56, border: `14px solid ${c.ring}`, background: c.bg, boxShadow: `0 16px 0 ${SHADOW[i]}`, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box', opacity: dim ? 0.55 : readIdx !== null && readIdx !== i ? 0.7 : 1, '--ring': c.ring } as React.CSSProperties}>
               {chosen && <span key={`pick-${q}-${i}`} className="hm-pickring" aria-hidden="true" style={{ borderColor: c.ring }} />}
@@ -250,7 +252,7 @@ export default function QuestionPage() {
               <span className="hm-num" style={{ position: 'absolute', top: -34, left: -34, width: 104, height: 104, borderRadius: 52, background: BADGE[i], color: '#fff', border: '8px solid #FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, fontWeight: 600, boxSizing: 'border-box' }}>{i + 1}</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {img && <img src={img} alt="" style={{ width: '100%', maxHeight: showText ? 250 : '100%', objectFit: 'contain' }} />}
-              {showText && <span style={{ position: 'absolute', left: 0, right: 0, bottom: 14, textAlign: 'center', fontSize: 44, fontWeight: 600, color: '#5A4038' }}>{a.text}</span>}
+              {showText && <span style={textOnly ? { textAlign: 'center', fontSize: 72, fontWeight: 600, lineHeight: 1.1, color: '#5A4038', overflowWrap: 'anywhere' } : { position: 'absolute', left: 0, right: 0, bottom: 14, textAlign: 'center', fontSize: 44, fontWeight: 600, color: '#5A4038' }}>{a.text}</span>}
             </button>
           );
         })}
