@@ -47,9 +47,9 @@ test('add a card with a picture and a word: nothing is uploaded until Save, then
   await openCards(page);
   await page.getByRole('button', { name: 'Add card' }).click();
   await expect(save(page)).toBeDisabled(); // the new card has no picture or word yet
-  await pasteCardSvg(page, 13);
-  await page.getByLabel('Word for card 13', { exact: true }).fill('lion');
-  await expect(page.getByRole('img', { name: 'Card 13 picture' })).toHaveAttribute('src', /^blob:/);
+  await pasteCardSvg(page, 1); // new cards go to the top
+  await page.getByLabel('Word for card 1', { exact: true }).fill('lion');
+  await expect(page.getByRole('img', { name: 'Card 1 picture' })).toHaveAttribute('src', /^blob:/);
   await expect(save(page)).toBeEnabled();
   expect(await storage()).toEqual([]); // picking is only a local preview
   expect((await cardsOf()).some((c) => c.word === 'lion')).toBe(false);
@@ -64,8 +64,8 @@ test('add a card with a picture and a word: nothing is uploaded until Save, then
   expect(await storage()).toEqual([lion!.image_path]);
 
   await page.reload();
-  await expect(page.getByLabel('Word for card 13', { exact: true })).toHaveValue('lion');
-  await expect(page.getByRole('img', { name: 'Card 13 picture' })).toHaveAttribute('src', new RegExp(`/storage/v1/object/public/media/${lion!.image_path}$`));
+  await expect(page.getByLabel('Word for card 1', { exact: true })).toHaveValue('lion'); // newest first
+  await expect(page.getByRole('img', { name: 'Card 1 picture' })).toHaveAttribute('src', new RegExp(`/storage/v1/object/public/media/${lion!.image_path}$`));
 });
 
 test('Revert discards unsaved edits', async ({ page }) => {
@@ -73,8 +73,9 @@ test('Revert discards unsaved edits', async ({ page }) => {
   await page.getByLabel('Word for card 1', { exact: true }).fill('changed');
   await page.getByRole('button', { name: 'Add card' }).click();
   await expect(page.getByLabel('Word for card 13', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('Word for card 1', { exact: true })).toHaveValue(''); // the new card is on top
   await page.getByRole('button', { name: 'Revert' }).click();
-  await expect(page.getByLabel('Word for card 1', { exact: true })).toHaveValue('word1');
+  await expect(page.getByLabel('Word for card 1', { exact: true })).toHaveValue('word12'); // newest first
   await expect(page.getByLabel('Word for card 13', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Revert' })).toBeDisabled();
   expect((await cardsOf()).map((c) => c.word)).toEqual(makeCards(12).map((c) => c.word));
@@ -87,7 +88,7 @@ test('turning a card off lowers the available levels, and Save stores it', async
   await expect(health(page)).toHaveText('11 active cards: levels 12, 16 and 20 are available; 24 needs 12, 30 needs 15.');
   await save(page).click();
   await expect(save(page)).toBeDisabled();
-  await expect.poll(async () => (await cardsOf()).find((c) => c.word === 'word1')?.active).toBe(false);
+  await expect.poll(async () => (await cardsOf()).find((c) => c.word === 'word12')?.active).toBe(false);
 });
 
 test('Delete asks first and removes the row and its bucket file only after Save', async ({ page }) => {
@@ -98,20 +99,21 @@ test('Delete asks first and removes the row and its bucket file only after Save'
   await putFile('seed/apple.svg'); // bundled art is never ours to delete, even if a file had that name
   await openCards(page);
 
-  await page.getByRole('button', { name: 'Delete card 1' }).click();
+  // newest first: word3, word2, word1, so word1 (cards/old.svg) is card 3
+  await page.getByRole('button', { name: 'Delete card 3' }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Cancel' }).click();
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
-  await expect(page.getByLabel('Word for card 1', { exact: true })).toHaveValue('word1');
+  await expect(page.getByLabel('Word for card 3', { exact: true })).toHaveValue('word1');
 
-  await page.getByRole('button', { name: 'Delete card 1' }).click();
+  await page.getByRole('button', { name: 'Delete card 3' }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Delete card' }).click();
-  await expect(page.getByLabel('Word for card 1', { exact: true })).toHaveValue('word2');
+  await expect(page.getByLabel('Word for card 3', { exact: true })).toHaveCount(0);
   // staged only: the database and the bucket are untouched until Save
   expect((await cardsOf()).map((c) => c.word)).toEqual(['word1', 'word2', 'word3']);
   expect((await storage()).sort()).toEqual(['cards/old.svg', 'seed/apple.svg']);
 
   // a card using bundled art goes too; its seed/ file must stay
-  await page.getByRole('button', { name: 'Delete card 1' }).click();
+  await page.getByRole('button', { name: 'Delete card 2' }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Delete card' }).click();
 
   await save(page).click();
@@ -254,7 +256,7 @@ test.describe('Groups (A17, A18)', () => {
     await page.getByLabel('New group name').press('Enter');
     await expect(page.getByLabel('New group name')).toHaveValue('');
     await expect(groupsArea(page).getByRole('listitem')).toHaveText(['Birds']);
-    await picker(page, 2).selectOption({ label: 'Birds' });
+    await picker(page, 11).selectOption({ label: 'Birds' }); // newest first: card 11 is word2
     await expect(save(page)).toBeEnabled();
     expect(await groupsOf()).toEqual([]); // nothing is written before Save
 
@@ -265,21 +267,21 @@ test.describe('Groups (A17, A18)', () => {
     expect((await cardsOf() as (CardRow & { group_id: string | null })[]).find((c) => c.word === 'word2')?.group_id).toBe(birds.id);
 
     await page.reload();
-    await expect(picker(page, 2).locator('option:checked')).toHaveText('Birds');
+    await expect(picker(page, 11).locator('option:checked')).toHaveText('Birds');
     await expect(picker(page, 1).locator('option:checked')).toHaveText('No group');
     await expect(groupsArea(page).getByRole('listitem')).toHaveText(['Birds']);
 
     await page.getByRole('button', { name: 'Delete group Birds' }).click();
     await expect(page.getByRole('alertdialog')).toContainText('1 card uses this group. It will have no group.');
     await page.getByRole('alertdialog').getByRole('button', { name: 'Delete group' }).click();
-    await expect(picker(page, 2).locator('option:checked')).toHaveText('No group'); // at once, in the draft
+    await expect(picker(page, 11).locator('option:checked')).toHaveText('No group'); // at once, in the draft
     expect(await groupsOf()).toHaveLength(1); // still there until Save
 
     await save(page).click();
     await expect(page.getByRole('status').filter({ hasText: /^Saved$/ })).toBeVisible();
     await expect.poll(groupsOf).toEqual([]);
     await page.reload();
-    await expect(picker(page, 2).locator('option:checked')).toHaveText('No group');
+    await expect(picker(page, 11).locator('option:checked')).toHaveText('No group');
     await expect(groupsArea(page).getByText('No groups yet. Add one below.')).toBeVisible();
     expect((await cardsOf() as (CardRow & { group_id: string | null })[]).every((c) => c.group_id == null)).toBe(true);
   });
@@ -291,7 +293,7 @@ test.describe('Groups (A17, A18)', () => {
     await openCards(page);
     const weak = 'Sort It needs at least 4 cards with different words in a group.';
     await expect(page.getByText(weak)).toHaveCount(3);
-    await picker(page, 4).selectOption({ label: 'Animals' });
+    await picker(page, 1).selectOption({ label: 'Animals' }); // newest first: card 1 is the ungrouped word4
     await expect(page.getByText(weak)).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Rename group Animals' }).click();
