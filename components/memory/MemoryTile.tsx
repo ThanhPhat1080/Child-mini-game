@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { mediaUrl } from '@/lib/media';
 import type { DeckTile } from '@/lib/memory/deck';
 import { FlowerBack } from './FlowerBack';
+import { Pic } from '@/components/Pic';
 
 type Props = {
   tile: DeckTile;
@@ -48,8 +49,7 @@ export function MemoryTile({ tile, faceUp, matched, onPress, label, wiggle = fal
         </span>
         <span className="hm-mt-face hm-mt-front">
           {seen && (src && !broken ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={src} alt="" draggable={false} onError={() => setBroken(true)} />
+            <Pic src={src} alt="" draggable={false} onError={() => setBroken(true)} />
           ) : (
             <svg data-placeholder aria-hidden="true" width="60%" height="60%" viewBox="0 0 10 10">
               <rect x="1" y="1" width="8" height="8" rx="2" fill="#EFE6DA" />

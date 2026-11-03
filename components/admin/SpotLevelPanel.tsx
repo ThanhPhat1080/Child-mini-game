@@ -11,6 +11,7 @@ import { Chevron } from './LevelSort';
 import { LibraryButton } from './LibraryButton';
 import { PicIcon, dangerBtn, fileName, ghostBtn, panel } from './editor-parts';
 import { SpotMarkerEditor } from './SpotMarkerEditor';
+import { Pic } from '@/components/Pic';
 
 /** Accepted level pictures (A14). */
 export const SPOT_IMG_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
@@ -32,8 +33,7 @@ function PicturePicker({ side, n, path, open, onLibrary, onSvg, startCrop, onCro
     <div style={{ flex: open ? '1 1 240px' : '0 1 200px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
       <span style={{ fontSize: 13, fontWeight: 700 }}>Picture {label}</span>
       <div style={{ height: open ? 110 : 72, borderRadius: 14, background: '#FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A8968A', overflow: 'hidden' }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {url ? <img src={url} alt={`Level ${n} picture ${label} thumbnail`} draggable={false} style={{ maxWidth: '100%', maxHeight: open ? 110 : 72, objectFit: 'contain' }} /> : <PicIcon size={30} />}
+        {url ? <Pic src={url} alt={`Level ${n} picture ${label} thumbnail`} draggable={false} style={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: open ? 110 : 72, objectFit: 'contain' }} /> : <PicIcon size={30} />}
       </div>
       {open && (<>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>

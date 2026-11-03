@@ -1,5 +1,6 @@
 import { mediaUrl } from '@/lib/media';
 import { tintFor } from '@/lib/sets';
+import { Pic } from '@/components/Pic';
 
 export type SetCardData = { id: string; title: string; subtitle: string | null; heading_color: string; cover_path: string | null; count: number };
 
@@ -17,8 +18,7 @@ export function SetCard({ set, done, hintEmptyCover }: { set: SetCardData; index
       )}
       <span style={{ width: 300, height: 300, borderRadius: 150, background: cover || !hintEmptyCover ? tintFor(set.heading_color) : '#FFFDF9', border: cover || !hintEmptyCover ? 'none' : '3px dashed #D9C6B2', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10, overflow: 'hidden' }}>
         {!cover && hintEmptyCover && <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, fontSize: 28, fontWeight: 700, color: '#A8968A', fontFamily: 'Nunito, sans-serif' }}>No cover yet</span>}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {cover && <img src={cover} alt="" draggable={false} style={{ width: 210, height: 210, objectFit: 'contain' }} />}
+        {cover && <Pic src={cover} alt="" width={210} height={210} draggable={false} style={{ width: 210, height: 210, objectFit: 'contain' }} />}
       </span>
       <span style={{ fontSize: 64, fontWeight: 600, color: set.heading_color, lineHeight: 1 }}>{set.title}</span>
       {set.subtitle && <span style={{ fontSize: 34, fontWeight: 500, color: '#9A8174', lineHeight: 1 }}>{set.subtitle}</span>}

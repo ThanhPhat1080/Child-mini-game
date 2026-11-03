@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { Hills } from '@/components/Hills';
 import { Confetti } from '@/components/Confetti';
+import { Pic } from '@/components/Pic';
 
 const STAR = 'M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z';
 
@@ -18,13 +19,11 @@ export function CelebrationScene({ greeting, extra, children }: { greeting: stri
       <Hills variant="double" />
       <Confetti count={36} delayStep={0.6} />
       <div className="hm-float" style={{ position: 'absolute', left: 220, top: 340, width: 289, height: 682 }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/girl.webp" alt="" width={289} height={682} style={{ display: 'block', width: 289, height: 682 }} />
+        <Pic src="/images/girl.webp" alt="" width={289} height={682} style={{ display: 'block', width: 289, height: 682 }} />
       </div>
       {/* second character on the right (transparent background); floats out of step with the left one */}
       <div className="hm-float" style={{ position: 'absolute', left: 1378, top: 360, width: 327, height: 650, animationDelay: '-2.2s' }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/girl-beret.webp" alt="" width={327} height={650} style={{ display: 'block', width: 327, height: 650 }} />
+        <Pic src="/images/girl-beret.webp" alt="" width={327} height={650} style={{ display: 'block', width: 327, height: 650 }} />
       </div>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 44, paddingBottom: 60, boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', gap: 28 }} role="img" aria-label="3 stars earned">

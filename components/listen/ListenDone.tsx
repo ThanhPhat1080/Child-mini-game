@@ -10,19 +10,19 @@ import { sayWord } from '@/lib/memory/cards';
 import { mediaUrl } from '@/lib/media';
 import { totalWrong, type WrongEntry } from '@/lib/listen/wrongLog';
 import type { MemoryCard } from '@/lib/memory/types';
+import { Pic } from '@/components/Pic';
 
 const btn = { width: 160, height: 160, borderRadius: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', padding: 0 } as const;
 const PIC = 96;
 
-function Pic({ card }: { card: MemoryCard | undefined }) {
+function AnswerPic({ card }: { card: MemoryCard | undefined }) {
   const [broken, setBroken] = useState(false);
   const src = card ? mediaUrl(card.image_path) : null;
   const box = { width: PIC, height: PIC, borderRadius: PIC / 2, background: '#fff', border: '6px solid #EADCC8', boxSizing: 'border-box', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' } as const;
   if (!src || broken) return <span data-placeholder aria-hidden="true" style={{ ...box, background: '#EFE6DA' }} />;
   return (
     <span style={box}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" draggable={false} onError={() => setBroken(true)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+      <Pic src={src} alt="" draggable={false} onError={() => setBroken(true)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
     </span>
   );
 }
@@ -82,7 +82,7 @@ export function ListenDone({ wrong, cards, childName, completeUrl, onAgain, game
                   onClick={() => sayWord(cards.get(e.id) ?? { word: e.word, audio_path: null })}
                   style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: 128, background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', color: '#7A5C50' }}
                 >
-                  <Pic card={cards.get(e.id)} />
+                  <AnswerPic card={cards.get(e.id)} />
                   <span style={{ fontSize: 26, fontWeight: 600, lineHeight: 1.1, maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {e.word}{e.count > 1 && <span style={{ color: '#B8737B' }}> x{e.count}</span>}
                   </span>

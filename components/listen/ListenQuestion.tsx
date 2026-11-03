@@ -5,6 +5,7 @@ import { mediaUrl } from '@/lib/media';
 import { SLOT_COLORS } from '@/lib/tokens';
 import type { Question } from '@/lib/listen/rounds';
 import type { MemoryCard } from '@/lib/memory/types';
+import { Pic } from '@/components/Pic';
 
 const BADGE = ['#C77D85', '#5F86A8', '#8A6A2A'];
 const SHADOW = ['#D9A0A6', '#7FA0BE', '#D2B466'];
@@ -29,8 +30,7 @@ function Picture({ card }: { card: MemoryCard }) {
   if (!src || broken) {
     return <span data-placeholder aria-hidden="true" style={{ display: 'block', width: '70%', height: '70%', borderRadius: 32, background: '#EFE6DA' }} />;
   }
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt="" draggable={false} onError={() => setBroken(true)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />;
+  return <Pic src={src} alt="" draggable={false} onError={() => setBroken(true)} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />;
 }
 
 /** The Listen & Pick question: a big speaker above three picture-only answers (no written word anywhere). */

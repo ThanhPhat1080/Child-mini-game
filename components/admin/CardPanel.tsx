@@ -7,6 +7,7 @@ import { LEVELS, levelsAvailable, pairsOf } from '@/lib/memory/deck';
 import s from './admin-ui.module.css';
 import { LibraryButton } from './LibraryButton';
 import { PicIcon, dangerBtn, fileName, ghostBtn, inputStyle, panel } from './editor-parts';
+import { Pic } from '@/components/Pic';
 
 export const WORD_MAX = 40;
 /** Accepted picture and pronunciation files (A11). */
@@ -66,8 +67,7 @@ export function CardPanel({ c, n, duplicate, message, autoFocus, groups, weakGro
       </div>
 
       <div style={{ height: 120, borderRadius: 14, background: '#FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A8968A', overflow: 'hidden' }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {img ? <img src={img} alt={`Card ${n} picture`} draggable={false} style={{ width: 104, height: 104, objectFit: 'contain' }} /> : <PicIcon size={32} />}
+        {img ? <Pic src={img} alt={`Card ${n} picture`} draggable={false} style={{ width: 104, height: 104, objectFit: 'contain' }} /> : <PicIcon size={32} />}
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
         <LibraryButton kind="image" label={`card ${n} picture`} onChoose={(path) => onChooseLibrary('image', path)} />

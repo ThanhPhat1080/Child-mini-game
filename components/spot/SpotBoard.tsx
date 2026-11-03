@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import type { SpotLevel } from '@/lib/spot/types';
+import { Pic } from '@/components/Pic';
 
 export type SpotRipple = { side: 'a' | 'b'; x: number; y: number; key: number };
 
@@ -54,8 +55,7 @@ export function SpotBoard({ level, urlA, urlB, found, onTap, ripple = null, redu
       >
         <span ref={(el) => { areas.current[side] = el; }} data-spot-area style={{ position: 'absolute', inset: 0, borderRadius: 32, overflow: 'hidden', display: 'block' }}>
           {src ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Pic
               src={src}
               alt=""
               draggable={false}

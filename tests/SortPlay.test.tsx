@@ -128,7 +128,7 @@ describe('Sort It play screen (R1-R6, R8-R10)', () => {
     expect(root().getAttribute('data-done')).toBe('false');
     for (const i of [0, 1] as const) {
       const g = basketEl(i).parentElement!.getAttribute('data-group')!;
-      const src = basketEl(i).querySelector('[data-basket-example] img')!.getAttribute('src')!;
+      const src = new URL(basketEl(i).querySelector<HTMLImageElement>('[data-basket-example] img')!.src).pathname;
       const exampleId = src.replace('/media/', '').replace('.svg', '');
       expect(groupOf(exampleId)).toBe(g);
       expect(ids()).not.toContain(exampleId);

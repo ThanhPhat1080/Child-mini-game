@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const lib = vi.hoisted(() => ({
@@ -123,11 +123,11 @@ describe('MediaLibraryDialog crop before upload (A24)', () => {
   }
 
   /** Gives the crop window a 1200x800 picture, as the browser would when it loads. */
-  function loadPicture() {
+  async function loadPicture() {
     const img = screen.getByRole('dialog', { name: 'Crop picture' }).querySelector('img') as HTMLImageElement;
     Object.defineProperty(img, 'naturalWidth', { value: 1200 });
     Object.defineProperty(img, 'naturalHeight', { value: 800 });
-    fireEvent.load(img);
+    await act(async () => { fireEvent.load(img); });
   }
 
   it('picking a PNG opens the crop window and uploads nothing yet', async () => {
@@ -144,7 +144,7 @@ describe('MediaLibraryDialog crop before upload (A24)', () => {
     await screen.findByText('Nothing in the library yet.');
     pick(png);
     await screen.findByRole('dialog', { name: 'Crop picture' });
-    loadPicture();
+    await loadPicture();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(lib.uploadToLibrary).toHaveBeenCalledTimes(1));
     expect(lib.cropToSquare).toHaveBeenCalledWith(png, expect.objectContaining({ ratio: 1.5 }));
@@ -182,7 +182,7 @@ describe('MediaLibraryDialog crop before upload (A24)', () => {
     await screen.findByText('Nothing in the library yet.');
     pick(png);
     await screen.findByRole('dialog', { name: 'Crop picture' });
-    loadPicture();
+    await loadPicture();
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Could not read this picture')).toBeTruthy();
     expect(lib.uploadToLibrary).not.toHaveBeenCalled();
@@ -240,7 +240,7 @@ describe('MediaLibraryDialog size limits for cropped pictures', () => {
     const img = crop.querySelector('img') as HTMLImageElement;
     Object.defineProperty(img, 'naturalWidth', { value: 1200 });
     Object.defineProperty(img, 'naturalHeight', { value: 800 });
-    fireEvent.load(img);
+    await act(async () => { fireEvent.load(img); });
     fireEvent.click(within(crop).getByRole('button', { name: 'Save' }));
     expect(await screen.findByText('Image must be 2 MB or smaller.')).toBeTruthy();
     expect(lib.uploadToLibrary).not.toHaveBeenCalled();
