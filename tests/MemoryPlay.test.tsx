@@ -131,7 +131,7 @@ describe('Memory play screen (M2-M6, M8-M10)', () => {
     expect(h.flipTick).toHaveBeenCalledTimes(1);
     expect(tile(1).getAttribute('data-face-up')).toBe('true');
     expect(tile(1).getAttribute('aria-pressed')).toBe('true');
-    expect(tile(1).querySelector('img')?.getAttribute('src')).toBe('/media/c0.svg');
+    expect(new URL(tile(1).querySelector('img')!.src).pathname).toBe('/media/c0.svg'); // next/image sets src again on mount, so it is absolute
   });
 
   it('a matching pair chimes, then says the word once', async () => {

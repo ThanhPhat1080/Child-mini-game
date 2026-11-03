@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import type { FindObject } from '@/lib/find/types';
 import { MIN_HIT_R } from '@/lib/find/validate';
+import { Pic } from '@/components/Pic';
 
 export type FindRipple = { x: number; y: number; key: number };
 
@@ -52,8 +53,7 @@ export function FindBoard({ url, objects, found, onTap, ripple = null, reduced =
         style={{ position: 'absolute', inset: 0, borderRadius: 32, overflow: 'hidden', display: 'block', cursor: 'pointer', touchAction: 'manipulation', userSelect: 'none' }}
       >
         {src ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Pic
             src={src}
             alt=""
             draggable={false}

@@ -223,7 +223,7 @@ function rest(req, res, table, url, bodyBuf) {
   const body = parseJson(bodyBuf);
 
   if (req.method === 'POST') {
-    const incoming = (Array.isArray(body) ? body : [body ?? {}]).map((r) => withDefaults(table, r));
+    const incoming = Array.isArray(body) ? body : [body ?? {}];
     const merge = prefer.includes('resolution=merge-duplicates');
     const ignore = prefer.includes('resolution=ignore-duplicates');
     const conflictCols = (params.get('on_conflict') ?? 'id').split(',');
@@ -231,13 +231,14 @@ function rest(req, res, table, url, bodyBuf) {
     for (const r of incoming) {
       const idx = rows.findIndex((e) => conflictCols.every((c) => e[c] !== undefined && same(e[c], r[c])));
       if (idx >= 0 && (merge || ignore)) {
-        if (merge) rows[idx] = { ...rows[idx], ...r };
+        if (merge) rows[idx] = { ...rows[idx], ...r }; // column defaults only apply to inserts, like Postgres
         out.push(rows[idx]);
       } else if (idx >= 0) {
         return send(res, 409, { code: '23505', details: null, hint: null, message: 'duplicate key value violates unique constraint' });
       } else {
-        rows.push(r);
-        out.push(r);
+        const created = withDefaults(table, r);
+        rows.push(created);
+        out.push(created);
       }
     }
     return respond(201, out);

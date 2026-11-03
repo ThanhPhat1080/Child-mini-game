@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SpotLevel } from '@/lib/spot/types';
 import { SpotBoard } from '@/components/spot/SpotBoard';
@@ -95,12 +95,12 @@ describe('SpotBoard', () => {
     expect(pic('a').style.height).toBe('860px');
   });
 
-  it('shows a portrait picture 860 tall (aspect 0.73) and a 4:3 picture 880x660', () => {
+  it('shows a portrait picture 860 tall (aspect 0.73) and a 4:3 picture 880x660', async () => {
     const { unmount } = render(<SpotBoard level={level} urlA="/a.svg" urlB="/b.svg" found={[]} onTap={() => {}} />);
     const img = pic('a').querySelector('img')!;
     Object.defineProperty(img, 'naturalWidth', { value: 730, configurable: true });
     Object.defineProperty(img, 'naturalHeight', { value: 1000, configurable: true });
-    fireEvent.load(img);
+    await act(async () => { fireEvent.load(img); });
     expect(pic('a').style.height).toBe('860px');
     expect(pic('a').style.width).toBe(`${Math.floor(860 * 0.73)}px`);
     expect(pic('b').style.height).toBe('860px');
@@ -109,7 +109,7 @@ describe('SpotBoard', () => {
     const img2 = pic('a').querySelector('img')!;
     Object.defineProperty(img2, 'naturalWidth', { value: 1600, configurable: true });
     Object.defineProperty(img2, 'naturalHeight', { value: 1200, configurable: true });
-    fireEvent.load(img2);
+    await act(async () => { fireEvent.load(img2); });
     expect(pic('a').style.width).toBe('880px');
     expect(pic('a').style.height).toBe('660px');
   });

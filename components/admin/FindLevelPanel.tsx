@@ -10,6 +10,7 @@ import { Chevron } from './LevelSort';
 import { FindMarkerEditor } from './FindMarkerEditor';
 import { MediaLibraryDialog } from './MediaLibraryDialog';
 import { PicIcon, dangerBtn, fileName, ghostBtn, panel } from './editor-parts';
+import { Pic } from '@/components/Pic';
 
 /** Accepted level pictures (A21), the same types as the Spot and Cards pictures. */
 export const FIND_IMG_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
@@ -25,8 +26,7 @@ function PicturePicker({ n, path, open, onSvg, onLibrary }: { n: number; path: s
     <div style={{ flex: open ? '1 1 240px' : '0 1 200px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
       <span style={{ fontSize: 13, fontWeight: 700 }}>Picture</span>
       <div style={{ height: open ? 130 : 72, borderRadius: 14, background: '#FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A8968A', overflow: 'hidden' }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {url ? <img src={url} alt={`Level ${n} picture`} draggable={false} style={{ maxWidth: '100%', maxHeight: open ? 130 : 72, objectFit: 'contain' }} /> : <PicIcon size={30} />}
+        {url ? <Pic src={url} alt={`Level ${n} picture`} draggable={false} style={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: open ? 130 : 72, objectFit: 'contain' }} /> : <PicIcon size={30} />}
       </div>
       {open && (<>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>

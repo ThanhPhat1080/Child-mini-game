@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import { MAX_SOUND_BYTES, cardAudioType } from './CardPanel';
 import { ghostBtn } from './editor-parts';
 import { mediaUrl, uploadToLibrary, isMediaInUse, deleteMedia, MAX_IMAGE_BYTES } from '@/lib/media';
@@ -98,8 +99,9 @@ const PictureViewer = ({ url, name, onClose }: { url: string; name: string; onCl
     style={{ position: 'fixed', inset: 0, background: 'rgba(74,56,48,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box', zIndex: 55 }}>
     <button type="button" autoFocus aria-label="Close picture" onClick={onClose}
       style={{ position: 'absolute', top: 16, right: 16, width: 40, height: 40, borderRadius: 20, border: 'none', background: '#fff', color: '#4A3830', cursor: 'pointer', fontSize: 22, fontWeight: 700 }}>×</button>
-    <img src={url} alt={name} onClick={(e) => e.stopPropagation()}
-      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', background: '#fff', borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,0.35)' }} />
+    {/* bucket pictures have any size; unoptimized keeps the file as uploaded */}
+    <Image src={url} alt={name} width={1600} height={1200} unoptimized onClick={(e) => e.stopPropagation()}
+      style={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', background: '#fff', borderRadius: 12, boxShadow: '0 20px 60px rgba(0,0,0,0.35)' }} />
   </div>
 );
 
@@ -108,7 +110,7 @@ const Loading = () => (
   <div role="status" className={s.loadingBox}>
     <div className={s.loadingWater} aria-hidden="true">
       <span className={s.loadingRipple} /><span className={s.loadingRipple} /><span className={s.loadingRipple} />
-      <img className={s.loadingFish} src="/seed/fish.svg" alt="" />
+      <Image className={s.loadingFish} src="/seed/fish.svg" alt="" width={60} height={60} unoptimized />
     </div>
     <span className={s.loadingText}>Loading...</span>
   </div>
@@ -350,7 +352,11 @@ export function MediaLibrary({ mode = 'dialog', kind, onChoose, onClose, startCr
             <button type="button" aria-label={`${dialog ? 'Choose' : 'View'} ${name}`} aria-pressed={dialog ? on : undefined} data-selected={on ? 'true' : 'false'} disabled={!!phase}
               onClick={phase ? undefined : () => { if (dialog) setSelected(p); setViewing(p); }}
               style={{ flex: '1 1 auto', minHeight: 0, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 4, boxSizing: 'border-box', background: 'none', border: 'none', cursor: phase ? 'default' : 'zoom-in' }}>
-              {url && <img src={url} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />}
+              {url && (
+                <span style={{ position: 'relative', flex: 1, alignSelf: 'stretch', minHeight: 0 }}>
+                  <Image src={url} alt="" fill sizes="120px" unoptimized style={{ objectFit: 'contain' }} />
+                </span>
+              )}
             </button>
             {phase && <RemovingText phase={phase} style={{ position: 'absolute', top: 8, right: 40, background: 'rgba(255,255,255,0.9)', borderRadius: 8, padding: '1px 6px' }} />}
             <DeleteButton label={`Delete ${name}`} busy={!!phase} onClick={() => void askDelete(p)} style={{ position: 'absolute', top: 4, right: 4, boxShadow: '0 1px 4px rgba(74,56,48,0.25)' }} />

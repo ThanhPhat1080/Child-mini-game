@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FindObject } from '@/lib/find/types';
 import { FindBoard } from '@/components/find/FindBoard';
@@ -85,12 +85,12 @@ describe('FindBoard (F2-F9)', () => {
     expect(pic().style.height).toBe('900px');
   });
 
-  it('a 2:1 picture fills 1280 px wide, a tall one fills 900 px high', () => {
+  it('a 2:1 picture fills 1280 px wide, a tall one fills 900 px high', async () => {
     const { unmount } = render(<FindBoard url="/a.svg" objects={objects} found={[]} onTap={() => {}} />);
     const img = area().querySelector('img')!;
     Object.defineProperty(img, 'naturalWidth', { value: 2000, configurable: true });
     Object.defineProperty(img, 'naturalHeight', { value: 1000, configurable: true });
-    fireEvent.load(img);
+    await act(async () => { fireEvent.load(img); });
     expect(pic().style.width).toBe('1280px');
     expect(pic().style.height).toBe('640px');
     unmount();
@@ -98,7 +98,7 @@ describe('FindBoard (F2-F9)', () => {
     const img2 = area().querySelector('img')!;
     Object.defineProperty(img2, 'naturalWidth', { value: 730, configurable: true });
     Object.defineProperty(img2, 'naturalHeight', { value: 1000, configurable: true });
-    fireEvent.load(img2);
+    await act(async () => { fireEvent.load(img2); });
     expect(pic().style.height).toBe('900px');
     expect(pic().style.width).toBe(`${Math.floor(900 * 0.73)}px`);
   });

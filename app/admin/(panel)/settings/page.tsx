@@ -11,6 +11,7 @@ import { replacePath } from '@/lib/mediaPaths';
 import { RevertButton, SaveButton } from '@/components/admin/SaveButtons';
 import { LibraryButton } from '@/components/admin/LibraryButton';
 import { PlayButton } from '@/components/admin/PlayButton';
+import { Pic } from '@/components/Pic';
 
 type Row = { child_name: string; greeting_path: string | null; music_path: string | null; music_volume: number; avatar_path: string | null; hooray_path: string | null; ohoh_path: string | null; complete_path: string | null };
 type AudioKind = 'greeting' | 'music' | 'hooray' | 'ohoh' | 'complete';
@@ -57,7 +58,7 @@ export default function SettingsPage() {
         setChildName(r.child_name);
         setVolume(r.music_volume);
       });
-  }, []);
+  }, [showToast]);
 
   function stopPreview() {
     preview.current?.pause();
@@ -207,8 +208,7 @@ export default function SettingsPage() {
       <section className={`${styles.section} ${styles.profile}`}>
         <div className={styles.avatar}>
           {mediaUrl(avatarShown) ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={mediaUrl(avatarShown) ?? ''} alt="Avatar" className={styles.avatarImg} />
+            <Pic src={mediaUrl(avatarShown) ?? ''} alt="Avatar" className={styles.avatarImg} />
           ) : (
             <svg aria-hidden="true" width="54" height="38" viewBox="0 0 60 42" fill="#F6E2A6" stroke="#B08A48" strokeWidth="2" strokeLinejoin="round"><path d="M4 38 L8 10 L20 24 L30 4 L40 24 L52 10 L56 38 Z" /></svg>
           )}

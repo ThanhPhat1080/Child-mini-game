@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, ty
 import { moveCrop, resizeCrop, startCropFor, type Crop } from '@/lib/crop/geometry';
 import { ghostBtn } from './editor-parts';
 import s from './admin-ui.module.css';
+import { Pic } from '@/components/Pic';
 
 /** Arrow keys move the square by this fraction of the picture's shorter side. */
 const KEY_STEP = 0.02;
@@ -116,15 +117,14 @@ export function CropDialog({ file, start, onCancel, onSave }: {
           style={{ position: 'relative', alignSelf: 'center', display: 'inline-block', maxWidth: '100%', overflow: 'hidden', lineHeight: 0, touchAction: 'none' }}
         >
           {url && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Pic
               ref={imgRef}
               src={url}
               alt=""
               draggable={false}
               onLoad={onLoad}
               onError={() => setBroken(true)}
-              style={{ display: 'block', maxWidth: '100%', maxHeight: '52vh', userSelect: 'none', imageOrientation: 'from-image' } as CSSProperties}
+              style={{ display: 'block', width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '52vh', userSelect: 'none', imageOrientation: 'from-image' } as CSSProperties}
             />
           )}
           {ready && (

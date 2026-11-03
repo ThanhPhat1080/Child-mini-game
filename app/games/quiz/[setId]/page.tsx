@@ -13,6 +13,7 @@ import { Confetti } from '@/components/Confetti';
 import { handleChoiceKey } from '@/lib/keynav';
 import { hasAnswerContent } from '@/lib/sets';
 import { clearProgress, deviceStore, firstUnfinished, loadProgress, nextUnfinished, saveProgress } from '@/lib/quizProgress';
+import { Pic } from '@/components/Pic';
 
 type Answer = { slot: number; image_path: string | null; text: string | null; is_correct: boolean };
 type Question = { id: string; position: number; prompt_text: string | null; prompt_image_path: string | null; prompt_audio_path: string | null; read_answers: boolean; hide_answer_text: boolean; answers: Answer[] };
@@ -225,8 +226,7 @@ export default function QuestionPage() {
 
       <div style={{ position: 'absolute', top: 172, left: 0, right: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 72 }}>
         {qImg && <div style={{ width: 300, height: 300, boxSizing: 'border-box', padding: 20, overflow: 'hidden', borderRadius: 44, background: '#fff', boxShadow: '0 12px 0 #EADCC8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={qImg} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+          <Pic src={qImg} alt="" style={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
         </div>}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28 }}>
           <button type="button" className="hm-tap hm-breathe" aria-label="Hear the question again" onClick={() => { void readAll(cur); setPing((n) => n + 1); }} style={{ width: 120, height: 120, borderRadius: 60, border: 'none', background: '#EBB7BC', boxShadow: '0 10px 0 #D9A0A6', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
@@ -250,8 +250,7 @@ export default function QuestionPage() {
               {chosen && <span key={`pick-${q}-${i}`} className="hm-pickring" aria-hidden="true" style={{ borderColor: c.ring }} />}
               {readIdx === i && (<><span className="hm-readring" aria-hidden="true" style={{ borderColor: c.ring }} /><span className="hm-bars" aria-hidden="true"><i /><i /><i /></span></>)}
               <span className="hm-num" style={{ position: 'absolute', top: -34, left: -34, width: 104, height: 104, borderRadius: 52, background: BADGE[i], color: '#fff', border: '8px solid #FBF4E9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56, fontWeight: 600, boxSizing: 'border-box' }}>{i + 1}</span>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              {img && <img src={img} alt="" style={{ width: '100%', maxHeight: showText ? 250 : '100%', objectFit: 'contain' }} />}
+              {img && <Pic src={img} alt="" style={{ width: '100%', height: 'auto', maxHeight: showText ? 250 : '100%', objectFit: 'contain' }} />}
               {showText && <span style={textOnly ? { textAlign: 'center', fontSize: 72, fontWeight: 600, lineHeight: 1.1, color: '#5A4038', overflowWrap: 'anywhere' } : { position: 'absolute', left: 0, right: 0, bottom: 14, textAlign: 'center', fontSize: 44, fontWeight: 600, color: '#5A4038' }}>{a.text}</span>}
             </button>
           );
