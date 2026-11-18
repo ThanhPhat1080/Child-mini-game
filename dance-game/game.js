@@ -128,17 +128,47 @@
   const kick = (t) => tone('sine', 140, t, 0.25, 0.9, 40);
   const snare = (t) => { hiss(t, 0.16, 0.35, 1200); tone('triangle', 200, t, 0.08, 0.25); };
   const hat = (t, v = 0.12) => hiss(t, 0.04, v, 7000);
-  const ROOTS = [110, 87.31, 130.81, 98]; // A2 F2 C3 G2
-  const MEL = [0, 7, 12, 7, 3, 7, 12, 15];
+  // ---- "Happy Birthday" (public domain) as an upbeat 4/4 dance loop ----
+  // 8 bars x 4 beats = 32 beats = 4 rounds. Notes: [bar 1-8, start in eighths, length in eighths, MIDI]
+  const midi = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  const G4 = 67, A4 = 69, B4 = 71, C5 = 72, D5 = 74, E5 = 76, F5 = 77, G5 = 79;
+  const SONG = [
+    [1, 0, 2, A4], [1, 2, 2, G4], [1, 4, 2, C5], [1, 6, 5, B4],
+    [2, 6, 1.5, G4], [2, 7.5, 0.5, G4],
+    [3, 0, 2, A4], [3, 2, 2, G4], [3, 4, 2, D5], [3, 6, 5, C5],
+    [4, 6, 1.5, G4], [4, 7.5, 0.5, G4],
+    [5, 0, 2, G5], [5, 2, 2, E5], [5, 4, 2, C5], [5, 6, 2, B4],
+    [6, 0, 4, A4], [6, 6, 1.5, F5], [6, 7.5, 0.5, F5],
+    [7, 0, 2, E5], [7, 2, 2, C5], [7, 4, 2, D5], [7, 6, 5, C5],
+    [8, 6, 1.5, G4], [8, 7.5, 0.5, G4], // pick-up "Hap-py" into the next loop
+  ].map(([bar, e, len, m]) => ({ at: (bar - 1) * 8 + e, len, m }));
+  const CHORDS = { C: { bass: 36, tones: [60, 64, 67] }, G: { bass: 43, tones: [59, 62, 67] }, F: { bass: 41, tones: [60, 65, 69] } };
+  const HALVES = ['C', 'G', 'G', 'G', 'G', 'C', 'C', 'C', 'C', 'C', 'F', 'F', 'C', 'G', 'C', 'C']; // one chord per half bar
+  const LOOP_BEATS = 32, INTRO_BEATS = 4;
+
+  function lead(m, t, dur) {
+    tone('square', midi(m), t, dur, 0.07);
+    tone('triangle', midi(m + 12), t, dur, 0.05);
+  }
   function scheduleBeat(b, t) {
-    const beat = 60 / bpm;
-    const root = ROOTS[Math.floor(b / 4) % 4];
+    const beat = 60 / bpm, eighth = beat / 2;
+    // Intro bar maps onto bar 8 of the loop, so the song's pick-up lands right before round 1
+    const pos = ((b - INTRO_BEATS) % LOOP_BEATS + LOOP_BEATS) % LOOP_BEATS;
+    const chord = CHORDS[HALVES[Math.floor(pos / 2)]];
+    const intro = b < INTRO_BEATS;
+    // Drums: four-on-the-floor, clap on 2 & 4, open hats on the off-beat
     kick(t);
-    if (b % 2 === 1) snare(t);
-    hat(t + beat / 2, 0.15); hat(t, 0.06);
-    tone('square', root, t, beat * 0.4, 0.09);
-    tone('square', root * 2, t + beat / 2, beat * 0.3, 0.06);
-    if (b % 8 >= 4) tone('triangle', root * 4 * Math.pow(2, MEL[(b * 2) % 8] / 12), t, beat * 0.45, 0.07);
+    if (pos % 2 === 1) snare(t);
+    hat(t, 0.05); hat(t + eighth, 0.16);
+    if (pos === 0 && !intro) hiss(t, 0.8, 0.12, 4000); // crash at the top of the loop
+    if (intro) return void SONG.filter((n) => n.at >= pos * 2 && n.at < pos * 2 + 2).forEach((n) => lead(n.m, t + (n.at - pos * 2) * eighth, n.len * eighth * 0.9));
+    // Octave disco bass + off-beat chord stabs
+    tone('square', midi(chord.bass), t, eighth * 0.8, 0.1);
+    tone('square', midi(chord.bass + 12), t + eighth, eighth * 0.7, 0.08);
+    chord.tones.forEach((m) => tone('triangle', midi(m), t + eighth, eighth * 0.5, 0.035));
+    // Melody
+    SONG.filter((n) => n.at >= pos * 2 && n.at < pos * 2 + 2)
+      .forEach((n) => lead(n.m, t + (n.at - pos * 2) * eighth, n.len * eighth * 0.9));
   }
   const sfx = {
     tap: () => tone('triangle', 880, ctx.currentTime, 0.06, 0.2),
@@ -223,11 +253,27 @@
       pendingSpin = kind === 'perfect';
       setDance(moves[Math.floor(Math.random() * moves.length)]);
     }
+    if (kind === 'perfect' || kind === 'great') confetti(kind === 'perfect' ? 40 : 15);
     showJudge(kind, kind === 'miss' ? 'MISS' : kind.toUpperCase() + (combo > 1 ? ' x' + combo : ''));
     sfx[kind]();
     updateHud();
   }
   let pendingSpin = false;
+
+  const CONFETTI = ['#ff5ea8', '#ffd84d', '#4dc3ff', '#5eea8a', '#c45eff', '#fff'];
+  function confetti(n) {
+    const stage = document.getElementById('stage');
+    for (let i = 0; i < n; i++) {
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.left = (Math.random() * 100) + 'vw';
+      c.style.background = CONFETTI[i % CONFETTI.length];
+      c.style.animationDelay = (Math.random() * 0.5) + 's';
+      c.style.animationDuration = (1.8 + Math.random()) + 's';
+      stage.appendChild(c);
+      setTimeout(() => c.remove(), 3500);
+    }
+  }
 
   function onKey(e) {
     if (e.key === 'Escape') { if (playing) stop(); return; }

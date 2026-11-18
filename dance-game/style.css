@@ -79,47 +79,77 @@ kbd { background: #fff2; border: 1px solid #fff6; border-radius: 4px; padding: 0
 
 /* ---------- Dancers ---------- */
 #crew { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
-.dancer { position: absolute; width: 12em; height: 25em; transform: translateX(-50%); }
-.dancer.main { font-size: 1.65vh; left: 50%; bottom: 19vh; z-index: 3; }
-.dancer.back { font-size: 1.2vh; bottom: 31vh; z-index: 1; filter: brightness(.85); }
-.dancer.back.l { left: 28%; } .dancer.back.r { left: 72%; }
-.dancer.back.l2 { left: 12%; bottom: 26vh; font-size: 1.3vh; z-index: 2; }
-.dancer.back.r2 { left: 88%; bottom: 26vh; font-size: 1.3vh; z-index: 2; }
-.shadow { position: absolute; left: 1.5em; right: 1.5em; bottom: -0.8em; height: 1.6em; border-radius: 50%; background: #0007; }
+/* Chibi 2D proportions: big head, small body, so the face is the star */
+.dancer { position: absolute; width: 14em; height: 24em; transform: translateX(-50%); }
+.dancer.main { font-size: 1.85vh; left: 50%; bottom: 25vh; z-index: 3; }
+.dancer.back { font-size: 1.15vh; bottom: 38vh; z-index: 1; filter: brightness(.8) saturate(.8); }
+.dancer.back.l { left: 30%; } .dancer.back.r { left: 70%; }
+.dancer.back.l2 { left: 13%; bottom: 31vh; font-size: 1.3vh; z-index: 2; }
+.dancer.back.r2 { left: 87%; bottom: 31vh; font-size: 1.3vh; z-index: 2; }
+.shadow { position: absolute; left: 3em; right: 3em; bottom: -0.6em; height: 1.4em; border-radius: 50%; background: #0007; }
 .spinner { position: absolute; inset: 0; }
 .body { position: absolute; inset: 0; transform-origin: 50% 100%; }
 .part { position: absolute; }
 
-.head { left: 2.5em; top: 3em; width: 7em; height: 7.4em; z-index: 3; }
-.face { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: .25em solid #0004; background: #f5c9a0; display: block; }
-.ear { position: absolute; top: 3em; width: 1.3em; height: 1.8em; border-radius: 50%; background: var(--skin, #f2c094); z-index: -1; }
-.ear.l { left: -.6em; } .ear.r { right: -.6em; }
+.head { left: 1.5em; top: 2.6em; width: 11em; height: 11.4em; z-index: 3; transform-origin: 50% 95%; }
+.face { position: relative; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: .3em solid #0003; background: #f5c9a0; display: block; z-index: 1; }
+.ear { position: absolute; top: 4.6em; width: 1.8em; height: 2.6em; border-radius: 50%; background: var(--skin, #f2c094); z-index: 0; }
+.ear.l { left: -.7em; } .ear.r { right: -.7em; }
+/* Main face: white rim, pink ring, warm halo that pulses on the beat */
+.main .face { border: .35em solid #fff; box-shadow: 0 0 0 .35em #ff5ea8, 0 .6em 1.2em #0006; }
+.main .head::before { content: ""; position: absolute; inset: -2.4em; border-radius: 50%; z-index: -1;
+  background: radial-gradient(circle, #fff3b0cc 0 45%, #ffd84d55 60%, transparent 72%);
+  animation: halo var(--beat) ease-out infinite; }
+@keyframes halo { 0% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(.94); opacity: .6; } }
+
+/* Head bob (separate from body, cartoon bobble-head) */
+.st-bounce .head { animation: nod var(--beat) ease-in-out infinite; }
+.st-m1 .head, .st-m2 .head, .st-m4 .head { animation: wobble calc(var(--beat) * 2) ease-in-out infinite; }
+.st-m3 .head { animation: nod var(--beat) ease-in-out infinite reverse; }
+@keyframes nod { 0%, 100% { transform: rotate(0) translateY(0); } 50% { transform: rotate(0) translateY(.5em); } }
+@keyframes wobble { 0%, 100% { transform: rotate(-9deg); } 25% { transform: rotate(0) translateY(.4em); } 50% { transform: rotate(9deg); } 75% { transform: rotate(0) translateY(.4em); } }
+/* PERFECT: face pops big */
+.spin.main .face { animation: facePop calc(var(--beat) * 2) ease-out 1; }
+@keyframes facePop { 0% { transform: scale(1); } 25% { transform: scale(1.25); } 60% { transform: scale(.95); } 100% { transform: scale(1); } }
 
 /* Propeller beanie */
-.hat { left: 2.1em; top: .9em; width: 7.8em; height: 3.9em; z-index: 4;
+.hat { left: 1.1em; top: -.4em; width: 11.8em; height: 5.4em; z-index: 4;
   border-radius: 50% 50% 8% 8% / 100% 100% 10% 10%;
   background: conic-gradient(from -90deg at 50% 100%, #ff4f7b 0 30deg, #ffd84d 30deg 60deg, #4dc3ff 60deg 90deg, #5eea8a 90deg 120deg, #ff4f7b 120deg 150deg, #ffd84d 150deg 180deg, transparent 0);
   box-shadow: inset 0 -.4em 0 #0002; }
-.hat::after { /* visor */ content: ""; position: absolute; right: -2.2em; bottom: -.3em; width: 4.2em; height: 1.1em; border-radius: 0 50% 50% 0 / 0 100% 100% 0; background: #ff4f7b; box-shadow: inset 0 -.3em 0 #0003; transform: rotate(-6deg); }
-.hat .stick { position: absolute; left: 50%; top: -1.1em; width: .45em; height: 1.3em; margin-left: -.22em; background: #555; border-radius: .2em; }
-.hat .ball { position: absolute; left: 50%; top: -1.5em; width: .9em; height: .9em; margin-left: -.45em; border-radius: 50%; background: #ffd84d; z-index: 2; }
-.hat .prop { position: absolute; left: 50%; top: -1.35em; width: 6em; height: .9em; margin-left: -3em;
+.hat::after { /* visor */ content: ""; position: absolute; right: -3em; bottom: -.3em; width: 5.6em; height: 1.4em; border-radius: 0 50% 50% 0 / 0 100% 100% 0; background: #ff4f7b; box-shadow: inset 0 -.3em 0 #0003; transform: rotate(-6deg); }
+.hat .stick { position: absolute; left: 50%; top: -1.5em; width: .55em; height: 1.7em; margin-left: -.27em; background: #555; border-radius: .2em; }
+.hat .ball { position: absolute; left: 50%; top: -2em; width: 1.2em; height: 1.2em; margin-left: -.6em; border-radius: 50%; background: #ffd84d; z-index: 2; }
+.hat .prop { position: absolute; left: 50%; top: -1.8em; width: 8em; height: 1.1em; margin-left: -4em;
   background: linear-gradient(90deg, #4dc3ff 0 48%, transparent 48% 52%, #ff4f7b 52%); border-radius: 50%;
   animation: prop .25s linear infinite; }
 @keyframes prop { 0% { transform: scaleX(1); } 50% { transform: scaleX(-1); } 100% { transform: scaleX(1); } }
 
-.torso { left: 3em; top: 10em; width: 6em; height: 6.8em; border-radius: 1.6em 1.6em 1em 1em; background: var(--shirt, #ff7a3d); z-index: 2;
-  box-shadow: inset 0 -.6em 0 #0002; }
-.torso::after { content: "★"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 3em; color: #fff9; }
-.neck { left: 5.2em; top: 9.4em; width: 1.6em; height: 1.2em; background: var(--skin, #f2c094); z-index: 1; }
-.arm { top: 10.4em; width: 1.7em; height: 6.2em; border-radius: .9em; background: var(--shirt, #ff7a3d); transform-origin: 50% .8em; z-index: 1; }
-.arm::after { content: ""; position: absolute; left: -.15em; bottom: -.9em; width: 2em; height: 2em; border-radius: 50%; background: var(--skin, #f2c094); }
-.arm.l { left: 1.6em; transform: rotate(14deg); }
-.arm.r { left: 8.7em; transform: rotate(-14deg); }
-.leg { top: 16.2em; width: 2.1em; height: 7.6em; border-radius: .6em; background: var(--pants, #2e5aac); transform-origin: 50% 0; z-index: 1; }
-.leg::after { content: ""; position: absolute; bottom: -.5em; width: 3.2em; height: 1.4em; border-radius: 1em 1.4em .4em .4em; background: var(--shoe, #fff); }
-.leg.l { left: 3.5em; } .leg.l::after { left: -1.2em; }
-.leg.r { left: 6.4em; } .leg.r::after { left: .1em; }
+.torso { left: 4.25em; top: 13.6em; width: 5.5em; height: 5.4em; border-radius: 1.6em 1.6em 1em 1em; background: var(--shirt, #ff7a3d); z-index: 2; }
+.torso::after { content: "★"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 2.4em; color: #fff9; }
+.neck { left: 6.2em; top: 13em; width: 1.6em; height: 1.2em; background: var(--skin, #f2c094); z-index: 1; }
+.arm { top: 14em; width: 1.5em; height: 4.8em; border-radius: .8em; background: var(--shirt, #ff7a3d); transform-origin: 50% .75em; z-index: 1; }
+.arm::after { content: ""; position: absolute; left: -.2em; bottom: -.8em; width: 1.9em; height: 1.9em; border-radius: 50%; background: var(--skin, #f2c094); }
+.arm.l { left: 3.1em; transform: rotate(14deg); }
+.arm.r { left: 9.4em; transform: rotate(-14deg); }
+.leg { top: 18.6em; width: 1.8em; height: 4.6em; border-radius: .6em; background: var(--pants, #2e5aac); transform-origin: 50% 0; z-index: 1; }
+.leg::after { content: ""; position: absolute; bottom: -.5em; width: 2.8em; height: 1.3em; border-radius: 1em 1.4em .4em .4em; background: var(--shoe, #fff); }
+.leg.l { left: 5em; } .leg.l::after { left: -1.1em; }
+.leg.r { left: 7.2em; } .leg.r::after { left: .1em; }
+
+/* ---------- Birthday decor ---------- */
+.bunting { position: absolute; top: 64px; left: 0; right: 0; height: 40px; display: flex; justify-content: space-around; z-index: 5; pointer-events: none;
+  background: linear-gradient(transparent 0 2px, #fff6 2px 4px, transparent 4px); }
+.bunting i { width: 0; height: 0; border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 34px solid #ff5ea8; transform-origin: 50% 0; animation: flag calc(var(--beat) * 2) ease-in-out infinite alternate; }
+.bunting i:nth-child(4n+2) { border-top-color: #ffd84d; } .bunting i:nth-child(4n+3) { border-top-color: #4dc3ff; } .bunting i:nth-child(4n) { border-top-color: #5eea8a; }
+@keyframes flag { from { transform: rotate(-6deg); } to { transform: rotate(6deg); } }
+.balloon { position: absolute; width: 60px; height: 74px; border-radius: 50% 50% 48% 48%; z-index: 4; pointer-events: none;
+  animation: float 4s ease-in-out infinite alternate; }
+.balloon::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: 90px; background: #fff8; }
+.balloon::before { content: ""; position: absolute; left: 14px; top: 12px; width: 12px; height: 18px; border-radius: 50%; background: #fff6; }
+@keyframes float { from { transform: translateY(0) rotate(-4deg); } to { transform: translateY(-18px) rotate(4deg); } }
+.confetti { position: absolute; top: -20px; width: 10px; height: 16px; z-index: 30; pointer-events: none; animation: fall 2.2s linear forwards; }
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
 
 /* ---------- States ---------- */
 /* Fail / waiting: just bounce ("nhún nhún") */
@@ -173,5 +203,6 @@ kbd { background: #fff2; border: 1px solid #fff6; border-radius: 4px; padding: 0
 
 @media (prefers-reduced-motion: reduce) {
   .lights i, .hat .prop { animation: none; }
-  .spin .spinner { animation: none; }
+  .spin .spinner, .spin.main .face, .bunting i, .balloon, .main .head::before { animation: none; }
+  .confetti { display: none; }
 }
