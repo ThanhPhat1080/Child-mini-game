@@ -187,7 +187,17 @@
   const beatLen = () => 60 / bpm;
   const roundLen = () => beatLen() * BEATS_PER_ROUND;
   const now = () => ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0);
-  const arrowCount = (k) => Math.min(3 + Math.floor(k / 3), 10);
+  // Arrow plan: 4 arrows x3 rounds, 5 x3, 6 x4, 7 x5, 8 x8, then 9-11 (random) until the stage ends
+  const PLAN = [[4, 3], [5, 3], [6, 4], [7, 5], [8, 8]], LAST_MIN = 9, LAST_MAX = 11;
+  function planStep(k) {
+    for (let i = 0, end = 0; i < PLAN.length; i++) { end += PLAN[i][1]; if (k < end) return i; }
+    return PLAN.length;
+  }
+  const arrowCount = (k) => PLAN[planStep(k)] ? PLAN[planStep(k)][0]
+    : LAST_MIN + Math.floor(Math.random() * (LAST_MAX - LAST_MIN + 1));
+  const STAGE_SECONDS = 120; // one stage is about 2 minutes, rounded to whole rounds
+  let totalRounds = 0, endTime = 0, lastSecShown = -1;
+  const elTimer = $('timer');
 
   // Beat bar layout
   (function drawBar() {
@@ -224,7 +234,7 @@
   }
   function updateHud() {
     ui.score.textContent = score; ui.combo.textContent = combo;
-    ui.level.textContent = arrowCount(Math.max(roundIdx, 0)) - 2;
+    ui.level.textContent = planStep(Math.max(roundIdx, 0)) + 1;
     ui.P.textContent = counts.perfect; ui.G.textContent = counts.great; ui.B.textContent = counts.bad; ui.M.textContent = counts.miss;
   }
 
@@ -296,9 +306,16 @@
       sfx.tap();
       if (round.idx === round.seq.length) { round.state = 'ready'; elArrows.classList.add('ready'); }
     } else {
-      box.classList.add('wrong');
       sfx.wrong();
-      judge('miss');
+      const zoneStart = round.start + TARGET_BEAT * beatLen() - WIN.bad;
+      if (now() >= zoneStart) { box.classList.add('wrong'); judge('miss'); return; }
+      // Before the bright zone: flash red, clear the sequence and let the player type it again
+      round.idx = 0;
+      const boxes = [...elArrows.children];
+      boxes.forEach((b) => b.classList.remove('hit'));
+      boxes.forEach((b) => b.classList.add('wrong'));
+      const r = round;
+      setTimeout(() => { if (round === r) boxes.forEach((b) => b.classList.remove('wrong')); }, 250);
     }
   }
 
@@ -319,14 +336,17 @@
       const b = Math.floor(rel / beatLen()); // -4..-1
       if (b !== lastBeatSeen) { lastBeatSeen = b; showJudge('count', b === -1 ? 'NHẢY!' : String(-b - 1)); }
       elMarker.style.left = '0%';
+      drawTimer(totalRounds * roundLen());
       raf = requestAnimationFrame(loop);
       return;
     }
     const k = Math.floor(rel / roundLen());
     if (k !== roundIdx) {
       if (round && round.state !== 'judged') judge('miss');
+      if (k >= totalRounds) { finish(); return; }
       startRound(k);
     }
+    drawTimer(endTime - t);
     // Too late for Space -> miss
     if (round.state !== 'judged' && t > round.start + TARGET_BEAT * beatLen() + WIN.bad) {
       judge('miss');
@@ -352,6 +372,10 @@
     const begin = ctx.currentTime + 0.15;
     nextBeatIdx = 0; nextBeatTime = begin;
     t0 = begin + 4 * beatLen(); // one-bar intro with countdown
+    totalRounds = Math.round(STAGE_SECONDS / roundLen());
+    endTime = t0 + totalRounds * roundLen();
+    lastSecShown = -1;
+    $('result').hidden = true;
     applyDance('bounce');
     updateHud();
     playing = true;
@@ -360,6 +384,35 @@
     schedTimer = setInterval(scheduler, 25);
     scheduler();
     raf = requestAnimationFrame(loop);
+  }
+  // Top-centre countdown; the last 5 seconds grow big with a beep each second
+  function drawTimer(left) {
+    const sec = Math.max(0, Math.ceil(left));
+    if (sec === lastSecShown) return;
+    lastSecShown = sec;
+    if (sec <= 5 && sec > 0) {
+      elTimer.textContent = sec;
+      elTimer.className = '';
+      void elTimer.offsetWidth;
+      elTimer.className = 'alert';
+      $('stage').classList.add('final');
+      if (ctx) tone('square', 1046, ctx.currentTime, 0.12, 0.25);
+    } else {
+      elTimer.className = '';
+      $('stage').classList.remove('final');
+      elTimer.textContent = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+    }
+  }
+  function finish() {
+    stop();
+    elTimer.className = '';
+    elTimer.textContent = '0:00';
+    $('stage').classList.remove('final');
+    showJudge('count', 'HẾT GIỜ!');
+    $('result').hidden = false;
+    $('resScore').textContent = score;
+    $('resDetail').textContent = `Perfect ${counts.perfect} · Great ${counts.great} · Bad ${counts.bad} · Miss ${counts.miss}`;
+    $('start').textContent = '▶ Chơi lại';
   }
   function stop() {
     playing = false;

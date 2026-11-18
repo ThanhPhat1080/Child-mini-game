@@ -28,6 +28,15 @@ kbd { background: #fff2; border: 1px solid #fff6; border-radius: 4px; padding: 0
 .hud-box { background: #0007; border: 2px solid #fff3; border-radius: 14px; padding: 6px 16px; font-size: 18px; }
 .hud-box b { color: var(--gold); font-size: 24px; margin-left: 6px; }
 .hud-box.small, .hud-box.small b { font-size: 15px; }
+#hud { align-items: flex-start; }
+#timer { min-width: 120px; text-align: center; font-size: 34px; font-weight: 900; font-variant-numeric: tabular-nums; color: #fff;
+  background: linear-gradient(#ff5ea8, #c4306f); border: 3px solid #fff; border-radius: 18px; padding: 2px 18px; box-shadow: 0 4px 0 #0006;
+  transform-origin: 50% 0; position: relative; z-index: 30; }
+#timer.alert { color: #fff; background: linear-gradient(#ff3b3b, #a10f0f); animation: alertPop 1s ease-out forwards; }
+@keyframes alertPop { 0% { transform: scale(1); } 15% { transform: scale(3.4); } 40% { transform: scale(2.6); } 100% { transform: scale(2.2); } }
+#result { margin: 6px 0 14px; padding: 12px; border-radius: 14px; background: #0005; }
+.res-title { font-size: 20px; }
+.res-score b { font-size: 48px; color: var(--gold); }
 
 /* ---------- Panel ---------- */
 #panel { position: absolute; left: 50%; bottom: 3vh; transform: translateX(-50%); width: min(860px, 94vw); z-index: 20;
@@ -45,6 +54,11 @@ kbd { background: #fff2; border: 1px solid #fff6; border-radius: 4px; padding: 0
 #zone-bad { background: #ff9f1a55; }
 #zone-great { background: #4dc3ff88; }
 #zone-perfect { background: #fff; box-shadow: 0 0 12px #fff; }
+/* The target zone blinks so it is easy to spot */
+#zone-great, #zone-perfect { animation: blink calc(var(--beat) / 2) steps(1) infinite; }
+#zone-bad { animation: blinkSoft calc(var(--beat) / 2) ease-in-out infinite alternate; }
+@keyframes blink { 0% { opacity: 1; } 50% { opacity: .25; } }
+@keyframes blinkSoft { from { opacity: 1; } to { opacity: .4; } }
 #marker { position: absolute; top: -2px; bottom: -2px; width: 6px; margin-left: -3px; background: var(--gold); border-radius: 3px; box-shadow: 0 0 10px var(--gold); }
 .hint { text-align: center; font-size: 14px; opacity: .8; }
 
@@ -52,6 +66,9 @@ kbd { background: #fff2; border: 1px solid #fff6; border-radius: 4px; padding: 0
 #judge { position: absolute; left: 50%; top: 22%; transform: translate(-50%, -50%); z-index: 25; pointer-events: none;
   font-size: clamp(40px, 9vw, 96px); font-weight: 900; letter-spacing: 3px; font-style: italic; text-shadow: 0 4px 0 #0008; }
 #judge.show { animation: pop .9s ease-out forwards; }
+#judge { white-space: nowrap; }
+/* Last 5 seconds: the big countdown owns the top, judgments drop lower and smaller */
+#stage.final #judge { top: 36%; font-size: clamp(28px, 5vw, 56px); }
 #judge.perfect { background: linear-gradient(90deg, #ff5ea8, #ffd84d, #5effc8, #5ec8ff, #c45eff); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 3px 0 #0008); }
 #judge.great { color: #4dc3ff; }
 #judge.bad { color: #ff9f1a; }
@@ -203,6 +220,7 @@ kbd { background: #fff2; border: 1px solid #fff6; border-radius: 4px; padding: 0
 
 @media (prefers-reduced-motion: reduce) {
   .lights i, .hat .prop { animation: none; }
+  #zone-great, #zone-perfect, #zone-bad, #timer.alert { animation: none; }
   .spin .spinner, .spin.main .face, .bunting i, .balloon, .main .head::before { animation: none; }
   .confetti { display: none; }
 }

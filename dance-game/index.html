@@ -20,6 +20,7 @@
   <div id="hud">
     <div class="hud-box">Điểm <b id="score">0</b></div>
     <div class="hud-box">Combo <b id="combo">0</b></div>
+    <div id="timer">2:00</div>
     <div class="hud-box">Cấp <b id="level">1</b></div>
     <div class="hud-box small">P <b id="cntP">0</b> · G <b id="cntG">0</b> · B <b id="cntB">0</b> · M <b id="cntM">0</b></div>
   </div>
@@ -39,14 +40,19 @@
       <div id="zone-perfect"></div>
       <div id="marker"></div>
     </div>
-    <div class="hint">Gõ các mũi tên theo thứ tự ← ↑ → ↓ rồi bấm <kbd>Space</kbd> đúng lúc vạch chạy vào ô sáng</div>
+    <div class="hint">Gõ các mũi tên theo thứ tự ← ↑ → ↓ rồi bấm <kbd>Space</kbd> đúng lúc vạch chạy vào ô sáng nhấp nháy</div>
   </div>
 
   <!-- Menu -->
   <div id="menu">
     <div class="card">
       <h1>Vũ Điệu Mũ Chong Chóng</h1>
-      <p>Gõ <b>các phím mũi tên</b> giống trên màn hình, rồi bấm <kbd>Space</kbd> khi vạch chạy tới ô sáng.</p>
+      <div id="result" hidden>
+        <div class="res-title">Kết thúc màn chơi!</div>
+        <div class="res-score"><b id="resScore">0</b> điểm</div>
+        <div id="resDetail" class="small"></div>
+      </div>
+      <p>Gõ <b>các phím mũi tên</b> giống trên màn hình, rồi bấm <kbd>Space</kbd> khi vạch chạy tới ô sáng nhấp nháy. Mỗi màn chơi khoảng 2 phút.</p>
       <p class="rules"><span class="p">PERFECT +3</span> <span class="g">GREAT +2</span> <span class="b">BAD +1</span> <span class="m">MISS 0</span></p>
       <p class="small">Gõ sai hoặc trễ: cả nhóm chỉ nhún nhún, không có điểm, chờ lượt sau.</p>
       <label class="btn ghost">📷 Chọn ảnh khuôn mặt
