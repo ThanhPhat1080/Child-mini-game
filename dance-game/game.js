@@ -1,0 +1,337 @@
+(() => {
+  'use strict';
+
+  // ---------- Config ----------
+  const FACE_PATH = 'assets/face.png';   // put the boy's face photo here
+  const BEATS_PER_ROUND = 8;              // marker crosses the bar in 8 beats
+  const TARGET_BEAT = 7;                  // Space should land on beat 7
+  const WIN = { perfect: 0.07, great: 0.14, bad: 0.24 }; // seconds either side
+  const POINTS = { perfect: 3, great: 2, bad: 1, miss: 0 };
+  const ARROWS = { ArrowLeft: '←', ArrowUp: '↑', ArrowRight: '→', ArrowDown: '↓' };
+  const KEYS = Object.keys(ARROWS);
+
+  // ---------- Default cartoon faces (SVG) ----------
+  function faceSvg(skin, hair, mouth = 'smile') {
+    const m = mouth === 'smile'
+      ? '<path d="M38 66 Q50 78 62 66" stroke="#7a2e1d" stroke-width="4" fill="none" stroke-linecap="round"/>'
+      : '<ellipse cx="50" cy="69" rx="7" ry="5" fill="#7a2e1d"/>';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="${skin}"/>
+      <path d="M0 0 H100 V30 Q75 42 50 30 Q25 42 0 30Z" fill="${hair}"/>
+      <ellipse cx="35" cy="50" rx="5" ry="7" fill="#222"/><ellipse cx="65" cy="50" rx="5" ry="7" fill="#222"/>
+      <circle cx="37" cy="47" r="1.8" fill="#fff"/><circle cx="67" cy="47" r="1.8" fill="#fff"/>
+      <circle cx="25" cy="62" r="6" fill="#ff8a8a" opacity=".5"/><circle cx="75" cy="62" r="6" fill="#ff8a8a" opacity=".5"/>
+      ${m}</svg>`;
+    return 'data:image/svg+xml,' + encodeURIComponent(svg);
+  }
+  const DEFAULT_FACE = faceSvg('#f2c094', '#2b1a10');
+
+  // ---------- Build dancers ----------
+  const crew = document.getElementById('crew');
+  function makeDancer(cls, face, colors) {
+    const d = document.createElement('div');
+    d.className = 'dancer ' + cls + ' st-bounce';
+    Object.entries(colors).forEach(([k, v]) => d.style.setProperty('--' + k, v));
+    d.innerHTML = `
+      <div class="shadow"></div>
+      <div class="spinner"><div class="body">
+        <div class="part arm l"></div><div class="part arm r"></div>
+        <div class="part leg l"></div><div class="part leg r"></div>
+        <div class="part neck"></div>
+        <div class="part torso"></div>
+        <div class="part head"><div class="ear l"></div><div class="ear r"></div><img class="face" alt="" src="${face}"></div>
+        ${cls.includes('main') ? '<div class="part hat"><div class="stick"></div><div class="prop"></div><div class="ball"></div></div>' : ''}
+      </div></div>`;
+    crew.appendChild(d);
+    return d;
+  }
+  const dancers = [
+    makeDancer('back l2', faceSvg('#e8b98a', '#6b3b1a', 'o'), { shirt: '#5eea8a', pants: '#333', skin: '#e8b98a' }),
+    makeDancer('back r2', faceSvg('#f6d0b0', '#111'), { shirt: '#c45eff', pants: '#2e2e6e', skin: '#f6d0b0' }),
+    makeDancer('back l', faceSvg('#d9a77a', '#3a2a1a'), { shirt: '#4dc3ff', pants: '#553', skin: '#d9a77a' }),
+    makeDancer('back r', faceSvg('#f2c094', '#8a4b20', 'o'), { shirt: '#ffd84d', pants: '#7a2e5a', skin: '#f2c094' }),
+    makeDancer('main', DEFAULT_FACE, { shirt: '#ff7a3d', pants: '#2e5aac', skin: '#f2c094' }),
+  ];
+  const mainFace = dancers[4].querySelector('.face');
+
+  // Face: uploaded (saved) > assets/face.png > cartoon default
+  function setMainFace(src) { mainFace.src = src; }
+  let saved = null;
+  try { saved = localStorage.getItem('dance.face'); } catch (e) { /* ignore */ }
+  if (saved) setMainFace(saved);
+  else {
+    const probe = new Image();
+    probe.onload = () => setMainFace(FACE_PATH);
+    probe.src = FACE_PATH;
+  }
+  document.getElementById('faceInput').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => {
+      // Downscale to keep localStorage small
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        const s = 320, k = Math.min(img.width, img.height);
+        c.width = c.height = s;
+        c.getContext('2d').drawImage(img, (img.width - k) / 2, (img.height - k) / 2, k, k, 0, 0, s, s);
+        const url = c.toDataURL('image/jpeg', 0.88);
+        setMainFace(url);
+        try { localStorage.setItem('dance.face', url); } catch (err) { /* ignore */ }
+      };
+      img.src = r.result;
+    };
+    r.readAsDataURL(file);
+  });
+  document.getElementById('faceReset').addEventListener('click', () => {
+    try { localStorage.removeItem('dance.face'); } catch (e) { /* ignore */ }
+    setMainFace(DEFAULT_FACE);
+    const probe = new Image();
+    probe.onload = () => setMainFace(FACE_PATH);
+    probe.src = FACE_PATH;
+  });
+
+  // ---------- DOM ----------
+  const $ = (id) => document.getElementById(id);
+  const elArrows = $('arrows'), elMarker = $('marker'), elJudge = $('judge'), elMenu = $('menu');
+  const ui = { score: $('score'), combo: $('combo'), level: $('level'), P: $('cntP'), G: $('cntG'), B: $('cntB'), M: $('cntM') };
+
+  // ---------- Audio ----------
+  let ctx = null, noise = null, master = null;
+  function initAudio() {
+    if (ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain(); master.gain.value = 0.6; master.connect(ctx.destination);
+    noise = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
+    const d = noise.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  function env(g, t, a, peak, dec) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + a);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + a + dec);
+  }
+  function tone(type, freq, t, dur, vol, freqEnd) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (freqEnd) o.frequency.exponentialRampToValueAtTime(freqEnd, t + dur);
+    env(g, t, 0.005, vol, dur);
+    o.connect(g).connect(master); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function hiss(t, dur, vol, hp) {
+    const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    s.buffer = noise; f.type = 'highpass'; f.frequency.value = hp;
+    env(g, t, 0.002, vol, dur);
+    s.connect(f).connect(g).connect(master); s.start(t); s.stop(t + dur + 0.05);
+  }
+  const kick = (t) => tone('sine', 140, t, 0.25, 0.9, 40);
+  const snare = (t) => { hiss(t, 0.16, 0.35, 1200); tone('triangle', 200, t, 0.08, 0.25); };
+  const hat = (t, v = 0.12) => hiss(t, 0.04, v, 7000);
+  const ROOTS = [110, 87.31, 130.81, 98]; // A2 F2 C3 G2
+  const MEL = [0, 7, 12, 7, 3, 7, 12, 15];
+  function scheduleBeat(b, t) {
+    const beat = 60 / bpm;
+    const root = ROOTS[Math.floor(b / 4) % 4];
+    kick(t);
+    if (b % 2 === 1) snare(t);
+    hat(t + beat / 2, 0.15); hat(t, 0.06);
+    tone('square', root, t, beat * 0.4, 0.09);
+    tone('square', root * 2, t + beat / 2, beat * 0.3, 0.06);
+    if (b % 8 >= 4) tone('triangle', root * 4 * Math.pow(2, MEL[(b * 2) % 8] / 12), t, beat * 0.45, 0.07);
+  }
+  const sfx = {
+    tap: () => tone('triangle', 880, ctx.currentTime, 0.06, 0.2),
+    wrong: () => tone('sawtooth', 160, ctx.currentTime, 0.3, 0.25, 80),
+    perfect: () => [0, 4, 7, 12].forEach((s, i) => tone('triangle', 660 * Math.pow(2, s / 12), ctx.currentTime + i * 0.05, 0.15, 0.2)),
+    great: () => [0, 7].forEach((s, i) => tone('triangle', 660 * Math.pow(2, s / 12), ctx.currentTime + i * 0.06, 0.15, 0.2)),
+    bad: () => tone('triangle', 440, ctx.currentTime, 0.15, 0.2),
+    miss: () => tone('sawtooth', 220, ctx.currentTime, 0.35, 0.2, 110),
+  };
+
+  // ---------- Game state ----------
+  let bpm = 110, playing = false, t0 = 0, nextBeatIdx = 0, nextBeatTime = 0, schedTimer = 0, raf = 0;
+  let roundIdx = -1, round = null, lastBeatSeen = -99, pendingState = null;
+  let score = 0, combo = 0, counts = { perfect: 0, great: 0, bad: 0, miss: 0 };
+
+  const beatLen = () => 60 / bpm;
+  const roundLen = () => beatLen() * BEATS_PER_ROUND;
+  const now = () => ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0);
+  const arrowCount = (k) => Math.min(3 + Math.floor(k / 3), 10);
+
+  // Beat bar layout
+  (function drawBar() {
+    const ticks = $('ticks');
+    for (let i = 1; i < BEATS_PER_ROUND; i++) {
+      const t = document.createElement('i'); t.style.left = (i / BEATS_PER_ROUND * 100) + '%'; ticks.appendChild(t);
+    }
+  })();
+  function layoutZones() {
+    const c = TARGET_BEAT / BEATS_PER_ROUND * 100, rl = roundLen();
+    [['zone-bad', WIN.bad], ['zone-great', WIN.great], ['zone-perfect', WIN.perfect]].forEach(([id, w]) => {
+      const el = $(id); el.style.left = c + '%'; el.style.width = (w * 2 / rl * 100) + '%';
+    });
+  }
+
+  function setDance(state) {
+    // state: 'bounce' | 'm1'..'m4'; applied on the next beat so it stays in time
+    pendingState = state;
+  }
+  function applyDance(state, spin) {
+    dancers.forEach((d) => {
+      d.classList.remove('st-bounce', 'st-m1', 'st-m2', 'st-m3', 'st-m4', 'spin');
+      void d.offsetWidth; // restart animations on the beat
+      d.classList.add('st-' + state);
+      if (spin) d.classList.add('spin');
+    });
+  }
+
+  function showJudge(kind, text) {
+    elJudge.className = '';
+    void elJudge.offsetWidth;
+    elJudge.textContent = text || kind.toUpperCase();
+    elJudge.className = kind + ' show';
+  }
+  function updateHud() {
+    ui.score.textContent = score; ui.combo.textContent = combo;
+    ui.level.textContent = arrowCount(Math.max(roundIdx, 0)) - 2;
+    ui.P.textContent = counts.perfect; ui.G.textContent = counts.great; ui.B.textContent = counts.bad; ui.M.textContent = counts.miss;
+  }
+
+  function startRound(k) {
+    roundIdx = k;
+    const n = arrowCount(k);
+    const seq = [];
+    for (let i = 0; i < n; i++) seq.push(KEYS[Math.floor(Math.random() * 4)]);
+    round = { seq, idx: 0, state: 'input', start: t0 + k * roundLen() };
+    elArrows.className = '';
+    elArrows.innerHTML = seq.map((key) => `<div class="arr">${ARROWS[key]}</div>`).join('');
+    updateHud();
+  }
+
+  function judge(kind) {
+    round.state = 'judged';
+    counts[kind]++;
+    score += POINTS[kind];
+    if (kind === 'miss') {
+      combo = 0;
+      elArrows.classList.add('dead');
+      setDance('bounce');
+    } else {
+      combo++;
+      const moves = ['m1', 'm2', 'm3', 'm4'];
+      pendingSpin = kind === 'perfect';
+      setDance(moves[Math.floor(Math.random() * moves.length)]);
+    }
+    showJudge(kind, kind === 'miss' ? 'MISS' : kind.toUpperCase() + (combo > 1 ? ' x' + combo : ''));
+    sfx[kind]();
+    updateHud();
+  }
+  let pendingSpin = false;
+
+  function onKey(e) {
+    if (e.key === 'Escape') { if (playing) stop(); return; }
+    if (!playing) return;
+    if (!KEYS.includes(e.key) && e.code !== 'Space') return;
+    e.preventDefault();
+    if (e.repeat || !round || round.state === 'judged' || now() < round.start) return;
+
+    if (e.code === 'Space') {
+      if (round.state !== 'ready') { judge('miss'); return; }
+      const dt = Math.abs(now() - (round.start + TARGET_BEAT * beatLen()));
+      judge(dt <= WIN.perfect ? 'perfect' : dt <= WIN.great ? 'great' : dt <= WIN.bad ? 'bad' : 'miss');
+      return;
+    }
+    if (round.state !== 'input') return; // extra arrows after finishing are ignored
+    const box = elArrows.children[round.idx];
+    if (e.key === round.seq[round.idx]) {
+      box.classList.add('hit');
+      round.idx++;
+      sfx.tap();
+      if (round.idx === round.seq.length) { round.state = 'ready'; elArrows.classList.add('ready'); }
+    } else {
+      box.classList.add('wrong');
+      sfx.wrong();
+      judge('miss');
+    }
+  }
+
+  function scheduler() {
+    while (nextBeatTime < ctx.currentTime + 0.12) {
+      scheduleBeat(nextBeatIdx, nextBeatTime);
+      nextBeatIdx++;
+      nextBeatTime += beatLen();
+    }
+  }
+
+  function loop() {
+    if (!playing) return;
+    const t = now();
+    const rel = t - t0;
+    // Countdown during the intro bar
+    if (rel < 0) {
+      const b = Math.floor(rel / beatLen()); // -4..-1
+      if (b !== lastBeatSeen) { lastBeatSeen = b; showJudge('count', b === -1 ? 'NHẢY!' : String(-b - 1)); }
+      elMarker.style.left = '0%';
+      raf = requestAnimationFrame(loop);
+      return;
+    }
+    const k = Math.floor(rel / roundLen());
+    if (k !== roundIdx) {
+      if (round && round.state !== 'judged') judge('miss');
+      startRound(k);
+    }
+    // Too late for Space -> miss
+    if (round.state !== 'judged' && t > round.start + TARGET_BEAT * beatLen() + WIN.bad) {
+      judge('miss');
+    }
+    elMarker.style.left = ((t - round.start) / roundLen() * 100) + '%';
+    // Apply queued dance change on each beat boundary
+    const beatNo = Math.floor(rel / beatLen());
+    if (beatNo !== lastBeatSeen) {
+      lastBeatSeen = beatNo;
+      if (pendingState) { applyDance(pendingState, pendingSpin); pendingState = null; pendingSpin = false; }
+    }
+    raf = requestAnimationFrame(loop);
+  }
+
+  function start() {
+    initAudio();
+    ctx.resume();
+    document.documentElement.style.setProperty('--beat', beatLen() + 's');
+    layoutZones();
+    score = 0; combo = 0; counts = { perfect: 0, great: 0, bad: 0, miss: 0 };
+    roundIdx = -1; round = null; lastBeatSeen = -99; pendingState = null;
+    elArrows.innerHTML = '';
+    const begin = ctx.currentTime + 0.15;
+    nextBeatIdx = 0; nextBeatTime = begin;
+    t0 = begin + 4 * beatLen(); // one-bar intro with countdown
+    applyDance('bounce');
+    updateHud();
+    playing = true;
+    elMenu.classList.add('hidden');
+    if (document.activeElement) document.activeElement.blur();
+    schedTimer = setInterval(scheduler, 25);
+    scheduler();
+    raf = requestAnimationFrame(loop);
+  }
+  function stop() {
+    playing = false;
+    clearInterval(schedTimer);
+    cancelAnimationFrame(raf);
+    applyDance('bounce');
+    elMenu.classList.remove('hidden');
+    $('start').focus();
+  }
+
+  document.addEventListener('keydown', onKey);
+  $('start').addEventListener('click', start);
+  document.querySelectorAll('.sp').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('.sp').forEach((x) => x.classList.remove('on'));
+    b.classList.add('on'); bpm = Number(b.dataset.bpm);
+  }));
+  // Prevent Space on a focused button from re-clicking during play
+  document.addEventListener('keyup', (e) => { if (playing && e.code === 'Space') e.preventDefault(); });
+  layoutZones();
+  updateHud();
+})();

@@ -1,0 +1,177 @@
+:root {
+  --beat: 0.545s;
+  --gold: #ffd84d;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #120726; font-family: "Trebuchet MS", system-ui, sans-serif; color: #fff; }
+kbd { background: #fff2; border: 1px solid #fff6; border-radius: 4px; padding: 0 6px; }
+
+/* ---------- Stage ---------- */
+#stage { position: relative; width: 100vw; height: 100vh; overflow: hidden;
+  background: radial-gradient(ellipse at 50% 20%, #5a1d8f 0%, #2a0d4f 45%, #120726 100%); }
+.floor { position: absolute; left: -20%; right: -20%; bottom: 0; height: 42%;
+  background:
+    repeating-linear-gradient(90deg, #ffffff10 0 2px, transparent 2px 12%),
+    repeating-linear-gradient(0deg, #ffffff10 0 2px, transparent 2px 18%),
+    linear-gradient(#3b1670, #1a0833);
+  transform: perspective(600px) rotateX(55deg); transform-origin: 50% 100%; }
+.lights i { position: absolute; top: -10%; width: 30vw; height: 110vh; opacity: .22;
+  background: linear-gradient(#fff, transparent 80%); clip-path: polygon(45% 0, 55% 0, 100% 100%, 0 100%);
+  transform-origin: 50% 0; animation: sweep 6s ease-in-out infinite alternate; }
+.lights i:nth-child(1) { left: 5%; background: linear-gradient(#ff7ad9, transparent 80%); }
+.lights i:nth-child(2) { left: 35%; background: linear-gradient(#7af0ff, transparent 80%); animation-delay: -2s; }
+.lights i:nth-child(3) { left: 65%; background: linear-gradient(#ffe97a, transparent 80%); animation-delay: -4s; }
+@keyframes sweep { from { transform: rotate(-25deg); } to { transform: rotate(25deg); } }
+
+/* ---------- HUD ---------- */
+#hud { position: absolute; top: 14px; left: 0; right: 0; display: flex; justify-content: center; gap: 12px; z-index: 20; flex-wrap: wrap; }
+.hud-box { background: #0007; border: 2px solid #fff3; border-radius: 14px; padding: 6px 16px; font-size: 18px; }
+.hud-box b { color: var(--gold); font-size: 24px; margin-left: 6px; }
+.hud-box.small, .hud-box.small b { font-size: 15px; }
+
+/* ---------- Panel ---------- */
+#panel { position: absolute; left: 50%; bottom: 3vh; transform: translateX(-50%); width: min(860px, 94vw); z-index: 20;
+  background: #0009; border: 2px solid #fff3; border-radius: 18px; padding: 12px 16px; }
+#arrows { display: flex; justify-content: center; gap: 8px; min-height: 58px; }
+.arr { width: 54px; height: 54px; border-radius: 12px; display: grid; place-items: center; font-size: 34px; font-weight: 900;
+  background: linear-gradient(#6a5acd, #3b2b8f); border: 3px solid #fff6; transition: transform .1s, background .1s; }
+.arr.hit { background: linear-gradient(#ffe066, #ff9f1a); color: #4a2200; transform: scale(1.12); border-color: #fff; }
+.arr.wrong { background: linear-gradient(#ff6b6b, #a11); }
+#arrows.dead .arr:not(.hit) { opacity: .4; }
+#arrows.ready .arr { box-shadow: 0 0 14px #ffe066; }
+#beatbar { position: relative; height: 26px; margin: 12px 0 6px; border-radius: 13px; background: #ffffff18; overflow: hidden; }
+#ticks i { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff3; }
+#zone-bad, #zone-great, #zone-perfect { position: absolute; top: 0; bottom: 0; transform: translateX(-50%); }
+#zone-bad { background: #ff9f1a55; }
+#zone-great { background: #4dc3ff88; }
+#zone-perfect { background: #fff; box-shadow: 0 0 12px #fff; }
+#marker { position: absolute; top: -2px; bottom: -2px; width: 6px; margin-left: -3px; background: var(--gold); border-radius: 3px; box-shadow: 0 0 10px var(--gold); }
+.hint { text-align: center; font-size: 14px; opacity: .8; }
+
+/* ---------- Judgment ---------- */
+#judge { position: absolute; left: 50%; top: 22%; transform: translate(-50%, -50%); z-index: 25; pointer-events: none;
+  font-size: clamp(40px, 9vw, 96px); font-weight: 900; letter-spacing: 3px; font-style: italic; text-shadow: 0 4px 0 #0008; }
+#judge.show { animation: pop .9s ease-out forwards; }
+#judge.perfect { background: linear-gradient(90deg, #ff5ea8, #ffd84d, #5effc8, #5ec8ff, #c45eff); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 3px 0 #0008); }
+#judge.great { color: #4dc3ff; }
+#judge.bad { color: #ff9f1a; }
+#judge.miss { color: #aaa; }
+#judge.count { color: #fff; }
+@keyframes pop { 0% { transform: translate(-50%, -50%) scale(.3); opacity: 0; }
+  20% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+  35% { transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; } 100% { transform: translate(-50%, -70%) scale(1); opacity: 0; } }
+
+/* ---------- Menu ---------- */
+#menu { position: absolute; inset: 0; display: grid; place-items: center; background: #0008; z-index: 50; }
+#menu.hidden { display: none; }
+.card { background: linear-gradient(#3b1670, #1f0a40); border: 3px solid #fff4; border-radius: 22px; padding: 26px 32px; max-width: 560px; width: 92vw; text-align: center; }
+.card h1 { margin: 0 0 10px; font-size: 32px; color: var(--gold); }
+.rules span { display: inline-block; margin: 2px 4px; padding: 3px 10px; border-radius: 8px; font-weight: 800; }
+.rules .p { background: #c45eff; } .rules .g { background: #1e88c8; } .rules .b { background: #d87a00; } .rules .m { background: #666; }
+.small { font-size: 14px; opacity: .85; }
+.btn { display: inline-block; cursor: pointer; border: 2px solid #fff5; background: #ffffff1a; color: #fff; border-radius: 12px; padding: 8px 14px; margin: 4px; font: inherit; }
+.btn:hover { background: #ffffff33; }
+.btn.on { background: var(--gold); color: #3a1d00; }
+.btn.big { font-size: 24px; padding: 12px 34px; background: linear-gradient(#ff5ea8, #c4306f); border-color: #fff; margin-top: 12px; }
+.btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.speed { margin-top: 8px; }
+
+/* ---------- Dancers ---------- */
+#crew { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
+.dancer { position: absolute; width: 12em; height: 25em; transform: translateX(-50%); }
+.dancer.main { font-size: 1.65vh; left: 50%; bottom: 19vh; z-index: 3; }
+.dancer.back { font-size: 1.2vh; bottom: 31vh; z-index: 1; filter: brightness(.85); }
+.dancer.back.l { left: 28%; } .dancer.back.r { left: 72%; }
+.dancer.back.l2 { left: 12%; bottom: 26vh; font-size: 1.3vh; z-index: 2; }
+.dancer.back.r2 { left: 88%; bottom: 26vh; font-size: 1.3vh; z-index: 2; }
+.shadow { position: absolute; left: 1.5em; right: 1.5em; bottom: -0.8em; height: 1.6em; border-radius: 50%; background: #0007; }
+.spinner { position: absolute; inset: 0; }
+.body { position: absolute; inset: 0; transform-origin: 50% 100%; }
+.part { position: absolute; }
+
+.head { left: 2.5em; top: 3em; width: 7em; height: 7.4em; z-index: 3; }
+.face { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: .25em solid #0004; background: #f5c9a0; display: block; }
+.ear { position: absolute; top: 3em; width: 1.3em; height: 1.8em; border-radius: 50%; background: var(--skin, #f2c094); z-index: -1; }
+.ear.l { left: -.6em; } .ear.r { right: -.6em; }
+
+/* Propeller beanie */
+.hat { left: 2.1em; top: .9em; width: 7.8em; height: 3.9em; z-index: 4;
+  border-radius: 50% 50% 8% 8% / 100% 100% 10% 10%;
+  background: conic-gradient(from -90deg at 50% 100%, #ff4f7b 0 30deg, #ffd84d 30deg 60deg, #4dc3ff 60deg 90deg, #5eea8a 90deg 120deg, #ff4f7b 120deg 150deg, #ffd84d 150deg 180deg, transparent 0);
+  box-shadow: inset 0 -.4em 0 #0002; }
+.hat::after { /* visor */ content: ""; position: absolute; right: -2.2em; bottom: -.3em; width: 4.2em; height: 1.1em; border-radius: 0 50% 50% 0 / 0 100% 100% 0; background: #ff4f7b; box-shadow: inset 0 -.3em 0 #0003; transform: rotate(-6deg); }
+.hat .stick { position: absolute; left: 50%; top: -1.1em; width: .45em; height: 1.3em; margin-left: -.22em; background: #555; border-radius: .2em; }
+.hat .ball { position: absolute; left: 50%; top: -1.5em; width: .9em; height: .9em; margin-left: -.45em; border-radius: 50%; background: #ffd84d; z-index: 2; }
+.hat .prop { position: absolute; left: 50%; top: -1.35em; width: 6em; height: .9em; margin-left: -3em;
+  background: linear-gradient(90deg, #4dc3ff 0 48%, transparent 48% 52%, #ff4f7b 52%); border-radius: 50%;
+  animation: prop .25s linear infinite; }
+@keyframes prop { 0% { transform: scaleX(1); } 50% { transform: scaleX(-1); } 100% { transform: scaleX(1); } }
+
+.torso { left: 3em; top: 10em; width: 6em; height: 6.8em; border-radius: 1.6em 1.6em 1em 1em; background: var(--shirt, #ff7a3d); z-index: 2;
+  box-shadow: inset 0 -.6em 0 #0002; }
+.torso::after { content: "★"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 3em; color: #fff9; }
+.neck { left: 5.2em; top: 9.4em; width: 1.6em; height: 1.2em; background: var(--skin, #f2c094); z-index: 1; }
+.arm { top: 10.4em; width: 1.7em; height: 6.2em; border-radius: .9em; background: var(--shirt, #ff7a3d); transform-origin: 50% .8em; z-index: 1; }
+.arm::after { content: ""; position: absolute; left: -.15em; bottom: -.9em; width: 2em; height: 2em; border-radius: 50%; background: var(--skin, #f2c094); }
+.arm.l { left: 1.6em; transform: rotate(14deg); }
+.arm.r { left: 8.7em; transform: rotate(-14deg); }
+.leg { top: 16.2em; width: 2.1em; height: 7.6em; border-radius: .6em; background: var(--pants, #2e5aac); transform-origin: 50% 0; z-index: 1; }
+.leg::after { content: ""; position: absolute; bottom: -.5em; width: 3.2em; height: 1.4em; border-radius: 1em 1.4em .4em .4em; background: var(--shoe, #fff); }
+.leg.l { left: 3.5em; } .leg.l::after { left: -1.2em; }
+.leg.r { left: 6.4em; } .leg.r::after { left: .1em; }
+
+/* ---------- States ---------- */
+/* Fail / waiting: just bounce ("nhún nhún") */
+.st-bounce .body { animation: bounce var(--beat) ease-in-out infinite; }
+.st-bounce .arm.l { transform: rotate(8deg); } .st-bounce .arm.r { transform: rotate(-8deg); }
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(.9em) scaleY(.96); } }
+
+/* m1: wave arms */
+.st-m1 .body { animation: sway calc(var(--beat) * 2) ease-in-out infinite; }
+.st-m1 .arm.l { animation: waveL calc(var(--beat) * 2) ease-in-out infinite; }
+.st-m1 .arm.r { animation: waveR calc(var(--beat) * 2) ease-in-out infinite; }
+@keyframes sway { 0%, 100% { transform: rotate(-5deg) translateY(0); } 25% { transform: rotate(0) translateY(.8em); } 50% { transform: rotate(5deg) translateY(0); } 75% { transform: rotate(0) translateY(.8em); } }
+@keyframes waveL { 0%, 100% { transform: rotate(20deg); } 25% { transform: rotate(165deg); } 50% { transform: rotate(20deg); } 75% { transform: rotate(110deg); } }
+@keyframes waveR { 0%, 100% { transform: rotate(-110deg); } 25% { transform: rotate(-20deg); } 50% { transform: rotate(-165deg); } 75% { transform: rotate(-20deg); } }
+
+/* m2: side step */
+.st-m2 .body { animation: step calc(var(--beat) * 2) ease-in-out infinite; }
+.st-m2 .leg.l { animation: legL calc(var(--beat) * 2) ease-in-out infinite; }
+.st-m2 .leg.r { animation: legR calc(var(--beat) * 2) ease-in-out infinite; }
+.st-m2 .arm.l { animation: swingL var(--beat) ease-in-out infinite alternate; }
+.st-m2 .arm.r { animation: swingR var(--beat) ease-in-out infinite alternate; }
+@keyframes step { 0%, 50%, 100% { transform: translateX(0) translateY(.6em); } 25% { transform: translateX(-2.2em) rotate(-6deg); } 75% { transform: translateX(2.2em) rotate(6deg); } }
+@keyframes legL { 0%, 50%, 100% { transform: rotate(0); } 25% { transform: rotate(28deg); } }
+@keyframes legR { 0%, 50%, 100% { transform: rotate(0); } 75% { transform: rotate(-28deg); } }
+@keyframes swingL { from { transform: rotate(-30deg); } to { transform: rotate(60deg); } }
+@keyframes swingR { from { transform: rotate(-60deg); } to { transform: rotate(30deg); } }
+
+/* m3: jump with arms up */
+.st-m3 .body { animation: jump var(--beat) cubic-bezier(.3, 0, .4, 1) infinite; }
+.st-m3 .arm.l { animation: upL var(--beat) ease-in-out infinite; }
+.st-m3 .arm.r { animation: upR var(--beat) ease-in-out infinite; }
+.st-m3 .leg.l { animation: kickL var(--beat) ease-in-out infinite; }
+.st-m3 .leg.r { animation: kickR var(--beat) ease-in-out infinite; }
+@keyframes jump { 0%, 100% { transform: translateY(.6em) scaleY(.95); } 45% { transform: translateY(-3.2em); } }
+@keyframes upL { 0%, 100% { transform: rotate(40deg); } 45% { transform: rotate(160deg); } }
+@keyframes upR { 0%, 100% { transform: rotate(-40deg); } 45% { transform: rotate(-160deg); } }
+@keyframes kickL { 0%, 100% { transform: rotate(0); } 45% { transform: rotate(18deg); } }
+@keyframes kickR { 0%, 100% { transform: rotate(0); } 45% { transform: rotate(-18deg); } }
+
+/* m4: disco point */
+.st-m4 .body { animation: disco calc(var(--beat) * 2) ease-in-out infinite; }
+.st-m4 .arm.r { animation: point calc(var(--beat) * 2) steps(1) infinite; }
+.st-m4 .arm.l { transform: rotate(-35deg); }
+.st-m4 .leg.r { animation: legR calc(var(--beat) * 2) ease-in-out infinite; }
+@keyframes disco { 0%, 100% { transform: rotate(-8deg) translateX(-1em); } 25% { transform: rotate(0) translateY(.7em); } 50% { transform: rotate(8deg) translateX(1em); } 75% { transform: rotate(0) translateY(.7em); } }
+@keyframes point { 0% { transform: rotate(-155deg); } 25% { transform: rotate(-40deg); } 50% { transform: rotate(-155deg); } 75% { transform: rotate(-40deg); } }
+
+/* Perfect bonus: full spin */
+.spin .spinner { animation: spinY calc(var(--beat) * 2) ease-in-out 1; }
+@keyframes spinY { from { transform: rotateY(0); } to { transform: rotateY(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lights i, .hat .prop { animation: none; }
+  .spin .spinner { animation: none; }
+}
