@@ -249,7 +249,10 @@
     for (let i = 0, end = 0; i < PLAN.length; i++) { end += PLAN[i][1]; if (k < end) return i; }
     return PLAN.length;
   }
-  const arrowCount = (k) => (PLAN[planStep(k)] || [LAST_COUNT])[0];
+  // Difficulty caps the arrow count: Bắt đầu 5, Dễ 7, Vừa 10, Khó 12 (full plan)
+  let maxArrows = 12;
+  try { const m = Number(localStorage.getItem('dance.max')); if ([5, 7, 10, 12].includes(m)) maxArrows = m; } catch (e) { /* ignore */ }
+  const arrowCount = (k) => Math.min((PLAN[planStep(k)] || [LAST_COUNT])[0], maxArrows);
   const STAGE_SECONDS = 120; // one stage is about 2 minutes, rounded to whole rounds
   let totalRounds = 0, endTime = 0, lastSecShown = -1;
   const elTimer = $('timer');
@@ -289,7 +292,7 @@
   }
   function updateHud() {
     ui.score.textContent = score; ui.combo.textContent = combo;
-    ui.level.textContent = planStep(Math.max(roundIdx, 0)) + 1;
+    ui.level.textContent = arrowCount(Math.max(roundIdx, 0)) - 3;
     ui.P.textContent = counts.perfect; ui.G.textContent = counts.great; ui.B.textContent = counts.bad; ui.M.textContent = counts.miss;
   }
 
@@ -480,6 +483,14 @@
 
   document.addEventListener('keydown', onKey);
   $('start').addEventListener('click', start);
+  document.querySelectorAll('.df').forEach((b) => {
+    b.classList.toggle('on', Number(b.dataset.max) === maxArrows);
+    b.addEventListener('click', () => {
+      maxArrows = Number(b.dataset.max);
+      document.querySelectorAll('.df').forEach((x) => x.classList.toggle('on', x === b));
+      try { localStorage.setItem('dance.max', String(maxArrows)); } catch (e) { /* ignore */ }
+    });
+  });
   document.querySelectorAll('.sp').forEach((b) => b.addEventListener('click', () => {
     document.querySelectorAll('.sp').forEach((x) => x.classList.remove('on'));
     b.classList.add('on'); bpm = Number(b.dataset.bpm);
