@@ -11,59 +11,93 @@
   const KEYS = Object.keys(ARROWS);
 
   // ---------- Default cartoon faces (SVG) ----------
-  function faceSvg(skin, hair, mouth = 'smile') {
+  function faceSvg(skin, hair, mouth = 'smile', girl = false) {
     const m = mouth === 'smile'
       ? '<path d="M38 66 Q50 78 62 66" stroke="#7a2e1d" stroke-width="4" fill="none" stroke-linecap="round"/>'
       : '<ellipse cx="50" cy="69" rx="7" ry="5" fill="#7a2e1d"/>';
+    const hairPath = girl
+      ? `<path d="M0 0 H100 V100 H86 V40 Q70 26 50 34 Q30 26 14 40 V100 H0Z" fill="${hair}"/>
+         <path d="M70 8 l12 -6 v14z M70 8 l-12 -6 v14z" fill="#ff5ea8"/><circle cx="70" cy="8" r="3" fill="#ff9ccc"/>`
+      : `<path d="M0 0 H100 V30 Q75 42 50 30 Q25 42 0 30Z" fill="${hair}"/>`;
+    const lashes = girl ? '<path d="M29 43 l-4 -4 M71 43 l4 -4" stroke="#222" stroke-width="2.5" stroke-linecap="round"/>' : '';
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-      <rect width="100" height="100" fill="${skin}"/>
-      <path d="M0 0 H100 V30 Q75 42 50 30 Q25 42 0 30Z" fill="${hair}"/>
-      <ellipse cx="35" cy="50" rx="5" ry="7" fill="#222"/><ellipse cx="65" cy="50" rx="5" ry="7" fill="#222"/>
+      <rect width="100" height="100" fill="${skin}"/>${hairPath}
+      <ellipse cx="35" cy="50" rx="5" ry="7" fill="#222"/><ellipse cx="65" cy="50" rx="5" ry="7" fill="#222"/>${lashes}
       <circle cx="37" cy="47" r="1.8" fill="#fff"/><circle cx="67" cy="47" r="1.8" fill="#fff"/>
       <circle cx="25" cy="62" r="6" fill="#ff8a8a" opacity=".5"/><circle cx="75" cy="62" r="6" fill="#ff8a8a" opacity=".5"/>
       ${m}</svg>`;
     return 'data:image/svg+xml,' + encodeURIComponent(svg);
   }
-  const DEFAULT_FACE = faceSvg('#f2c094', '#2b1a10');
+  const DEFAULT_FACE = { boy: faceSvg('#f2c094', '#2b1a10'), girl: faceSvg('#f2c094', '#3a1f12', 'smile', true) };
 
   // ---------- Build dancers ----------
+  // Main character's gender picks the crew: a boy dances with girls, a girl dances with boys.
   const crew = document.getElementById('crew');
-  function makeDancer(cls, face, colors) {
+  const BACKUP = {
+    boy: [
+      ['back l2', faceSvg('#e8b98a', '#6b3b1a', 'o'), { shirt: '#5eea8a', pants: '#333', skin: '#e8b98a' }],
+      ['back r2', faceSvg('#f6d0b0', '#111'), { shirt: '#c45eff', pants: '#2e2e6e', skin: '#f6d0b0' }],
+      ['back l', faceSvg('#d9a77a', '#3a2a1a'), { shirt: '#4dc3ff', pants: '#553', skin: '#d9a77a' }],
+      ['back r', faceSvg('#f2c094', '#8a4b20', 'o'), { shirt: '#ffd84d', pants: '#7a2e5a', skin: '#f2c094' }],
+    ],
+    girl: [
+      ['back l2', faceSvg('#e8b98a', '#2b1a10', 'smile', true), { shirt: '#ff9ccc', dress: '#ff5ea8', pants: '#e8b98a', skin: '#e8b98a', hair: '#2b1a10' }],
+      ['back r2', faceSvg('#f6d0b0', '#8a4b20', 'o', true), { shirt: '#9be7ff', dress: '#4dc3ff', pants: '#f6d0b0', skin: '#f6d0b0', hair: '#8a4b20' }],
+      ['back l', faceSvg('#d9a77a', '#111', 'o', true), { shirt: '#fff3a0', dress: '#ffd84d', pants: '#d9a77a', skin: '#d9a77a', hair: '#111' }],
+      ['back r', faceSvg('#f2c094', '#5a3418', 'smile', true), { shirt: '#c9f7d8', dress: '#5eea8a', pants: '#f2c094', skin: '#f2c094', hair: '#5a3418' }],
+    ],
+  };
+  const MAIN_COLORS = {
+    boy: { shirt: '#1d3fbf', pants: '#f4f4ff', skin: '#f2c094', shoe: '#ffd84d' },
+    girl: { shirt: '#ff7fbf', dress: '#ff9fd2', pants: '#f2c094', skin: '#f2c094', shoe: '#fff', hair: '#3a1f12' },
+  };
+  function makeDancer(cls, face, colors, kind) {
+    const main = cls.includes('main');
     const d = document.createElement('div');
-    d.className = 'dancer ' + cls + ' st-bounce';
+    d.className = `dancer ${cls} ${kind} st-bounce`;
     Object.entries(colors).forEach(([k, v]) => d.style.setProperty('--' + k, v));
+    const girl = kind === 'girl';
+    const hat = main && !girl ? '<div class="part hat"><div class="stick"></div><div class="prop"></div><div class="ball"></div></div>' : '';
+    const tiara = main && girl ? '<div class="part tiara"><i></i><i></i><i></i></div>' : '';
     d.innerHTML = `
       <div class="shadow"></div>
       <div class="spinner"><div class="body">
+        ${main && !girl ? '<div class="part cape"></div>' : ''}
+        ${girl ? '<div class="part hair-back"></div>' : ''}
         <div class="part arm l"></div><div class="part arm r"></div>
         <div class="part leg l"></div><div class="part leg r"></div>
         <div class="part neck"></div>
         <div class="part torso"></div>
+        ${girl ? '<div class="part skirt"></div>' : ''}
+        ${main && !girl ? '<div class="part bowtie"></div>' : ''}
         <div class="part head"><div class="ear l"></div><div class="ear r"></div><img class="face" alt="" src="${face}"></div>
-        ${cls.includes('main') ? '<div class="part hat"><div class="stick"></div><div class="prop"></div><div class="ball"></div></div>' : ''}
+        ${hat}${tiara}
       </div></div>`;
     crew.appendChild(d);
     return d;
   }
-  const dancers = [
-    makeDancer('back l2', faceSvg('#e8b98a', '#6b3b1a', 'o'), { shirt: '#5eea8a', pants: '#333', skin: '#e8b98a' }),
-    makeDancer('back r2', faceSvg('#f6d0b0', '#111'), { shirt: '#c45eff', pants: '#2e2e6e', skin: '#f6d0b0' }),
-    makeDancer('back l', faceSvg('#d9a77a', '#3a2a1a'), { shirt: '#4dc3ff', pants: '#553', skin: '#d9a77a' }),
-    makeDancer('back r', faceSvg('#f2c094', '#8a4b20', 'o'), { shirt: '#ffd84d', pants: '#7a2e5a', skin: '#f2c094' }),
-    makeDancer('main', DEFAULT_FACE, { shirt: '#ff7a3d', pants: '#2e5aac', skin: '#f2c094' }),
-  ];
-  const mainFace = dancers[4].querySelector('.face');
 
-  // Face: uploaded (saved) > assets/face.png > cartoon default
-  function setMainFace(src) { mainFace.src = src; }
-  let saved = null;
-  try { saved = localStorage.getItem('dance.face'); } catch (e) { /* ignore */ }
-  if (saved) setMainFace(saved);
-  else {
+  let gender = 'boy', customFace = null, dancers = [], mainFace = null;
+  try { if (localStorage.getItem('dance.gender') === 'girl') gender = 'girl'; } catch (e) { /* ignore */ }
+  function buildCrew() {
+    crew.innerHTML = '';
+    const backKind = gender === 'boy' ? 'girl' : 'boy';
+    dancers = BACKUP[backKind].map(([cls, face, colors]) => makeDancer(cls, face, colors, backKind));
+    dancers.push(makeDancer('main', customFace || DEFAULT_FACE[gender], MAIN_COLORS[gender], gender));
+    mainFace = dancers[dancers.length - 1].querySelector('.face');
+  }
+  buildCrew();
+
+  // Face: uploaded (saved) > assets/face.png > cartoon default for the chosen gender
+  function setMainFace(src) { customFace = src; mainFace.src = src; }
+  function probeAssetFace() {
     const probe = new Image();
     probe.onload = () => setMainFace(FACE_PATH);
     probe.src = FACE_PATH;
   }
+  let saved = null;
+  try { saved = localStorage.getItem('dance.face'); } catch (e) { /* ignore */ }
+  if (saved) setMainFace(saved); else probeAssetFace();
   document.getElementById('faceInput').addEventListener('change', (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
@@ -86,10 +120,18 @@
   });
   document.getElementById('faceReset').addEventListener('click', () => {
     try { localStorage.removeItem('dance.face'); } catch (e) { /* ignore */ }
-    setMainFace(DEFAULT_FACE);
-    const probe = new Image();
-    probe.onload = () => setMainFace(FACE_PATH);
-    probe.src = FACE_PATH;
+    customFace = null;
+    mainFace.src = DEFAULT_FACE[gender];
+    probeAssetFace();
+  });
+  document.querySelectorAll('.gd').forEach((b) => {
+    b.classList.toggle('on', b.dataset.gender === gender);
+    b.addEventListener('click', () => {
+      gender = b.dataset.gender;
+      document.querySelectorAll('.gd').forEach((x) => x.classList.toggle('on', x === b));
+      try { localStorage.setItem('dance.gender', gender); } catch (e) { /* ignore */ }
+      buildCrew();
+    });
   });
 
   // ---------- DOM ----------
@@ -170,10 +212,24 @@
     SONG.filter((n) => n.at >= pos * 2 && n.at < pos * 2 + 2)
       .forEach((n) => lead(n.m, t + (n.at - pos * 2) * eighth, n.len * eighth * 0.9));
   }
+  // Crowd applause: lots of short band-passed noise claps, dense at first then thinning out
+  function applause() {
+    const t = ctx.currentTime;
+    for (let i = 0; i < 90; i++) {
+      const at = t + Math.pow(Math.random(), 1.6) * 1.8;
+      const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      s.buffer = noise; f.type = 'bandpass'; f.frequency.value = 900 + Math.random() * 1800; f.Q.value = 1.2;
+      const v = (0.25 + Math.random() * 0.35) * (1 - (at - t) / 2.2);
+      env(g, at, 0.001, Math.max(v, 0.01), 0.03 + Math.random() * 0.03);
+      s.connect(f).connect(g).connect(master);
+      const off = Math.random() * 0.4;
+      s.start(at, off, 0.1); s.stop(at + 0.12);
+    }
+  }
   const sfx = {
     tap: () => tone('triangle', 880, ctx.currentTime, 0.06, 0.2),
     wrong: () => tone('sawtooth', 160, ctx.currentTime, 0.3, 0.25, 80),
-    perfect: () => [0, 4, 7, 12].forEach((s, i) => tone('triangle', 660 * Math.pow(2, s / 12), ctx.currentTime + i * 0.05, 0.15, 0.2)),
+    perfect: () => { [0, 4, 7, 12].forEach((s, i) => tone('triangle', 660 * Math.pow(2, s / 12), ctx.currentTime + i * 0.05, 0.15, 0.2)); applause(); },
     great: () => [0, 7].forEach((s, i) => tone('triangle', 660 * Math.pow(2, s / 12), ctx.currentTime + i * 0.06, 0.15, 0.2)),
     bad: () => tone('triangle', 440, ctx.currentTime, 0.15, 0.2),
     miss: () => tone('sawtooth', 220, ctx.currentTime, 0.35, 0.2, 110),
@@ -187,14 +243,13 @@
   const beatLen = () => 60 / bpm;
   const roundLen = () => beatLen() * BEATS_PER_ROUND;
   const now = () => ctx.currentTime - (ctx.outputLatency || ctx.baseLatency || 0);
-  // Arrow plan: 4 arrows x3 rounds, 5 x3, 6 x4, 7 x5, 8 x8, then 9-11 (random) until the stage ends
-  const PLAN = [[4, 3], [5, 3], [6, 4], [7, 5], [8, 8]], LAST_MIN = 9, LAST_MAX = 11;
+  // Arrow plan: 4,5,6,7,8 arrows for 3 rounds each, then 9,10,11 for 3 rounds each, then 12 until the stage ends
+  const PLAN = [[4, 3], [5, 3], [6, 3], [7, 3], [8, 3], [9, 3], [10, 3], [11, 3]], LAST_COUNT = 12;
   function planStep(k) {
     for (let i = 0, end = 0; i < PLAN.length; i++) { end += PLAN[i][1]; if (k < end) return i; }
     return PLAN.length;
   }
-  const arrowCount = (k) => PLAN[planStep(k)] ? PLAN[planStep(k)][0]
-    : LAST_MIN + Math.floor(Math.random() * (LAST_MAX - LAST_MIN + 1));
+  const arrowCount = (k) => (PLAN[planStep(k)] || [LAST_COUNT])[0];
   const STAGE_SECONDS = 120; // one stage is about 2 minutes, rounded to whole rounds
   let totalRounds = 0, endTime = 0, lastSecShown = -1;
   const elTimer = $('timer');

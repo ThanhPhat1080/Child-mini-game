@@ -154,6 +154,49 @@ kbd { background: #fff2; border: 1px solid #fff6; border-radius: 4px; padding: 0
 .leg.l { left: 5em; } .leg.l::after { left: -1.1em; }
 .leg.r { left: 7.2em; } .leg.r::after { left: .1em; }
 
+/* ---------- Costumes ---------- */
+/* Main character stands on a golden spotlight */
+.main .shadow { left: -1em; right: -1em; bottom: -1.4em; height: 3em; background: radial-gradient(ellipse, #ffe066cc 0 35%, #ffd84d44 60%, transparent 72%); }
+
+/* Boy star outfit: sequin jacket with gold trim, red bow tie, swinging cape */
+.main.boy .torso { border: .25em solid #ffd84d;
+  background: radial-gradient(circle, #ffffffaa 0 .1em, transparent .14em) 0 0 / .8em .8em, linear-gradient(135deg, #3a63ff, #142d9a);
+  animation: sequin 1.6s linear infinite; }
+.main.boy .torso::after { color: #ffd84d; }
+@keyframes sequin { to { background-position: .8em .8em, 0 0; } }
+.main.boy .arm::before { content: ""; position: absolute; left: -.1em; bottom: .2em; width: 1.7em; height: .5em; background: #ffd84d; border-radius: .2em; }
+.bowtie { left: 5.9em; top: 13.4em; width: 2.2em; height: 1.2em; z-index: 4; background: #ff3b5c;
+  clip-path: polygon(0 0, 50% 38%, 100% 0, 100% 100%, 50% 62%, 0 100%); }
+.cape { left: 2.6em; top: 13.8em; width: 8.8em; height: 8.6em; z-index: 0; transform-origin: 50% 0;
+  background: linear-gradient(#ff2a45, #9b0d22); clip-path: polygon(22% 0, 78% 0, 100% 100%, 0 100%);
+  animation: cape calc(var(--beat) * 2) ease-in-out infinite alternate; }
+@keyframes cape { from { transform: skewX(-8deg); } to { transform: skewX(8deg); } }
+
+/* Girls: long hair behind the head and a skirt */
+.girl .hair-back { left: 1.7em; top: 5.5em; width: 10.6em; height: 11.5em; z-index: 0; border-radius: 45% 45% 35% 35%; background: var(--hair, #3a1f12); }
+.girl .leg { width: 1.5em; }
+.girl .skirt { left: 2.9em; top: 17.4em; width: 8.2em; height: 4em; z-index: 2; background: var(--dress, #ff5ea8);
+  clip-path: polygon(25% 0, 75% 0, 100% 100%, 0 100%); transform-origin: 50% 0; }
+.girl:not(.st-bounce) .skirt { animation: twirl var(--beat) ease-in-out infinite alternate; }
+@keyframes twirl { from { transform: scaleX(.9); } to { transform: scaleX(1.12); } }
+
+/* Girl main: princess ball gown, puff sleeves, gold tiara */
+.main.girl .torso { left: 4.6em; width: 4.8em; border: .2em solid #ffd84d; background: linear-gradient(#ffb3dd, #ff5ea8); }
+.main.girl .torso::after { content: "♥"; color: #fff; font-size: 2em; }
+.main.girl .arm::before { content: ""; position: absolute; left: -.65em; top: -.5em; width: 2.8em; height: 2.4em; border-radius: 50%; background: #ffc4e4; box-shadow: inset 0 -.3em 0 #ff9fd2; }
+.main.girl .skirt { left: .3em; top: 16.8em; width: 13.4em; height: 6.4em;
+  clip-path: polygon(36% 0, 64% 0, 74% 22%, 88% 58%, 100% 100%, 0 100%, 12% 58%, 26% 22%);
+  background: radial-gradient(circle, #ffffffcc 0 .12em, transparent .16em) 0 0 / 1.1em 1.1em, linear-gradient(#ffd1ea, #ff7fbf 70%, #ff5ea8);
+  animation: sequin 2s linear infinite; }
+.main.girl:not(.st-bounce) .skirt { animation: twirl var(--beat) ease-in-out infinite alternate, sequin 2s linear infinite; }
+.main.girl .skirt::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1.2em;
+  background: radial-gradient(circle at 50% 0, #fff 0 .55em, transparent .6em) 0 0 / 1.3em 1.2em repeat-x; }
+.tiara { left: 3.4em; top: .7em; width: 7.2em; height: 3em; z-index: 4;
+  background: linear-gradient(#fff0a0, #e0a800); filter: drop-shadow(0 .2em 0 #0004);
+  clip-path: polygon(0 100%, 2% 35%, 20% 65%, 35% 20%, 50% 0, 65% 20%, 80% 65%, 98% 35%, 100% 100%); }
+.tiara i { position: absolute; width: .9em; height: .9em; border-radius: 50%; bottom: .4em; }
+.tiara i:nth-child(1) { left: 1.2em; background: #4dc3ff; } .tiara i:nth-child(2) { left: 3.15em; bottom: .8em; width: 1.1em; height: 1.1em; background: #ff3b5c; } .tiara i:nth-child(3) { right: 1.2em; background: #5eea8a; }
+
 /* ---------- Birthday decor ---------- */
 .bunting { position: absolute; top: 64px; left: 0; right: 0; height: 40px; display: flex; justify-content: space-around; z-index: 5; pointer-events: none;
   background: linear-gradient(transparent 0 2px, #fff6 2px 4px, transparent 4px); }
@@ -221,6 +264,7 @@ kbd { background: #fff2; border: 1px solid #fff6; border-radius: 4px; padding: 0
 @media (prefers-reduced-motion: reduce) {
   .lights i, .hat .prop { animation: none; }
   #zone-great, #zone-perfect, #zone-bad, #timer.alert { animation: none; }
+  .main.boy .torso, .main.girl .skirt, .cape, .girl .skirt { animation: none !important; }
   .spin .spinner, .spin.main .face, .bunting i, .balloon, .main .head::before { animation: none; }
   .confetti { display: none; }
 }
